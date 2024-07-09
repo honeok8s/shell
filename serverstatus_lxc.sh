@@ -37,8 +37,8 @@ PROBE(){
   if [[ ! -f "./client-linux.py" ]]; then
     # Retry downloading for up to 3 times
     for ((i=1; i<=3; i++)); do
-      wget --no-check-certificate -qO client-linux.py 'https://raw.githubusercontent.com/cppla/ServerStatus/master/clients/client-linux.py' >/dev/null 2>&1
-      #sed -i 's#CU = "cu.tz.cloudcpp.com"#CU = "mall.10010.com"#g; s#CT = "ct.tz.cloudcpp.com"#CT = "www.189.cn"#g; s#CM = "cm.tz.cloudcpp.com"#CM = "www.bj.10086.cn"#g' client-linux.py
+      wget --no-check-certificate -qO client-linux.py 'https://raw.githubusercontent.com/cppla/ServerStatus/master/clients/client-linux.py' >/dev/null 2>&1 &&
+      sed -i 's#CU = "cu.tz.cloudcpp.com"#CU = "119.6.222.234"#g; s#CT = "ct.tz.cloudcpp.com"#CT = "www.sc189.net"#g; s#CM = "cm.tz.cloudcpp.com"#CM = "wap.sc.10086.cn"#g' client-linux.py
     done
   fi
 
