@@ -19,7 +19,7 @@ printf "${yellow}========== start clean docker containers logs ==========${white
 echo""
 
 log_dir="/var/lib/docker/containers/"
-max_log_size="25M"
+max_log_size="28M"
 
 if [ ! -d "$log_dir" ]; then
   printf "${red}${log_dir} does not exist. Exiting.${white}\n"
