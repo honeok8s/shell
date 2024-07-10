@@ -7,7 +7,7 @@
 
 set -o errexit
 
-VERSION=$(own1.0)
+VERSION=own1.0
 
 yellow='\033[1;33m' # 用于提示信息
 red='\033[1;31m'    # 用于警告信息
