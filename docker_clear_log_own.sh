@@ -7,6 +7,8 @@
 
 set -o errexit
 
+VERSION=$(own1.0)
+
 yellow='\033[1;33m' # 用于提示信息
 red='\033[1;31m'    # 用于警告信息
 green='\033[1;32m'  # 用于成功信息
@@ -15,7 +17,7 @@ cyan='\033[1;36m'   # 用于特殊信息
 purple='\033[1;35m' # 用于紫色信息
 white='\033[0m'     # 用于结束颜色设置
 
-printf "${yellow}========== start clean docker containers logs ==========${white}\n"
+printf "${yellow}========== start clean docker containers logs ${VERSION}==========${white}\n"
 echo""
 
 log_dir="/var/lib/docker/containers/"
