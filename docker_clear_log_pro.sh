@@ -7,8 +7,6 @@
 
 set -o errexit
 
-VERSION=PRO1.0
-
 yellow='\033[1;33m' # 用于提示信息
 red='\033[1;31m'    # 用于警告信息
 green='\033[1;32m'  # 用于成功信息
@@ -16,9 +14,6 @@ blue='\033[1;34m'   # 用于一般信息
 cyan='\033[1;36m'   # 用于特殊信息
 purple='\033[1;35m' # 用于紫色信息
 white='\033[0m'     # 用于结束颜色设置
-
-printf "${yellow}========== start clean docker containers logs ${VERSION}==========${white}\n"
-echo""
 
 log_dir="/var/lib/docker/containers/"
 max_log_size="1G"
@@ -55,5 +50,3 @@ find "$log_dir" -name '*-json.log' | while IFS= read -r log; do
     printf "${purple}Log size $size is within limits, no cleaning needed.${white}\n"
   fi
 done
-
-printf "${yellow}========== end clean docker containers logs ==========${white}\n"
