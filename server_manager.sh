@@ -200,9 +200,6 @@ mysql_install() {
 	# 验证安装
 	check_mysql_installed
 
-	# 清理安装包文件
-	rm -f mysql-community*
-
 	# 备份当前的my.cnf文件
 	mv /etc/my.cnf{,.bak}
 	# 下载基础配置文件my-4C8G.cnf
@@ -246,7 +243,7 @@ mysql_install() {
 		sed -i "s/^read_rnd_buffer_size =.*/read_rnd_buffer_size = 256K/" /etc/my.cnf
 		sed -i "s/^read_buffer_size =.*/read_buffer_size = 256K/" /etc/my.cnf
 		sed -i "s/^sort_buffer_size =.*/sort_buffer_size = 256K/" /etc/my.cnf
-		printf "${yellow}MySQL配置文件已更新并根据服务器配置动态调整完成.{white}\n"
+		printf "${yellow}MySQL配置文件已更新并根据服务器配置动态调整完成.${white}\n"
 	else
 		printf "${red}未知内存配置,未做修改.${white}\n"
 	fi
@@ -270,6 +267,9 @@ mysql_install() {
 	fi
 	
 	echo ""
+	
+	# 清理安装包文件
+	rm -f mysql-community*
 }
 
 # MySQL卸载
