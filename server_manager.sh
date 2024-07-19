@@ -26,7 +26,7 @@ check_download_dir() {
 
 check_mysql_installed() {
 	if command -v mysql &>/dev/null; then
-		mysql_version=$(mysql --version 2>&1)
+		local mysql_version=$(mysql --version 2>&1)
 
 		if [[ "$mysql_version" =~ ([0-9]+\.[0-9]+\.[0-9]+) ]]; then
 			mysql_version="${BASH_REMATCH[1]}"
@@ -42,27 +42,18 @@ check_mysql_installed() {
 	fi
 }
 
-# MySQL初始化
-initialize_mysql() {
-	local dbroot_passwd=$(openssl rand -base64 10)
-
-	# 检查是否已经初始化过 MySQL
-	if grep -q "MySQL init process done. Ready for start up." /var/log/mysqld.log; then
-		printf "${red}MySQL已经初始化过,请不要重复初始化.${white}\n"
-		return 1
-	fi
-
-	echo "ALTER USER 'root'@'localhost' IDENTIFIED BY '${dbroot_passwd}';" > /tmp/mysql-init
-	if mysqld --initialize --user=mysql --init-file=/tmp/mysql-init; then
-		rm -f /tmp/mysql-init
-		printf "${green}通过指定配置文件初始化MySQL成功!${white}\n"
-		printf "${yellow}MySQL Root密码:$dbroot_passwd${white}\n"
-		return 0
-	else
-		printf "${red}MySQL初始化失败.${white}\n"
-		rm -f /tmp/mysql-init
-		return 1
-	fi
+# 检查并打印MySQL进程信息
+mysql_process_info() {
+    local process_info
+    process_info=$(ps -ef | awk '/[m]ysqld/ {print}')
+    
+    if [[ -z "$process_info" ]]; then
+        printf "${red}未找到MySQL进程信息.${white}\n"
+    else
+        printf "${yellow}MySQL进程信息:\n${process_info}${white}\n"
+    fi
+	
+	systemctl status mysqld
 }
 
 # 下载或生成my.cnf配置文件
@@ -143,14 +134,37 @@ EOF
 	fi
 }
 
+# MySQL初始化
+initialize_mysql() {
+	local dbroot_passwd=$(openssl rand -base64 10)
+
+	# 检查是否已经初始化过 MySQL
+	if grep -q "MySQL init process done. Ready for start up." /var/log/mysqld.log; then
+		printf "${red}MySQL已经初始化过,请不要重复初始化.${white}\n"
+		return 1
+	fi
+
+	echo "ALTER USER 'root'@'localhost' IDENTIFIED BY '${dbroot_passwd}';" > /tmp/mysql-init
+	if mysqld --initialize --user=mysql --init-file=/tmp/mysql-init; then
+		rm -f /tmp/mysql-init
+		printf "${green}通过指定配置文件初始化MySQL成功!${white}\n"
+		printf "${yellow}MySQL Root密码:$dbroot_passwd${white}\n"
+		return 0
+	else
+		printf "${red}MySQL初始化失败.${white}\n"
+		rm -f /tmp/mysql-init
+		return 1
+	fi
+}
+
 # MySQL安装
 mysql_install() {
 	check_download_dir
 	if ! check_mysql_installed; then
-		printf "${yellow}在${os_release}上安装! ${white}\n"
+		printf "${yellow}正在${os_release}上安装! ${white}\n"
 	else
 		printf "${red}MySQL已安装!${white}\n"
-		break
+		return
 	fi
 
 	cd "$download_dir" || exit 1
@@ -190,12 +204,17 @@ mysql_install() {
 		mysql-community-libs-8.0.26-1.el7.x86_64.rpm \
 		mysql-community-client-8.0.26-1.el7.x86_64.rpm \
 		mysql-community-server-8.0.26-1.el7.x86_64.rpm; do
-		if ! yum localinstall "$package" -y >/dev/null 2>&1; then
-			printf "${red}安装失败:${package}${white}\n"
-			exit 1
+
+		if rpm -ivh $package; then
+			printf "${green} MySQL安装包安装成功:${package}${white}\n"
+			rm -f "$package"
+		else
+			printf "${red} MySQL安装包安装失败:${package}${white}\n"
+			return 1
 		fi
-		printf "${green}安装成功:${package}${white}\n"
 	done
+
+	printf "${green}MySQL所有包安装完毕!${white}\n"
 
 	# 验证安装
 	check_mysql_installed
@@ -274,9 +293,7 @@ mysql_install() {
 
 # MySQL卸载
 mysql_uninstall() {
-	check_mysql_installed
-	if [[ $? -ne 0 ]]; then
-		printf "${red}MySQL未安装.${white}\n"
+	if ! check_mysql_installed; then
 		return
 	fi
 
@@ -299,8 +316,46 @@ mysql_uninstall() {
 
 	[ -f /etc/my.cnf ] && rm -f /etc/my.cnf
 	printf "${green}MySQL卸载完成.${white}\n"
+	sleep 2s
 }
 
+##########
+# MySQL子菜单
+mysql_menu() {
+    while true; do
+		clear
+		printf "${cyan}=== MySQL 操作 ===${white}\n"
+		printf "${cyan}1. 安装MySQL服务${white}\n"
+		printf "${cyan}2. 卸载MySQL服务${white}\n"
+		printf "${cyan}3. 查看MySQL服务${white}\n"
+		printf "${cyan}4. 返回主菜单.${white}\n"
+
+		printf "${cyan}请输入选项数字并按Enter键: ${white}"
+		read choice
+
+		case $choice in
+			1)
+				mysql_process_info
+				
+				;;
+			2)
+				mysql_install
+				;;
+			3)
+				mysql_uninstall
+				;;
+			4)
+				printf "${yellow}返回主菜单.${white}\n"
+				return  # 返回主菜单循环
+				;;
+			*)
+				printf "${red}无效选项,请重新输入${white}\n"
+				;;
+		esac
+		printf "${cyan}按任意键继续.${white}"
+		read -n 1 -s -r -p ""
+	done
+}
 ##########
 # 主菜单函数
 main_menu() {
@@ -319,39 +374,7 @@ main_menu() {
 				;;
 			2)
 				printf "${yellow}Bye!${white}\n"
-				break  # 退出主菜单循环
-				;;
-			*)
-				printf "${red}无效选项,请重新输入${white}\n"
-				;;
-		esac
-		printf "${cyan}按任意键继续.${white}"
-		read -n 1 -s -r -p ""
-	done
-}
-
-# MySQL子菜单
-mysql_menu() {
-    while true; do
-		clear
-		printf "${cyan}=== MySQL 操作 ===${white}\n"
-		printf "${cyan}1. 安装MySQL服务${white}\n"
-		printf "${cyan}2. 卸载MySQL服务${white}\n"
-		printf "${cyan}3. 返回主菜单.${white}\n"
-
-		printf "${cyan}请输入选项数字并按Enter键: ${white}"
-		read choice
-
-		case $choice in
-			1)
-				mysql_install
-				;;
-			2)
-				mysql_uninstall
-				;;
-			3)
-				printf "${yellow}返回主菜单.${white}\n"
-				return  # 返回主菜单循环
+				exit 0
 				;;
 			*)
 				printf "${red}无效选项,请重新输入${white}\n"
