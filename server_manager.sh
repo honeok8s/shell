@@ -325,10 +325,12 @@ mysql_menu() {
     while true; do
 		clear
 		printf "${cyan}=== MySQL 操作 ===${white}\n"
-		printf "${cyan}1. 安装MySQL服务${white}\n"
-		printf "${cyan}2. 卸载MySQL服务${white}\n"
-		printf "${cyan}3. 查看MySQL服务${white}\n"
-		printf "${cyan}4. 返回主菜单.${white}\n"
+		printf "${cyan}1. 查看MySQL服务${white}\n"
+		printf "${cyan}2. 启动MySQL服务${white}\n"
+		printf "${cyan}3. 停止MySQL服务${white}\n"
+		printf "${cyan}4. 安装MySQL服务${white}\n"
+		printf "${cyan}5. 卸载MySQL服务${white}\n"
+		printf "${cyan}6. 返回主菜单.${white}\n"
 
 		printf "${cyan}请输入选项数字并按Enter键: ${white}"
 		read choice
@@ -336,15 +338,20 @@ mysql_menu() {
 		case $choice in
 			1)
 				mysql_process_info
-				
 				;;
 			2)
-				mysql_install
+				systemctl enable mysqld --now
 				;;
 			3)
-				mysql_uninstall
+				systemctl stop mysqld
 				;;
 			4)
+				mysql_install
+				;;
+			5)
+				mysql_uninstall
+				;;
+			6)
 				printf "${yellow}返回主菜单.${white}\n"
 				return  # 返回主菜单循环
 				;;
