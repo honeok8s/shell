@@ -37,23 +37,80 @@ check_mysql_installed() {
 			return 1
 		fi
 	else
-		printf "${red}MySQL未安装.${white}\n"
+		printf "${red}MySQL未安装,请执行安装程序.${white}\n"
 		return 1
 	fi
 }
 
-# 检查并打印MySQL进程信息
-mysql_process_info() {
-    local process_info
-    process_info=$(ps -ef | awk '/[m]ysqld/ {print}')
-    
-    if [[ -z "$process_info" ]]; then
-        printf "${red}未找到MySQL进程信息.${white}\n"
-    else
-        printf "${yellow}MySQL进程信息:\n${process_info}${white}\n"
-    fi
+# 检查MySQL
+control_mysql() {
+	local action="$1"
 	
-	systemctl status mysqld
+	if [ -z "$action" ]; then
+		action="status"
+	fi
+
+    # 检查MySQL是否安装
+    if ! check_mysql_installed >/dev/null 2>&1; then
+        printf "${red}请先安装MySQL.${white}\n"
+        return
+    fi
+
+	case "$action" in
+		start)
+			# 检查MySQL是否已经在运行
+			if systemctl is-active mysqld >/dev/null 2>&1; then
+				printf "${yellow}MySQL已经在运行中,无需启动.${white}\n"
+				return 0
+			else
+				systemctl enable mysqld --now
+				if ! systemctl is-active mysqld >/dev/null 2>&1; then
+					printf "${red}MySQL启动失败!${white}\n"
+					return
+				else
+					printf "${green}MySQL启动成功!${white}\n"
+					return 0
+				fi
+			fi
+			;;
+		stop)
+			# 检查MySQL是否已经停止
+			if ! systemctl is-active mysqld >/dev/null 2>&1; then
+				printf "${yellow}MySQL已经停止,无需停止.${white}\n"
+				return 0
+			else
+				systemctl disable mysqld --now
+				if systemctl is-active mysqld >/dev/null 2>&1; then
+					printf "${red}MySQL停止失败!${white}\n"
+					return
+				else
+					printf "${green}MySQL停止成功!${white}\n"
+					return 0
+				fi
+			fi
+			;;
+		status)
+			# 查找MySQL进程
+			if ps -ef | grep '[m]ysqld' >/dev/null 2>&1; then
+				printf "${yellow}MySQL进程信息:\n$(ps -ef | grep '[m]ysqld')${white}\n"
+				systemctl status mysqld
+				return 0
+			else
+				printf "${red}未找到MySQL进程信息.${white}\n"
+				# 检查服务状态
+				if systemctl is-active mysqld >/dev/null 2>&1; then
+					printf "${yellow}MySQL服务正在运行,但未找到进程信息.${white}\n"
+				else
+					printf "${yellow}MySQL服务未启动.${white}\n"
+				fi
+				return
+			fi
+			;;
+		*)
+			printf "${red}无效的操作参数: ${action}${white}\n"
+			return
+			;;
+	esac
 }
 
 # 下载或生成my.cnf配置文件
@@ -104,7 +161,7 @@ log-error=/var/log/mysqld.log
 pid-file=/var/run/mysqld/mysqld.pid
 
 slow_query_log = ON # 慢查询日志开启
-long_query_time = 5 # 慢查询阈值设置为5秒
+#long_query_time = 5 # 慢查询阈值设置为5秒
 slow_query_log_file = /var/lib/mysql/slow.log
 
 max_connections=500 # 最大连接数
@@ -119,8 +176,8 @@ max_connect_errors=100  # 最大连接错误数
 connect_timeout=60      # 连接超时时间
 net_read_timeout=60     # 网络读取超时时间
 log_timestamps = SYSTEM # 日志时间戳格式
-#expire_logs_days =2
-binlog_expire_logs_seconds=172800 # 二进制日志过期时间2天
+expire_logs_days =2
+#binlog_expire_logs_seconds=172800 # 二进制日志过期时间2天
 max_binlog_size=512M     # 最大二进制日志文件大小
 read_rnd_buffer_size =1M # 随机读缓冲区大小
 read_buffer_size =1M     # 读取缓冲区大小
@@ -337,13 +394,13 @@ mysql_menu() {
 
 		case $choice in
 			1)
-				mysql_process_info
+				control_mysql
 				;;
 			2)
-				systemctl enable mysqld --now
+				control_mysql start
 				;;
 			3)
-				systemctl stop mysqld
+				control_mysql stop
 				;;
 			4)
 				mysql_install
@@ -353,7 +410,7 @@ mysql_menu() {
 				;;
 			6)
 				printf "${yellow}返回主菜单.${white}\n"
-				return  # 返回主菜单循环
+				return
 				;;
 			*)
 				printf "${red}无效选项,请重新输入${white}\n"
