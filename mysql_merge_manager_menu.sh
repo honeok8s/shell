@@ -364,23 +364,23 @@ mysql_version_selection_menu() {
 			1)
 				install_mysql_version "8.0.26"
 				;;
-            2)
-                install_mysql_version "8.0.28"
-                ;;
+			2)
+				install_mysql_version "8.0.28"
+				;;
 			3)
 				install_mysql_version "8.0.30"
 				;;
 			4)
 				return
 				;;
-            *)
-                printf "${red}无效选项,请重新输入${white}\n"
-                ;;
-        esac
-        # 等待用户按任意键继续
+			*)
+				printf "${red}无效选项,请重新输入${white}\n"
+				;;
+		esac
+		# 等待用户按任意键继续
 		printf "${cyan}按任意键继续${white}\n"
 		read -n 1 -s -r
-    done
+	done
 }
 
 # MySQL函数6
