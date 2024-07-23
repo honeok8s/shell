@@ -8,6 +8,7 @@ os_release=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d '"' -f 2 | sed 's/ (.
 yellow='\033[1;33m'
 red='\033[1;31m'
 green='\033[1;32m'
+purple='\033[1;35m'
 cyan='\033[1;36m'
 white='\033[0m'
 
@@ -33,6 +34,7 @@ create_software_dir() {
 	fi
 }
 
+# MySQL函数1
 # 检查MySQL是否已安装
 check_mysql_installed() {
     if command -v mysql >/dev/null 2>&1 && command -v mysqladmin >/dev/null 2>&1; then
@@ -53,72 +55,8 @@ check_mysql_installed() {
     fi
 }
 
-# MySQL控制
-control_mysql() {
-	local action="${1:-status}"
-
-	case "$action" in
-		status)
-			if ! check_mysql_installed; then
-				return # 返回mysql菜单
-			fi
-		
-			# 查找MySQL进程
-			if ps -ef | grep '[m]ysqld' >/dev/null 2>&1; then
-				printf "${yellow}MySQL进程信息:\n$(ps -ef | grep '[m]ysqld')${white}\n"
-				systemctl status mysqld
-			else
-				printf "${red}未找到MySQL进程信息${white}\n"
-				# 检查服务状态
-				if systemctl is-active mysqld >/dev/null 2>&1; then
-					printf "${yellow}MySQL服务正在运行,但未找到进程信息${white}\n"
-				else
-					printf "${yellow}MySQL服务未启动${white}\n"
-				fi
-			fi
-			;;
-		start)
-			if ! check_mysql_installed; then
-				return # 返回mysql菜单
-			fi
-
-			# 检查MySQL是否已经在运行
-			if systemctl is-active mysqld >/dev/null 2>&1; then
-				printf "${yellow}MySQL已经在运行中,无需启动${white}\n"
-			else
-				systemctl enable mysqld --now >/dev/null 2>&1
-				if systemctl is-active mysqld >/dev/null 2>&1; then
-					printf "${green}MySQL启动成功!${white}\n"
-				else
-					printf "${red}MySQL启动失败${white}\n"
-				fi
-			fi
-			;;
-		stop)
-			if ! check_mysql_installed; then
-				return # 返回mysql菜单
-			fi
-
-			if ! systemctl is-active mysqld >/dev/null 2>&1; then
-				printf "${yellow}MySQL已经停止,无需停止${white}\n"
-			else
-				systemctl disable mysqld --now >/dev/null 2>&1
-				if ! systemctl is-active mysqld >/dev/null 2>&1; then
-					printf "${green}MySQL停止成功!${white}\n"
-				else
-					printf "${red}MySQL停止失败!${white}\n"
-				fi
-			fi
-			;;
-		*)
-			printf "${red}无效的操作参数: ${action}${white}\n"
-			return 1
-			;;
-	esac
-	return 0
-}
-
-# 下载或生成my.cnf配置文件
+# MySQL函数2
+# 优化和自动生成 MySQL 配置文件
 generate_mysql_config() {
 	if wget -q -O /etc/my.cnf https://raw.githubusercontent.com/honeok8s/conf/main/mysql/my-4C8G.cnf; then
 		printf "${green}MySQL配置文件已成功下载${white}\n"
@@ -196,7 +134,8 @@ EOF
 	fi
 }
 
-# MySQL初始化
+# MySQL函数3
+# 初始化MySQL
 initialize_mysql() {
 	local dbroot_passwd=$(openssl rand -base64 15)
 
@@ -210,7 +149,7 @@ initialize_mysql() {
 	if mysqld --initialize --user=mysql --init-file=/tmp/mysql-init; then
 		rm -f /tmp/mysql-init >/dev/null 2>&1
 		printf "${green}通过指定配置文件初始化MySQL成功!${white}\n"
-		printf "${yellow}MySQL Root密码:$dbroot_passwd 请妥善保管${white}\n"
+		printf "${yellow}MySQL Root密码:$dbroot_passwd 请妥善保管!${white}\n"
 	else
 		printf "${red}MySQL初始化失败.${white}\n"
 		rm -f /tmp/mysql-init >/dev/null 2>&1
@@ -218,8 +157,9 @@ initialize_mysql() {
 	fi
 }
 
-# MySQL安装
-mysql_install() {
+# MySQL函数4
+# 安装指定版本的MySQL(该函数为mysql_version_selection_menu函数的调用子函数),包含下载路径的判断,配置文件的调优(支付:8G/4G/2G 内存自动判断并优化),数据库初始化
+install_mysql_version() {
 	# 校验软件包下载路径
 	create_software_dir
 
@@ -228,15 +168,18 @@ mysql_install() {
 		printf "${yellow}正在${os_release}上安装! ${white}\n"
 	else
 		printf "${red}MySQL已安装,请别发癫${white}\n"
-		return
+		return # 返回mysql菜单
 	fi
 
 	# 定义下载目录
+	local version="$1"
+	local arch=$(uname -m) # 获取系统架构
 	local mysql_download_dir="$SOFTWARE_DIR/mysql"
+	local mysql_url="https://downloads.mysql.com/archives/get/p/23/file/mysql-${version}-1.el7.${arch}.rpm-bundle.tar"
 
 	# 旧的下载目录如果存在则删除,有可能曾经以为不确定因素中断安装导致的文件夹创建
 	if [ -d "$mysql_download_dir" ]; then
-		rm -fr $mysql_download_dir >/dev/null 2>&1
+		rm -fr $mysql_download_dir
 		printf "${yellow}历史下载目录已删除:${mysql_download_dir}${white}\n"
 	fi
 
@@ -245,7 +188,7 @@ mysql_install() {
 		mkdir -p "$mysql_download_dir"
 		check_command "目录创建失败:${mysql_download_dir}"
 		if [ $? -eq 0 ]; then
-			printf "${green}目录创建成功:${mysql_download_dir}${white}\n"
+			printf "${green}软件安装目录创建成功:${mysql_download_dir}${white}\n"
 		else
 			return 1
 		fi
@@ -265,7 +208,7 @@ mysql_install() {
 	for package in mariadb-libs mysql-libs; do
 		if rpm -q $package >/dev/null 2>&1; then
 			yum remove $package -y >/dev/null 2>&1
-			printf "${yellow} 正在卸载冲突文件:${package}${white}\n"
+			printf "${yellow}正在卸载冲突文件:${package}${white}\n"
 		fi
 	done
 
@@ -278,35 +221,38 @@ mysql_install() {
 	done
 
 	# 下载MySQL软件包
-	local arch=$(uname -m) # 获取系统架构
-	local mysql_url="https://downloads.mysql.com/archives/get/p/23/file/mysql-8.0.26-1.el7.${arch}.rpm-bundle.tar"
 	
 	wget --progress=bar:force -P "$mysql_download_dir" "$mysql_url"
 	check_command "下载MySQL安装包失败"
 
-	tar xvf "$mysql_download_dir/mysql-8.0.26-1.el7.${arch}.rpm-bundle.tar" -C "$mysql_download_dir"
+	tar xvf "$mysql_download_dir/mysql-${version}-1.el7.${arch}.rpm-bundle.tar" -C "$mysql_download_dir"
 	check_command "解压MySQL安装包失败"
 	
 	# 删除安装包
-	rm -f "$mysql_download_dir/mysql-8.0.26-1.el7.${arch}.rpm-bundle.tar"
+	rm -f "$mysql_download_dir/mysql-${version}-1.el7.${arch}.rpm-bundle.tar"
 
-	# 安装MySQL,必须安装顺序执行
-	for package in \
-		mysql-community-common-8.0.26-1.el7.x86_64.rpm \
-		mysql-community-client-plugins-8.0.26-1.el7.x86_64.rpm \
-		mysql-community-libs-8.0.26-1.el7.x86_64.rpm \
-		mysql-community-client-8.0.26-1.el7.x86_64.rpm \
-		mysql-community-server-8.0.26-1.el7.x86_64.rpm; do
+	# 定义安装包数组
+	local packages=(
+		mysql-community-common-${version}-1.el7.${arch}.rpm
+		mysql-community-client-plugins-${version}-1.el7.${arch}.rpm
+		mysql-community-libs-${version}-1.el7.${arch}.rpm
+		mysql-community-icu-data-files-${version}-1.el7.${arch}.rpm
+		mysql-community-client-${version}-1.el7.${arch}.rpm
+		mysql-community-server-${version}-1.el7.${arch}.rpm
+	)
 
-		if rpm -ivh $package; then
-			printf "${green}MySQL安装包安装成功:${package}${white}\n"
+	# 安装MySQL,按顺序执行
+	for package in "${packages[@]}"; do
+		if [ -f "$package" ]; then
+			rpm -ivh "$package" && printf "${green}MySQL安装包安装成功:${package}${white}\n" || printf "${red}MySQL安装包安装失败:${package}${white}\n"
+			# 删除已安装的包文件
 			rm -f "$package"
 		else
-			printf "${red}MySQL安装包安装失败:${package}${white}\n"
-			return 1
+			printf "${yellow}未找到安装包:${package},本次跳过${white}\n"
 		fi
 	done
 
+	echo ""
 	printf "${green}MySQL所有包安装完毕${white}\n"
 
 	# 验证安装
@@ -325,7 +271,7 @@ mysql_install() {
 
 	# 根据内存大小调整参数
 	if [ "$memory_size" -ge 7500 ] && [ "$memory_size" -le 8000 ]; then
-		printf "${yellow}8GB内存配置,使用默认配置${white}\n"
+		printf "${yellow}检测到当前8GB内存,使用默认配置${white}\n"
 	elif [ "$memory_size" -ge 3500 ] && [ "$memory_size" -le 4000 ]; then
 		sed -ri "s/^max_connections=.*/max_connections=300/" /etc/my.cnf
 		sed -ri "s/^tmp_table_size=.*/tmp_table_size=16M/" /etc/my.cnf
@@ -340,7 +286,7 @@ mysql_install() {
 		sed -ri "s/^read_rnd_buffer_size =.*/read_rnd_buffer_size = 512K/" /etc/my.cnf
 		sed -ri "s/^read_buffer_size =.*/read_buffer_size = 512K/" /etc/my.cnf
 		sed -ri "s/^sort_buffer_size =.*/sort_buffer_size = 512K/" /etc/my.cnf
-		printf "${yellow}MySQL配置文件已更新并根据服务器配置动态调整完成.${white}\n"
+		printf "${yellow}MySQL配置文件已更新并根据服务器配置动态调整完成${white}\n"
 	elif [ "$memory_size" -ge 1500 ] && [ "$memory_size" -le 2000 ]; then
 		sed -ri "s/^max_connections=.*/max_connections=200/" /etc/my.cnf
 		sed -ri "s/^tmp_table_size=.*/tmp_table_size=8M/" /etc/my.cnf
@@ -389,10 +335,57 @@ mysql_install() {
 			rmdir "$mysql_download_dir"
 			printf "${green}安装包目录已清空并删除:${mysql_download_dir}${white}\n"
 		fi
+	else
+		printf "${red}文件下载目录为空,无需清理${white}\n"
 	fi
 }
 
-# 卸载MySQL服务
+# MySQL函数5
+# 提供MySQL版本选择菜单并调用install_mysql_version函数的MySQL安装总函数
+mysql_version_selection_menu() {
+    local choice
+
+    while true; do
+        clear
+        printf "${cyan}=================================${white}\n"
+        printf "${cyan}         选择MySQL版本           ${white}\n"
+        printf "${cyan}=================================${white}\n"
+        printf "${cyan}1. 安装MySQL8.0.26${white}\n"
+        printf "${cyan}2. 安装MySQL8.0.28${white}\n"
+        printf "${cyan}3. 安装MySQL8.0.30 ${purple}(beta)${white}\n"
+        printf "${cyan}4. 返回上一级菜单${white}\n"
+        printf "${cyan}=================================${white}\n"
+
+        # 读取用户选择
+        printf "${cyan}请输入选项并按回车:${white}"
+        read -r choice
+
+        case "$choice" in
+			1)
+				install_mysql_version "8.0.26"
+				;;
+            2)
+                install_mysql_version "8.0.28"
+                ;;
+			3)
+				install_mysql_version "8.0.30"
+				;;
+			4)
+				printf "${yellow}返回上一级菜单.${white}\n"
+				return
+				;;
+            *)
+                printf "${red}无效选项,请重新输入${white}\n"
+                ;;
+        esac
+        # 等待用户按任意键继续
+		printf "${cyan}按任意键继续${white}\n"
+		read -n 1 -s -r
+    done
+}
+
+# MySQL函数6
+# 卸载MySQL服务,一把梭
 mysql_uninstall() {
     if ! check_mysql_installed >/dev/null 2>&1; then
 		printf "${red}MySQL未安装, 无需卸载${white}\n"
@@ -420,6 +413,72 @@ mysql_uninstall() {
     [ -f /etc/my.cnf.bak ] && rm -f /etc/my.cnf.bak
 
     printf "${green}MySQL卸载完成${white}\n"
+}
+
+# MySQL函数7
+# 控制MySQL服务的状态
+control_mysql() {
+	local action="${1:-status}"
+
+	case "$action" in
+		status)
+			if ! check_mysql_installed; then
+				return # 返回mysql菜单
+			fi
+		
+			# 查找MySQL进程
+			if ps -ef | grep '[m]ysqld' >/dev/null 2>&1; then
+				printf "${yellow}MySQL进程信息:\n$(ps -ef | grep '[m]ysqld')${white}\n"
+				systemctl status mysqld
+			else
+				printf "${red}未找到MySQL进程信息${white}\n"
+				# 检查服务状态
+				if systemctl is-active mysqld >/dev/null 2>&1; then
+					printf "${yellow}MySQL服务正在运行,但未找到进程信息${white}\n"
+				else
+					printf "${yellow}MySQL服务未启动${white}\n"
+				fi
+			fi
+			;;
+		start)
+			if ! check_mysql_installed; then
+				return # 返回mysql菜单
+			fi
+
+			# 检查MySQL是否已经在运行
+			if systemctl is-active mysqld >/dev/null 2>&1; then
+				printf "${yellow}MySQL已经在运行中,无需启动${white}\n"
+			else
+				systemctl enable mysqld --now >/dev/null 2>&1
+				if systemctl is-active mysqld >/dev/null 2>&1; then
+					printf "${green}MySQL启动成功!${white}\n"
+				else
+					printf "${red}MySQL启动失败${white}\n"
+				fi
+			fi
+			;;
+		stop)
+			if ! check_mysql_installed; then
+				return # 返回mysql菜单
+			fi
+
+			if ! systemctl is-active mysqld >/dev/null 2>&1; then
+				printf "${yellow}MySQL已经停止,无需停止${white}\n"
+			else
+				systemctl disable mysqld --now >/dev/null 2>&1
+				if ! systemctl is-active mysqld >/dev/null 2>&1; then
+					printf "${green}MySQL停止成功!${white}\n"
+				else
+					printf "${red}MySQL停止失败!${white}\n"
+				fi
+			fi
+			;;
+		*)
+			printf "${red}无效的操作参数: ${action}${white}\n"
+			return 1
+			;;
+	esac
+	return 0
 }
 
 # mysql菜单
@@ -452,7 +511,7 @@ mysql_menu() {
 				control_mysql stop
 				;;
 			4)
-				mysql_install
+				mysql_version_selection_menu
 				;;
 			5)
 				mysql_uninstall
@@ -471,7 +530,7 @@ mysql_menu() {
 }
 
 # 主菜单
-main_menu() {
+main() {
     while true; do
         clear
         printf "${cyan}=================================${white}\n"
@@ -499,5 +558,5 @@ main_menu() {
     done
 }
 
-# 运行主菜单
-main_menu
+main
+exit 0
