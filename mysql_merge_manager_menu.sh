@@ -371,7 +371,6 @@ mysql_version_selection_menu() {
 				install_mysql_version "8.0.30"
 				;;
 			4)
-				printf "${yellow}返回上一级菜单.${white}\n"
 				return
 				;;
             *)
@@ -548,7 +547,7 @@ main() {
                 mysql_menu
                 ;;
             2)
-                printf "${yellow}退出程序.${white}\n"
+                printf "${yellow}Bey!${white}\n"
                 exit 0  # 退出脚本
                 ;;
             *)
