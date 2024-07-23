@@ -455,9 +455,9 @@ control_mysql() {
 			if ! check_mysql_installed; then
 				return # 返回mysql菜单
 			fi
-			
+
 			printf "${yellow}启动MySQL服务${white}\n"
-			systemctl start mysqld
+			systemctl enable mysqld --now
 			check_command "启动MySQL服务失败"
 			;;
 		stop)
@@ -466,7 +466,7 @@ control_mysql() {
 			fi
 
 			printf "${yellow}停止MySQL服务${white}\n"
-			systemctl stop mysqld
+			systemctl disable mysqld --now
 			check_command "停止MySQL服务失败"
 			;;
 		*)
