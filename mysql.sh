@@ -58,10 +58,28 @@ control_mysql() {
 	local action="${1:-status}"
 
 	case "$action" in
+		status)
+			if ! check_mysql_installed; then
+				return # 返回mysql菜单
+			fi
+		
+			# 查找MySQL进程
+			if ps -ef | grep '[m]ysqld' >/dev/null 2>&1; then
+				printf "${yellow}MySQL进程信息:\n$(ps -ef | grep '[m]ysqld')${white}\n"
+				systemctl status mysqld
+			else
+				printf "${red}未找到MySQL进程信息${white}\n"
+				# 检查服务状态
+				if systemctl is-active mysqld >/dev/null 2>&1; then
+					printf "${yellow}MySQL服务正在运行,但未找到进程信息${white}\n"
+				else
+					printf "${yellow}MySQL服务未启动${white}\n"
+				fi
+			fi
+			;;
 		start)
 			if ! check_mysql_installed; then
-				printf "${red}未安装MySQL.${white}\n"
-				return 1
+				return # 返回mysql菜单
 			fi
 
 			# 检查MySQL是否已经在运行
@@ -78,8 +96,7 @@ control_mysql() {
 			;;
 		stop)
 			if ! check_mysql_installed; then
-				printf "${red}未安装MySQL${white}\n"
-				return 1
+				return # 返回mysql菜单
 			fi
 
 			if ! systemctl is-active mysqld >/dev/null 2>&1; then
@@ -90,26 +107,6 @@ control_mysql() {
 					printf "${green}MySQL停止成功!${white}\n"
 				else
 					printf "${red}MySQL停止失败!${white}\n"
-				fi
-			fi
-			;;
-		status)
-			if ! check_mysql_installed; then
-				printf "${red}未安装MySQL${white}\n"
-				return 1
-			fi
-		
-			# 查找MySQL进程
-			if ps -ef | grep '[m]ysqld' >/dev/null 2>&1; then
-				printf "${yellow}MySQL进程信息:\n$(ps -ef | grep '[m]ysqld')${white}\n"
-				systemctl status mysqld
-			else
-				printf "${red}未找到MySQL进程信息.${white}\n"
-				# 检查服务状态
-				if systemctl is-active mysqld >/dev/null 2>&1; then
-					printf "${yellow}MySQL服务正在运行,但未找到进程信息${white}\n"
-				else
-					printf "${yellow}MySQL服务未启动${white}\n"
 				fi
 			fi
 			;;
@@ -124,7 +121,7 @@ control_mysql() {
 # 下载或生成my.cnf配置文件
 generate_mysql_config() {
 	if wget -q -O /etc/my.cnf https://raw.githubusercontent.com/honeok8s/conf/main/mysql/my-4C8G.cnf; then
-		printf "${green}MySQL配置文件已成功下载.${white}\n"
+		printf "${green}MySQL配置文件已成功下载${white}\n"
 	else
 	# 如果下载失败,使用EOF语法生成文件
 		cat <<EOF > /etc/my.cnf
@@ -205,18 +202,18 @@ initialize_mysql() {
 
 	# 检查是否已经初始化过 MySQL
 	if grep -q "MySQL init process done. Ready for start up." /var/log/mysqld.log; then
-		printf "${red}MySQL已经初始化过,请不要重复初始化.${white}\n"
+		printf "${red}MySQL已经初始化过,请不要重复初始化${white}\n"
 		return
 	fi
 
 	echo "ALTER USER 'root'@'localhost' IDENTIFIED BY '${dbroot_passwd}';" > /tmp/mysql-init
 	if mysqld --initialize --user=mysql --init-file=/tmp/mysql-init; then
-		rm -f /tmp/mysql-init
+		rm -f /tmp/mysql-init >/dev/null 2>&1
 		printf "${green}通过指定配置文件初始化MySQL成功!${white}\n"
 		printf "${yellow}MySQL Root密码:$dbroot_passwd 请妥善保管${white}\n"
 	else
 		printf "${red}MySQL初始化失败.${white}\n"
-		rm -f /tmp/mysql-init
+		rm -f /tmp/mysql-init >/dev/null 2>&1
 		return
 	fi
 }
@@ -226,15 +223,22 @@ mysql_install() {
 	# 校验软件包下载路径
 	create_software_dir
 
+	# 校验MySQL安装
 	if ! check_mysql_installed >/dev/null 2>&1; then
 		printf "${yellow}正在${os_release}上安装! ${white}\n"
 	else
-		printf "${red}MySQL已安装!${white}\n"
+		printf "${red}MySQL已安装,请别发癫${white}\n"
 		return
 	fi
 
 	# 定义下载目录
 	local mysql_download_dir="$SOFTWARE_DIR/mysql"
+
+	# 旧的下载目录如果存在则删除,有可能曾经以为不确定因素中断安装导致的文件夹创建
+	if [ -d "$mysql_download_dir" ]; then
+		rm -fr $mysql_download_dir >/dev/null 2>&1
+		printf "${yellow}历史下载目录已删除:${mysql_download_dir}${white}\n"
+	fi
 
 	# 创建下载目录,如果不存在
 	if [ ! -d "$mysql_download_dir" ]; then
@@ -253,7 +257,7 @@ mysql_install() {
 
 	# 检查临时文件夹权限,由于mysql安装中会通过mysql用户在/tmp目录下新建tmp_db文件,所以给/tmp较大权限
 	if [ "$(stat -c '%A' /tmp)" != "drwxrwxrwt" ]; then
-		chmod -R 777 /tmp
+		chmod -R 777 /tmp >/dev/null 2>&1
 		printf "${yellow}已更新/tmp目录权限为777!${white}\n"
 	fi
 
@@ -273,15 +277,18 @@ mysql_install() {
 		fi
 	done
 
-	# 下载 MySQL
-	wget --progress=bar:force -P "$mysql_download_dir" https://downloads.mysql.com/archives/get/p/23/file/mysql-8.0.26-1.el7.x86_64.rpm-bundle.tar
-	check_command "下载MySQL安装包失败"
+	# 下载MySQL软件包
+	local arch=$(uname -m) # 获取系统架构
+	local mysql_url="https://downloads.mysql.com/archives/get/p/23/file/mysql-8.0.26-1.el7.${arch}.rpm-bundle.tar"
 	
-	tar xvf mysql-8.0.26-1.el7.x86_64.rpm-bundle.tar
+	wget --progress=bar:force -P "$mysql_download_dir" "$mysql_url"
+	check_command "下载MySQL安装包失败"
+
+	tar xvf "$mysql_download_dir/mysql-8.0.26-1.el7.${arch}.rpm-bundle.tar" -C "$mysql_download_dir"
 	check_command "解压MySQL安装包失败"
 	
 	# 删除安装包
-	rm -f mysql-8.0.26-1.el7.x86_64.rpm-bundle.tar
+	rm -f "$mysql_download_dir/mysql-8.0.26-1.el7.${arch}.rpm-bundle.tar"
 
 	# 安装MySQL,必须安装顺序执行
 	for package in \
@@ -397,7 +404,7 @@ mysql_uninstall() {
     printf "${yellow}停止并禁用MySQL服务${white}\n"
     systemctl is-active mysqld >/dev/null 2>&1 && systemctl disable mysqld --now >/dev/null 2>&1
 
-    printf "${cyan}卸载MySQL软件包${white}\n"
+    printf "${yellow}卸载MySQL软件包${white}\n"
     for package in $(rpm -qa | grep -iE '^mysql-community-'); do
         if yum remove "$package" -y; then
             printf "${green}成功卸载: $package${white}\n"
@@ -421,7 +428,7 @@ mysql_menu() {
 	while true; do
 		clear
 		printf "${cyan}=================================${white}\n"
-		printf "${cyan}       MySQL 管理菜单             ${white}\n"
+		printf "${cyan}          MySQL 管理菜单         ${white}\n"
 		printf "${cyan}=================================${white}\n"
 		printf "${cyan}1. 查看MySQL服务${white}\n"
 		printf "${cyan}2. 启动MySQL服务${white}\n"
@@ -468,7 +475,7 @@ main_menu() {
     while true; do
         clear
         printf "${cyan}=================================${white}\n"
-        printf "${cyan}       主菜单                       ${white}\n"
+        printf "${cyan}              主菜单             ${white}\n"
         printf "${cyan}=================================${white}\n"
         printf "${cyan}1. MySQL管理${white}\n"
         printf "${cyan}2. 退出${white}\n"
