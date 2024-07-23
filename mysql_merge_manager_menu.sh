@@ -343,24 +343,24 @@ install_mysql_version() {
 # MySQL函数5
 # 提供MySQL版本选择菜单并调用install_mysql_version函数的MySQL安装总函数
 mysql_version_selection_menu() {
-    local choice
+	local choice
 
-    while true; do
-        clear
-        printf "${cyan}=================================${white}\n"
-        printf "${cyan}         选择MySQL版本           ${white}\n"
-        printf "${cyan}=================================${white}\n"
-        printf "${cyan}1. 安装MySQL8.0.26${white}\n"
-        printf "${cyan}2. 安装MySQL8.0.28${white}\n"
-        printf "${cyan}3. 安装MySQL8.0.30 ${purple}(beta)${white}\n"
-        printf "${cyan}4. 返回上一级菜单${white}\n"
-        printf "${cyan}=================================${white}\n"
+	while true; do
+		clear
+		printf "${cyan}=================================${white}\n"
+		printf "${cyan}         选择MySQL版本           ${white}\n"
+		printf "${cyan}=================================${white}\n"
+		printf "${cyan}1. 安装MySQL8.0.26${white}\n"
+		printf "${cyan}2. 安装MySQL8.0.28${white}\n"
+		printf "${cyan}3. 安装MySQL8.0.30 ${purple}(beta)${white}\n"
+		printf "${cyan}4. 返回上一级菜单${white}\n"
+		printf "${cyan}=================================${white}\n"
 
-        # 读取用户选择
-        printf "${cyan}请输入选项并按回车:${white}"
-        read -r choice
+		# 读取用户选择
+		printf "${cyan}请输入选项并按回车:${white}"
+		read -r choice
 
-        case "$choice" in
+		case "$choice" in
 			1)
 				install_mysql_version "8.0.26"
 				;;
