@@ -531,7 +531,7 @@ main() {
         printf "${cyan}=================================${white}\n"
         printf "${cyan}              主菜单             ${white}\n"
         printf "${cyan}=================================${white}\n"
-        printf "${cyan}1. MySQL管理${white}\n"
+        printf "${cyan}1. MySQL管理菜单${white}\n"
         printf "${cyan}2. 退出${white}\n"
         printf "${cyan}=================================${white}\n"
 
