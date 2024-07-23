@@ -213,10 +213,10 @@ install_mysql_version() {
 	done
 
 	# 检查并安装依赖
-	for package in libaio net-tools; do
+	for package in libaio net-tools wget; do
 		if ! rpm -q $package >/dev/null 2>&1; then
 			yum install $package -y >/dev/null 2>&1
-			printf "${yellow} 安装并检查依赖:${package}${white}\n"
+			printf "${yellow}安装并检查依赖:${package}${white}\n"
 		fi
 	done
 
@@ -394,22 +394,40 @@ mysql_uninstall() {
     local MAXDEPTH=5
 
     printf "${yellow}停止并禁用MySQL服务${white}\n"
-    systemctl is-active mysqld >/dev/null 2>&1 && systemctl disable mysqld --now >/dev/null 2>&1
+	if systemctl is-active mysqld >/dev/null 2>&1; then
+		systemctl disable mysqld --now >/dev/null 2>&1
+		check_command "无法停止并禁用MySQL服务"
+	else
+		printf "${green}MySQL服务已停止${white}\n"
+	fi
 
     printf "${yellow}卸载MySQL软件包${white}\n"
     for package in $(rpm -qa | grep -iE '^mysql-community-'); do
         if yum remove "$package" -y; then
-            printf "${green}成功卸载: $package${white}\n"
+            printf "${green}成功卸载:$package${white}\n"
         else
-            printf "${red}卸载失败: $package${white}\n"
+            printf "${red}卸载失败:$package${white}\n"
         fi
     done
 
-    printf "${yellow}删除与MySQL相关的文件${white}\n"
-    [ -f /var/log/mysqld.log ] && rm -f /var/log/mysqld.log || true
-    find / -maxdepth $MAXDEPTH -type d -name '*mysql*' 2>/dev/null | xargs rm -fr
-    [ -f /etc/my.cnf ] && rm -f /etc/my.cnf
-    [ -f /etc/my.cnf.bak ] && rm -f /etc/my.cnf.bak
+	# 删除MySQL日志文件
+	printf "${yellow}删除与MySQL相关的文件${white}\n"
+	if [ -f /var/log/mysqld.log ]; then
+		rm -f /var/log/mysqld.log
+		check_command "删除/var/log/mysqld.log失败"
+	fi
+
+	# 删除MySQL配置文件
+	if [ -f /etc/my.cnf ]; then
+		rm -f /etc/my.cnf
+		check_command "删除/etc/my.cnf失败"
+	fi
+
+	# 删除MySQL备份配置文件
+	if [ -f /etc/my.cnf.bak ]; then
+		rm -f /etc/my.cnf.bak
+		check_command "删除/etc/my.cnf.bak失败"
+	fi
 
     printf "${green}MySQL卸载完成${white}\n"
 }
