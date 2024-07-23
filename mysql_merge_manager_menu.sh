@@ -442,60 +442,38 @@ control_mysql() {
 			if ! check_mysql_installed; then
 				return # 返回mysql菜单
 			fi
-		
+
 			# 查找MySQL进程
-			if ps -ef | grep '[m]ysqld' >/dev/null 2>&1; then
-				printf "${yellow}MySQL进程信息:\n$(ps -ef | grep '[m]ysqld')${white}\n"
+			if pgrep -x mysqld >/dev/null 2>&1; then
+				printf "${yellow}MySQL进程信息:\n$(ps -p $(pgrep -x mysqld) -o pid,cmd)${white}\n"
 				systemctl status mysqld
 			else
-				printf "${red}未找到MySQL进程信息${white}\n"
-				# 检查服务状态
-				if systemctl is-active mysqld >/dev/null 2>&1; then
-					printf "${yellow}MySQL服务正在运行,但未找到进程信息${white}\n"
-				else
-					printf "${yellow}MySQL服务未启动${white}\n"
-				fi
+				printf "${red}MySQL未运行${white}\n"
 			fi
 			;;
 		start)
 			if ! check_mysql_installed; then
 				return # 返回mysql菜单
 			fi
-
-			# 检查MySQL是否已经在运行
-			if systemctl is-active mysqld >/dev/null 2>&1; then
-				printf "${yellow}MySQL已经在运行中,无需启动${white}\n"
-			else
-				systemctl enable mysqld --now >/dev/null 2>&1
-				if systemctl is-active mysqld >/dev/null 2>&1; then
-					printf "${green}MySQL启动成功!${white}\n"
-				else
-					printf "${red}MySQL启动失败${white}\n"
-				fi
-			fi
+			
+			printf "${yellow}启动MySQL服务${white}\n"
+			systemctl start mysqld
+			check_command "启动MySQL服务失败"
 			;;
 		stop)
 			if ! check_mysql_installed; then
 				return # 返回mysql菜单
 			fi
 
-			if ! systemctl is-active mysqld >/dev/null 2>&1; then
-				printf "${yellow}MySQL已经停止,无需停止${white}\n"
-			else
-				systemctl disable mysqld --now >/dev/null 2>&1
-				if ! systemctl is-active mysqld >/dev/null 2>&1; then
-					printf "${green}MySQL停止成功!${white}\n"
-				else
-					printf "${red}MySQL停止失败!${white}\n"
-				fi
-			fi
+			printf "${yellow}停止MySQL服务${white}\n"
+			systemctl stop mysqld
+			check_command "停止MySQL服务失败"
 			;;
 		*)
-			printf "${red}无效的操作参数: ${action}${white}\n"
-			return 1
+			printf "${red}无效操作:${action}${white}\n"
+			return
 			;;
 	esac
-	return 0
 }
 
 # mysql菜单
