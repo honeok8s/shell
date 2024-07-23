@@ -57,12 +57,12 @@ print_current_make_version() {
 		done
 
 		if [ $need_upgrade -eq 1 ]; then
-			printf "${yellow}您的make版本是: ${current_version},可升级到当前脚本支持的稳定版:%s${white}\n" "$(IFS=,; echo "${upgrade_versions[*]}")"
+			printf "${yellow}当前make版本是: ${current_version},可升级到当前脚本支持的稳定版:%s${white}\n" "$(IFS=,; echo "${upgrade_versions[*]}")"
 		else
 			if [[ $(printf '%s\n' "$current_version" "$latest_version" | sort -V | head -n1) == "$latest_version" ]]; then
-				printf "${yellow}您的make版本是:${current_version},比当前脚本支持的所有稳定版高,无需升级!${white}\n"
+				printf "${yellow}当前make版本是:${current_version},比当前脚本支持的所有稳定版高,无需升级!${white}\n"
 			else
-				printf "${yellow}您的make版本是:${current_version},已是最新的稳定版,无需升级!${white}\n"
+				printf "${yellow}当前make版本是:${current_version},已是最新的稳定版,无需升级!${white}\n"
 			fi
 		fi
 	else
@@ -184,7 +184,7 @@ make_menu() {
 		printf "${cyan}2. 选择make版本并安装${white}\n"
 		printf "${cyan}3. 返回上一级目录${white}\n"
 		printf "${cyan}=================================${white}\n"
-		printf "${cyan}请输入选项并按回车:${white}\n"
+		printf "${cyan}请输入选项并按回车:${white}"
 		read -r choice
 
 		case "$choice" in
