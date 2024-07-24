@@ -46,7 +46,7 @@ check_mysql_installed() {
 
 		if [[ "$mysql_version" =~ ([0-9]+\.[0-9]+\.[0-9]+) ]]; then
 			mysql_version="${BASH_REMATCH[1]}"
-			printf "${green}MySQL已安装, 版本为: ${mysql_version}${white}\n"
+			printf "${yellow}MySQL已安装, 版本为: ${mysql_version}${white}\n"
 			return 0
 		else
 			printf "${red}无法确定MySQL版本${white}\n"
@@ -61,7 +61,7 @@ check_mysql_installed() {
 # MySQL函数2
 # 优化和自动生成 MySQL 配置文件
 generate_mysql_config() {
-	if wget -q -O /etc/my.cnf https://raw.githubusercontent.com/honeok8s/conf/main/mysql/my-4C8G.cnf; then
+	if wget -q -O /etc/my.cnf https://raw.githubusercontent.com/honeok8s/conf/main/mysql/my_custom_config.cnf; then
 		printf "${green}MySQL配置文件已成功下载${white}\n"
 	else
 	# 如果下载失败,使用EOF语法生成文件
@@ -72,27 +72,7 @@ generate_mysql_config() {
 default-character-set=utf8mb4
 
 [mysqld]
-#
-# Remove leading # and set to the amount of RAM for the most important data
-# cache in MySQL. Start at 70% of total RAM for dedicated server, else 10%.
-# innodb_buffer_pool_size = 128M
-#
-# Remove the leading "# " to disable binary logging
-# Binary logging captures changes between backups and is enabled by
-# default. It's default setting is log_bin=binlog
-# disable_log_bin
-#
-# Remove leading # to set options mainly useful for reporting servers.
-# The server defaults are faster for transactions and fast SELECTs.
-# Adjust sizes as needed, experiment to find the optimal values.
-# join_buffer_size = 128M
-# sort_buffer_size = 2M
-# read_rnd_buffer_size = 2M
-#
-# Remove leading # to revert to previous value for default_authentication_plugin,
-# this will increase compatibility with older clients. For background, see:
-# https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html#sysvar_default_authentication_plugin
-# default-authentication-plugin=mysql_native_password
+
 port=3306
 default-storage-engine=INNODB # 默认存储引擎
 character-set-server=utf8mb4  # 字符集设置
@@ -107,7 +87,7 @@ log-error=/var/log/mysqld.log
 pid-file=/var/run/mysqld/mysqld.pid
 
 slow_query_log = ON # 慢查询日志开启
-#long_query_time = 5 # 慢查询阈值设置为5秒
+long_query_time = 5 # 慢查询阈值设置为5秒
 slow_query_log_file = /var/lib/mysql/slow.log
 
 max_connections=500 # 最大连接数
@@ -162,115 +142,104 @@ initialize_mysql() {
 
 # MySQL调优
 optimize_mysql_performance() {
-	# 获取系统的 CPU 核数
-	local num_cores=$(nproc)
-	# 获取系统的总内存大小（单位：MB）
-	local memory_size=$(free -m | awk '/^Mem:/{print $2}')
+    # 获取系统的 CPU 核数
+    local num_cores=$(nproc)
+    # 获取系统的总内存大小（单位：MB）
+    local memory_size=$(free -m | awk '/^Mem:/{print $2}')
 
-	# 定义一个函数来执行 sed 命令并打印结果
-	modify_and_print() {
-		local param="$1"
-		local value="$2"
-		local file="/etc/my.cnf"
-		# 使用 sed 修改配置文件中的参数
-		sed -ri "s/^$param=.*/$param=$value/" "$file"
-		# 打印修改结果
-		echo "$param修改为$value"
-	}
-
-	# 根据内存和CPU核数调整MySQL参数
-	if [ "$memory_size" -ge 7500 ] && [ "$memory_size" -le 8000 ] && [ "$num_cores" -ge 4 ] && [ "$num_cores" -le 6 ]; then
-		# 如果内存在7500MB到8000MB之间且CPU核数在4到6之间,使用默认配置
-		printf "${yellow}检测到当前8GB内存且CPU核数为4至6,使用默认配置${white}\n"
-	elif [ "$memory_size" -ge 950 ] && [ "$memory_size" -le 1024 ] && [ "$num_cores" -eq 1 ]; then
-		# 1核1GB内存(考虑到内存范围950MB-1024MB都视为1GB)
-		printf "${yellow}检测到当前1GB内存且CPU核数为1,调整配置如下${white}\n"
-		modify_and_print "max_connections" "50"
-		modify_and_print "tmp_table_size" "4M"
-		modify_and_print "myisam_sort_buffer_size" "8M"
-		modify_and_print "innodb_log_buffer_size" "32M"
-		modify_and_print "innodb_buffer_pool_size" "64M"
-		modify_and_print "innodb_log_file_size" "64M"
-		modify_and_print "innodb_open_files" "50"
-		modify_and_print "max_allowed_packet" "32M"
-		modify_and_print "max_connect_errors" "10"
-		modify_and_print "max_binlog_size" "32M"
-		modify_and_print "read_rnd_buffer_size" "64K"
-		modify_and_print "read_buffer_size" "64K"
-		modify_and_print "sort_buffer_size" "64K"
-		printf "${green}MySQL配置文件已更新并根据服务器配置动态调整完成${white}\n"
-	elif [ "$memory_size" -ge 1800 ] && [ "$memory_size" -le 2100 ] && [ "$num_cores" -eq 1 ]; then
-		# 1核2GB内存(考虑到内存范围1800MB-2100MB都视为2GB)
-		printf "${yellow}检测到当前2GB内存且CPU核数为1,调整配置如下${white}\n"
-		modify_and_print "max_connections" "100"
-		modify_and_print "tmp_table_size" "8M"
-		modify_and_print "myisam_sort_buffer_size" "16M"
-		modify_and_print "innodb_log_buffer_size" "64M"
-		modify_and_print "innodb_buffer_pool_size" "128M"
-		modify_and_print "innodb_log_file_size" "128M"
-		modify_and_print "innodb_open_files" "100"
-		modify_and_print "max_allowed_packet" "64M"
-		modify_and_print "max_connect_errors" "20"
-		modify_and_print "max_binlog_size" "64M"
-		modify_and_print "read_rnd_buffer_size" "128K"
-		modify_and_print "read_buffer_size" "128K"
-		modify_and_print "sort_buffer_size" "128K"
-		printf "${green}MySQL配置文件已更新并根据服务器配置动态调整完成${white}\n"
-	elif [ "$memory_size" -ge 1800 ] && [ "$memory_size" -le 2100 ] && [ "$num_cores" -eq 2 ]; then
-		# 2核2GB内存(考虑到内存范围1800MB-2100MB都视为2GB)
-		printf "${yellow}检测到当前2GB内存且CPU核数为2,调整配置如下${white}\n"
-		modify_and_print "max_connections" "150"
-		modify_and_print "tmp_table_size" "8M"
-		modify_and_print "myisam_sort_buffer_size" "16M"
-		modify_and_print "innodb_log_buffer_size" "64M"
-		modify_and_print "innodb_buffer_pool_size" "128M"
-		modify_and_print "innodb_log_file_size" "128M"
-		modify_and_print "innodb_open_files" "150"
-		modify_and_print "max_allowed_packet" "64M"
-		modify_and_print "max_connect_errors" "30"
-		modify_and_print "max_binlog_size" "128M"
-		modify_and_print "read_rnd_buffer_size" "256K"
-		modify_and_print "read_buffer_size" "256K"
-		modify_and_print "sort_buffer_size" "256K"
-		printf "${green}MySQL配置文件已更新并根据服务器配置动态调整完成${white}\n"
-	elif [ "$memory_size" -ge 3600 ] && [ "$memory_size" -le 4300 ] && [ "$num_cores" -eq 2 ]; then
-		# 2核4GB内存(考虑到内存范围3600MB-4300MB都视为4GB)
-		printf "${yellow}检测到当前4GB内存且CPU核数为2,调整配置如下${white}\n"
-		modify_and_print "max_connections" "200"
-		modify_and_print "tmp_table_size" "16M"
-		modify_and_print "myisam_sort_buffer_size" "32M"
-		modify_and_print "innodb_log_buffer_size" "128M"
-		modify_and_print "innodb_buffer_pool_size" "256M"
-		modify_and_print "innodb_log_file_size" "256M"
-		modify_and_print "innodb_open_files" "200"
-		modify_and_print "max_allowed_packet" "128M"
-		modify_and_print "max_connect_errors" "50"
-		modify_and_print "max_binlog_size" "256M"
-		modify_and_print "read_rnd_buffer_size" "512K"
-		modify_and_print "read_buffer_size" "512K"
-		modify_and_print "sort_buffer_size" "512K"
-		printf "${green}MySQL配置文件已更新并根据服务器配置动态调整完成${white}\n"
-	elif [ "$memory_size" -ge 3600 ] && [ "$memory_size" -le 4300 ] && [ "$num_cores" -eq 4 ]; then
-		# 4核4GB内存(考虑到内存范围3600MB-4300MB都视为4GB)
-		printf "${yellow}检测到当前4GB内存且CPU核数为4,调整配置如下${white}\n"
-		modify_and_print "max_connections" "200"
-		modify_and_print "tmp_table_size" "16M"
-		modify_and_print "myisam_sort_buffer_size" "32M"
-		modify_and_print "innodb_log_buffer_size" "128M"
-		modify_and_print "innodb_buffer_pool_size" "256M"
-		modify_and_print "innodb_log_file_size" "256M"
-		modify_and_print "innodb_open_files" "200"
-		modify_and_print "max_allowed_packet" "128M"
-		modify_and_print "max_connect_errors" "50"
-		modify_and_print "max_binlog_size" "256M"
-		modify_and_print "read_rnd_buffer_size" "512K"
-		modify_and_print "read_buffer_size" "512K"
-		modify_and_print "sort_buffer_size" "512K"
-		printf "${green}MySQL配置文件已更新并根据服务器配置动态调整完成${white}\n"
-	else
-		# 对于其他情况,不做任何修改
-		printf "${red}未匹配到合适的内存和CPU配置,未做任何修改${white}\n"
-	fi
+    # 根据内存和CPU核数调整MySQL参数
+    if [ "$memory_size" -ge 7500 ] && [ "$memory_size" -le 8192 ] && [ "$num_cores" -ge 4 ] && [ "$num_cores" -le 6 ]; then
+        # 如果内存在7500MB到8000MB之间且CPU核数在4到6之间,使用默认配置
+        printf "${yellow}检测到当前8GB内存且CPU核数为4至6,使用默认配置${white}\n"
+    elif [ "$memory_size" -ge 950 ] && [ "$memory_size" -le 1024 ] && [ "$num_cores" -eq 1 ]; then
+        # 1核1GB内存(考虑到内存范围950MB-1024MB都视为1GB)
+        printf "${yellow}检测到当前1GB内存且CPU核数为1,调整配置如下${white}\n"
+        sed -i -r '/^[[:space:]]*max_connections[[:space:]]*=[[:space:]]*[0-9]+/s/[0-9]+/50/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*tmp_table_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/4M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*myisam_sort_buffer_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/8M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*innodb_log_buffer_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/32M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*innodb_buffer_pool_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/64M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*innodb_log_file_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/64M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*innodb_open_files[[:space:]]*=[[:space:]]*[0-9]+/s/[0-9]+/50/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*max_allowed_packet[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/32M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*max_connect_errors[[:space:]]*=[[:space:]]*[0-9]+/s/[0-9]+/10/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*max_binlog_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/32M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*read_rnd_buffer_size[[:space:]]*=[[:space:]]*[0-9]+K?/s/[0-9]+K?/64K/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*read_buffer_size[[:space:]]*=[[:space:]]*[0-9]+K?/s/[0-9]+K?/64K/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*sort_buffer_size[[:space:]]*=[[:space:]]*[0-9]+K?/s/[0-9]+K?/64K/' /etc/my.cnf
+        printf "${green}MySQL配置文件已更新并根据服务器配置动态调整完成${white}\n"
+    elif [ "$memory_size" -ge 1800 ] && [ "$memory_size" -le 2048 ] && [ "$num_cores" -eq 1 ]; then
+        # 1核2GB内存(考虑到内存范围1800MB-2048MB都视为2GB)
+        printf "${yellow}检测到当前2GB内存且CPU核数为1,调整配置如下${white}\n"
+        sed -i -r '/^[[:space:]]*max_connections[[:space:]]*=[[:space:]]*[0-9]+/s/[0-9]+/100/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*tmp_table_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/8M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*myisam_sort_buffer_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/16M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*innodb_log_buffer_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/64M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*innodb_buffer_pool_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/128M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*innodb_log_file_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/128M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*innodb_open_files[[:space:]]*=[[:space:]]*[0-9]+/s/[0-9]+/100/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*max_allowed_packet[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/64M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*max_connect_errors[[:space:]]*=[[:space:]]*[0-9]+/s/[0-9]+/20/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*max_binlog_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/64M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*read_rnd_buffer_size[[:space:]]*=[[:space:]]*[0-9]+K?/s/[0-9]+K?/128K/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*read_buffer_size[[:space:]]*=[[:space:]]*[0-9]+K?/s/[0-9]+K?/128K/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*sort_buffer_size[[:space:]]*=[[:space:]]*[0-9]+K?/s/[0-9]+K?/128K/' /etc/my.cnf
+        printf "${green}MySQL配置文件已更新并根据服务器配置动态调整完成${white}\n"
+    elif [ "$memory_size" -ge 1800 ] && [ "$memory_size" -le 2048 ] && [ "$num_cores" -eq 2 ]; then
+        # 2核2GB内存(考虑到内存范围1800MB-2048MB都视为2GB)
+        printf "${yellow}检测到当前2GB内存且CPU核数为2,调整配置如下${white}\n"
+        sed -i -r '/^[[:space:]]*max_connections[[:space:]]*=[[:space:]]*[0-9]+/s/[0-9]+/150/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*tmp_table_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/8M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*myisam_sort_buffer_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/16M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*innodb_log_buffer_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/64M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*innodb_buffer_pool_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/128M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*innodb_log_file_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/128M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*innodb_open_files[[:space:]]*=[[:space:]]*[0-9]+/s/[0-9]+/150/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*max_allowed_packet[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/64M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*max_connect_errors[[:space:]]*=[[:space:]]*[0-9]+/s/[0-9]+/30/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*max_binlog_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/128M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*read_rnd_buffer_size[[:space:]]*=[[:space:]]*[0-9]+K?/s/[0-9]+K?/256K/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*read_buffer_size[[:space:]]*=[[:space:]]*[0-9]+K?/s/[0-9]+K?/256K/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*sort_buffer_size[[:space:]]*=[[:space:]]*[0-9]+K?/s/[0-9]+K?/256K/' /etc/my.cnf
+        printf "${green}MySQL配置文件已更新并根据服务器配置动态调整完成${white}\n"
+    elif [ "$memory_size" -ge 3600 ] && [ "$memory_size" -le 4096 ] && [ "$num_cores" -eq 2 ]; then
+        # 2核4GB内存(考虑到内存范围3600MB-4096MB都视为4GB)
+        printf "${yellow}检测到当前4GB内存且CPU核数为2,调整配置如下${white}\n"
+        sed -i -r '/^[[:space:]]*max_connections[[:space:]]*=[[:space:]]*[0-9]+/s/[0-9]+/200/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*tmp_table_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/16M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*myisam_sort_buffer_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/32M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*innodb_log_buffer_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/128M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*innodb_buffer_pool_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/256M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*innodb_log_file_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/256M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*innodb_open_files[[:space:]]*=[[:space:]]*[0-9]+/s/[0-9]+/200/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*max_allowed_packet[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/128M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*max_connect_errors[[:space:]]*=[[:space:]]*[0-9]+/s/[0-9]+/50/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*max_binlog_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/256M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*read_rnd_buffer_size[[:space:]]*=[[:space:]]*[0-9]+K?/s/[0-9]+K?/512K/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*read_buffer_size[[:space:]]*=[[:space:]]*[0-9]+K?/s/[0-9]+K?/512K/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*sort_buffer_size[[:space:]]*=[[:space:]]*[0-9]+K?/s/[0-9]+K?/512K/' /etc/my.cnf
+        printf "${green}MySQL配置文件已更新并根据服务器配置动态调整完成${white}\n"
+    elif [ "$memory_size" -ge 3600 ] && [ "$memory_size" -le 4096 ] && [ "$num_cores" -eq 4 ]; then
+        # 4核4GB内存(考虑到内存范围3600MB-4096MB都视为4GB)
+        printf "${yellow}检测到当前4GB内存且CPU核数为4,调整配置如下${white}\n"
+        sed -i -r '/^[[:space:]]*max_connections[[:space:]]*=[[:space:]]*[0-9]+/s/[0-9]+/200/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*tmp_table_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/16M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*myisam_sort_buffer_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/32M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*innodb_log_buffer_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/128M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*innodb_buffer_pool_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/256M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*innodb_log_file_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/256M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*innodb_open_files[[:space:]]*=[[:space:]]*[0-9]+/s/[0-9]+/200/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*max_allowed_packet[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/128M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*max_connect_errors[[:space:]]*=[[:space:]]*[0-9]+/s/[0-9]+/50/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*max_binlog_size[[:space:]]*=[[:space:]]*[0-9]+M?/s/[0-9]+M?/256M/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*read_rnd_buffer_size[[:space:]]*=[[:space:]]*[0-9]+K?/s/[0-9]+K?/512K/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*read_buffer_size[[:space:]]*=[[:space:]]*[0-9]+K?/s/[0-9]+K?/512K/' /etc/my.cnf
+        sed -i -r '/^[[:space:]]*sort_buffer_size[[:space:]]*=[[:space:]]*[0-9]+K?/s/[0-9]+K?/512K/' /etc/my.cnf
+        printf "${green}MySQL配置文件已更新并根据服务器配置动态调整完成${white}\n"
+    else
+        # 对于其他情况,不做任何修改
+        printf "${red}未匹配到合适的内存和CPU配置,未做任何修改${white}\n"
+    fi
 }
 
 # MySQL函数4
