@@ -248,7 +248,7 @@ install_mysql_version() {
 			# 删除已安装的包文件
 			rm -f "$package"
 		else
-			printf "${yellow}未找到安装包: ${package} 也许不被需要${white}\n"
+			printf "${yellow}未找到安装包: ${package} 也许不需要${white}\n"
 		fi
 	done
 
