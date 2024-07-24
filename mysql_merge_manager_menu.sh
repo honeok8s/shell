@@ -21,7 +21,7 @@ check_command() {
 	local message=$1
 	if [ $? -ne 0 ]; then
 		printf "${red}${message}${white}\n"
-		return
+		return 1
 	fi
 }
 
@@ -386,88 +386,135 @@ mysql_version_selection_menu() {
 # MySQL函数6
 # 卸载MySQL服务,一把梭
 mysql_uninstall() {
-	if ! check_mysql_installed >/dev/null 2>&1; then
-		printf "${red}MySQL未安装, 无需卸载${white}\n"
-		return # 返回mysql菜单
-	fi
+    # 局部函数：获取脚本路径
+    get_script_path() {
+        local script_path
+        local script_name
 
-	printf "${yellow}停止并禁用MySQL服务${white}\n"
-	if systemctl is-active mysqld >/dev/null 2>&1; then
-		systemctl disable mysqld --now >/dev/null 2>&1
-		check_command "无法停止并禁用MySQL服务"
-	else
-		printf "${green}MySQL服务已停止${white}\n"
-	fi
+        # 使用 $BASH_SOURCE[0] 获取脚本的相对路径
+        if [[ -n "${BASH_SOURCE[0]}" ]]; then
+            script_path="${BASH_SOURCE[0]}"
+        else
+            script_path="$0"
+        fi
 
-	printf "${yellow}卸载MySQL软件包${white}\n"
-	for package in $(rpm -qa | grep -iE '^mysql-community-'); do
-		if yum remove "$package" -y; then
-			printf "${green}成功卸载:$package${white}\n"
-		else
-			printf "${red}卸载失败:$package${white}\n"
-		fi
-	done
+        # 处理脚本可能被软链接的情况
+        if [[ -L "$script_path" ]]; then
+            script_path=$(readlink -f "$script_path")
+        else
+            script_path=$(realpath "$script_path")
+        fi
 
-	printf "${yellow}删除与MySQL相关的文件${white}\n"
+        # 如果路径为空，默认使用当前工作目录和脚本名称
+        if [[ -z "$script_path" ]]; then
+            script_name=$(basename "$0")
+            script_path="$(pwd)/$script_name"
+        fi
 
-	# 定义排除目录的数组
-	local EXCLUDE_DIRS=(
-		"/etc/selinux/"
-		"/usr/lib/firewalld/services/"
-		"/usr/lib64/"
-		"/usr/share/vim/"
-	)
+        # 返回脚本路径
+        echo "$script_path"
+    }
 
-	# 排除脚本本身
-	local SCRIPT_PATH=$(readlink -f "${BASH_SOURCE[0]}")
+    # 检查MySQL是否安装
+    if ! check_mysql_installed >/dev/null 2>&1; then
+        printf "${red}MySQL未安装, 无需卸载${white}\n"
+        return
+    fi
 
-	local delete_with_exclusions
-	delete_with_exclusions() {
-		local exclude_dirs_pattern
-		local items_to_delete
-		local item
+    printf "${yellow}停止并禁用MySQL服务${white}\n"
+    if systemctl is-active mysqld >/dev/null 2>&1; then
+        systemctl disable mysqld --now >/dev/null 2>&1
+        check_command "无法停止并禁用MySQL服务"
+        printf "${green}MySQL服务已停止并禁用${white}\n"
+    else
+        printf "${green}MySQL服务已停止${white}\n"
+    fi
 
-		# 将排除目录数组转换为正则表达式模式
-		# 将每个目录添加到排除模式中,并确保正则表达式正确处理
-		exclude_dirs_pattern=$(printf "%s|" "${EXCLUDE_DIRS[@]}" | sed 's/|$//')
-		exclude_dirs_pattern="^($exclude_dirs_pattern).*"
+    printf "${yellow}卸载MySQL软件包${white}\n"
+    for package in $(rpm -qa | grep -iE '^mysql-community-'); do
+        yum remove "$package" -y
+        check_command "卸载失败: $package"
+        printf "${green}成功卸载: $package${white}\n"
+    done
 
-		# 查找文件和目录,排除指定目录及其子目录
-		items_to_delete=$(find / -name "*mysql*" -print 2>/dev/null | grep -Pv "$exclude_dirs_pattern" | grep -vF "$SCRIPT_PATH")
+    printf "${yellow}删除与MySQL相关的文件${white}\n"
 
-		for item in $items_to_delete; do
-			if [ -d "$item" ]; then
-				printf "${yellow}删除目录:$item${white}\n"
-				rm -fr "$item"
-				check_command "删除目录$item 失败"
-			elif [ -f "$item" ]; then
-				printf "${yellow}删除文件:$item${white}\n"
-				rm -f "$item"
-				check_command "删除文件$item 失败"
-			fi
-		done
-	}
+    # 定义排除目录的数组
+    local EXCLUDE_DIRS=(
+        "/etc/selinux/"
+        "/usr/lib/firewalld/services/"
+        "/usr/lib64/"
+        "/usr/share/vim/"
+    )
 
-	# 删除特定的 MySQL 配置文件
-	local delete_specific_files
-	delete_specific_files() {
-		local files
-		files=$(ls /etc/my.cnf.* 2>/dev/null)
+    # 获取脚本路径
+    local SCRIPT_PATH
+    SCRIPT_PATH=$(get_script_path)
 
-		for file in $files; do
-			if [ -e "$file" ]; then
-				printf "${yellow}删除文件:$file${white}\n"
-				rm -f "$file"
-				check_command "删除文件$file失败"
-			fi
-		done
-	}
+    # 定义删除文件和目录的函数
+    delete_with_exclusions() {
+        local exclude_dirs_pattern
+        local items_to_delete
+        local item
 
-	# 调用局部函数进行删除操作
-	delete_with_exclusions
-	delete_specific_files
+        # 将排除目录数组转换为正则表达式模式
+        exclude_dirs_pattern=$(printf "%s|" "${EXCLUDE_DIRS[@]}" | sed 's/|$//')
+        exclude_dirs_pattern="^($exclude_dirs_pattern).*"
 
-	printf "${green}MySQL卸载完成${white}\n"
+        # 查找文件和目录,排除指定目录及其子目录
+        items_to_delete=$(find / -name "*mysql*" -print 2>/dev/null | grep -Pv "$exclude_dirs_pattern")
+
+        for item in $items_to_delete; do
+            # 跳过脚本本身
+            if [[ $item == "$SCRIPT_PATH" ]]; then
+                printf "${yellow}跳过脚本本身: $item${white}\n"
+                continue
+            fi
+
+            # 跳过排除目录中的项
+            local exclude=0
+            for exclude_dir in "${EXCLUDE_DIRS[@]}"; do
+                if [[ $item == $exclude_dir* ]]; then
+                    printf "${yellow}跳过排除目录中的项: $item${white}\n"
+                    exclude=1
+                    break
+                fi
+            done
+
+            # 如果未被排除，则删除文件或目录
+            if [ $exclude -eq 0 ]; then
+                if [ -d "$item" ]; then
+                    printf "${yellow}删除目录: $item${white}\n"
+                    rm -fr "$item"
+                    check_command "删除目录 $item 失败"
+                elif [ -f "$item" ]; then
+                    printf "${yellow}删除文件: $item${white}\n"
+                    rm -f "$item"
+                    check_command "删除文件 $item 失败"
+                fi
+            fi
+        done
+    }
+
+    # 删除特定的 MySQL 配置文件
+    delete_specific_files() {
+        local files
+        files=$(ls /etc/my.cnf.* 2>/dev/null)
+
+        for file in $files; do
+            if [ -e "$file" ]; then
+                printf "${yellow}删除文件: $file${white}\n"
+                rm -f "$file"
+                check_command "删除文件 $file 失败"
+            fi
+        done
+    }
+
+    # 调用局部函数进行删除操作
+    delete_with_exclusions
+    delete_specific_files
+
+    printf "${green}MySQL卸载完成${white}\n"
 }
 
 # MySQL函数7
