@@ -38,22 +38,22 @@ create_software_dir() {
 # MySQL函数1
 # 检查MySQL是否已安装
 check_mysql_installed() {
-    if command -v mysql >/dev/null 2>&1 && command -v mysqladmin >/dev/null 2>&1; then
-        local mysql_version
-        mysql_version=$(mysql --version 2>&1)
+	if command -v mysql >/dev/null 2>&1 && command -v mysqladmin >/dev/null 2>&1; then
+		local mysql_version
+		mysql_version=$(mysql --version 2>&1)
 
-        if [[ "$mysql_version" =~ ([0-9]+\.[0-9]+\.[0-9]+) ]]; then
-            mysql_version="${BASH_REMATCH[1]}"
-            printf "${green}MySQL已安装, 版本为: ${mysql_version}${white}\n"
-            return 0
-        else
-            printf "${red}无法确定MySQL版本${white}\n"
-            return 1
-        fi
-    else
-        printf "${red}MySQL未安装, 请执行安装程序${white}\n"
-        return 1
-    fi
+		if [[ "$mysql_version" =~ ([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+			mysql_version="${BASH_REMATCH[1]}"
+			printf "${green}MySQL已安装, 版本为: ${mysql_version}${white}\n"
+			return 0
+		else
+			printf "${red}无法确定MySQL版本${white}\n"
+			return 1
+		fi
+	else
+		printf "${red}MySQL未安装, 请执行安装程序${white}\n"
+		return 1
+	fi
 }
 
 # MySQL函数2
@@ -222,13 +222,12 @@ install_mysql_version() {
 	done
 
 	# 下载MySQL软件包
-	
 	wget --progress=bar:force -P "$mysql_download_dir" "$mysql_url"
 	check_command "下载MySQL安装包失败"
 
 	tar xvf "$mysql_download_dir/mysql-${version}-1.el7.${arch}.rpm-bundle.tar" -C "$mysql_download_dir"
 	check_command "解压MySQL安装包失败"
-	
+
 	# 删除安装包
 	rm -f "$mysql_download_dir/mysql-${version}-1.el7.${arch}.rpm-bundle.tar"
 
@@ -265,7 +264,7 @@ install_mysql_version() {
 	generate_mysql_config
 
 	# 根据服务器性能调优
-	# 获取CPU核数和内存大小（单位为MB）
+	# 获取CPU核数和内存大小(单位为MB)
 	# local num_cores=$(grep -c ^processor /proc/cpuinfo)
 	local num_cores=$(nproc)
 	local memory_size=$(free -m | awk '/^Mem:/{print $2}')
@@ -314,9 +313,9 @@ install_mysql_version() {
 		printf "${red}MySQL初始化失败${white}\n"
 		return 1
 	fi
-	
+
 	systemctl enable mysqld --now >/dev/null 2>&1
-	
+
 	# 检查MySQL服务是否处于活动状态
 	if ! systemctl is-active mysqld >/dev/null 2>&1; then
 		printf "${red}MySQL状态检查失败或服务无法启动,请检查安装日志或手动启动MySQL服务${white}\n"
@@ -324,9 +323,9 @@ install_mysql_version() {
 	else
 		printf "${green}MySQL已完成自检,启动并设置开机自启${white}\n"
 	fi
-	
+
 	echo ""
-	
+
 	# 清理安装包文件和下载路径
 	if [ -d "$mysql_download_dir" ] && [ "$(ls -A $mysql_download_dir)" ]; then
 		for file in "$mysql_download_dir"/*; do
@@ -387,12 +386,12 @@ mysql_version_selection_menu() {
 # MySQL函数6
 # 卸载MySQL服务,一把梭
 mysql_uninstall() {
-    if ! check_mysql_installed >/dev/null 2>&1; then
+	if ! check_mysql_installed >/dev/null 2>&1; then
 		printf "${red}MySQL未安装, 无需卸载${white}\n"
-        return # 返回mysql菜单
-    fi
+		return # 返回mysql菜单
+	fi
 
-    printf "${yellow}停止并禁用MySQL服务${white}\n"
+	printf "${yellow}停止并禁用MySQL服务${white}\n"
 	if systemctl is-active mysqld >/dev/null 2>&1; then
 		systemctl disable mysqld --now >/dev/null 2>&1
 		check_command "无法停止并禁用MySQL服务"
@@ -400,17 +399,17 @@ mysql_uninstall() {
 		printf "${green}MySQL服务已停止${white}\n"
 	fi
 
-    printf "${yellow}卸载MySQL软件包${white}\n"
-    for package in $(rpm -qa | grep -iE '^mysql-community-'); do
-        if yum remove "$package" -y; then
-            printf "${green}成功卸载:$package${white}\n"
-        else
-            printf "${red}卸载失败:$package${white}\n"
-        fi
-    done
+	printf "${yellow}卸载MySQL软件包${white}\n"
+	for package in $(rpm -qa | grep -iE '^mysql-community-'); do
+		if yum remove "$package" -y; then
+			printf "${green}成功卸载:$package${white}\n"
+		else
+			printf "${red}卸载失败:$package${white}\n"
+		fi
+	done
 
 	printf "${yellow}删除与MySQL相关的文件${white}\n"
-	
+
 	# 定义排除目录的数组
 	local EXCLUDE_DIRS=(
 		"/etc/selinux/"
@@ -427,7 +426,7 @@ mysql_uninstall() {
 		local exclude_dirs_pattern
 		local items_to_delete
 		local item
-		
+
 		# 将排除目录数组转换为正则表达式模式
 		# 将每个目录添加到排除模式中,并确保正则表达式正确处理
 		exclude_dirs_pattern=$(printf "%s|" "${EXCLUDE_DIRS[@]}" | sed 's/|$//')
@@ -481,7 +480,7 @@ control_mysql() {
 			if ! check_mysql_installed; then
 				return # 返回mysql菜单
 			fi
-		
+
 			# 查找MySQL进程
 			if ps -ef | grep '[m]ysqld' >/dev/null 2>&1; then
 				printf "${yellow}MySQL进程信息:\n$(ps -ef | grep '[m]ysqld')${white}\n"
@@ -587,31 +586,31 @@ mysql_menu() {
 
 # 主菜单
 main() {
-    while true; do
-        clear
-        printf "${cyan}=================================${white}\n"
-        printf "${cyan}              主菜单             ${white}\n"
-        printf "${cyan}=================================${white}\n"
-        printf "${cyan}1. MySQL管理${white}\n"
-        printf "${cyan}2. 退出${white}\n"
-        printf "${cyan}=================================${white}\n"
+	while true; do
+		clear
+		printf "${cyan}=================================${white}\n"
+		printf "${cyan}              主菜单             ${white}\n"
+		printf "${cyan}=================================${white}\n"
+		printf "${cyan}1. MySQL管理${white}\n"
+		printf "${cyan}2. 退出${white}\n"
+		printf "${cyan}=================================${white}\n"
 
-        printf "${cyan}请输入选项并按回车:${white}"
-        read -r choice
+		printf "${cyan}请输入选项并按回车:${white}"
+		read -r choice
 
-        case "$choice" in
-            1)
-                mysql_menu
-                ;;
-            2)
-                printf "${yellow}Bey!${white}\n"
-                exit 0  # 退出脚本
-                ;;
-            *)
-                printf "${red}无效选项, 请重新输入${white}\n"
-                ;;
-        esac
-    done
+		case "$choice" in
+			1)
+				mysql_menu
+				;;
+			2)
+				printf "${yellow}Bey!${white}\n"
+				exit 0  # 退出脚本
+				;;
+			*)
+				printf "${red}无效选项, 请重新输入${white}\n"
+				;;
+		esac
+	done
 }
 
 main
