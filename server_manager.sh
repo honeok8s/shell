@@ -150,7 +150,7 @@ initialize_mysql() {
 	if mysqld --initialize --user=mysql --init-file=/tmp/mysql-init; then
 		rm -f /tmp/mysql-init >/dev/null 2>&1
 		printf "${green}通过指定配置文件初始化MySQL成功!${white}\n"
-		printf "${yellow}MySQL Root密码:$dbroot_passwd 请妥善保管!${white}\n"
+		printf "${yellow}MySQL Root密码: $dbroot_passwd 请妥善保管${white}\n"
 	else
 		printf "${red}MySQL初始化失败.${white}\n"
 		rm -f /tmp/mysql-init >/dev/null 2>&1
