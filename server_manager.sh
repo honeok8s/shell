@@ -352,7 +352,7 @@ mysql_version_selection_menu() {
 		printf "${cyan}=================================${white}\n"
 		printf "${cyan}1. 安装MySQL8.0.26${white}\n"
 		printf "${cyan}2. 安装MySQL8.0.28${white}\n"
-		printf "${cyan}3. 安装MySQL8.0.30 ${purple}(beta)${white}\n"
+		printf "${cyan}3. 安装MySQL8.0.30${white}\n"
 		printf "${cyan}4. 返回上一级菜单${white}\n"
 		printf "${cyan}=================================${white}\n"
 
@@ -386,39 +386,10 @@ mysql_version_selection_menu() {
 # MySQL函数6
 # 卸载MySQL服务,一把梭
 mysql_uninstall() {
-    # 局部函数：获取脚本路径
-    get_script_path() {
-        local script_path
-        local script_name
-
-        # 使用 $BASH_SOURCE[0] 获取脚本的相对路径
-        if [[ -n "${BASH_SOURCE[0]}" ]]; then
-            script_path="${BASH_SOURCE[0]}"
-        else
-            script_path="$0"
-        fi
-
-        # 处理脚本可能被软链接的情况
-        if [[ -L "$script_path" ]]; then
-            script_path=$(readlink -f "$script_path")
-        else
-            script_path=$(realpath "$script_path")
-        fi
-
-        # 如果路径为空，默认使用当前工作目录和脚本名称
-        if [[ -z "$script_path" ]]; then
-            script_name=$(basename "$0")
-            script_path="$(pwd)/$script_name"
-        fi
-
-        # 返回脚本路径
-        echo "$script_path"
-    }
-
     # 检查MySQL是否安装
     if ! check_mysql_installed >/dev/null 2>&1; then
         printf "${red}MySQL未安装, 无需卸载${white}\n"
-        return
+        return # 返回mysql菜单
     fi
 
     printf "${yellow}停止并禁用MySQL服务${white}\n"
@@ -433,8 +404,8 @@ mysql_uninstall() {
     printf "${yellow}卸载MySQL软件包${white}\n"
     for package in $(rpm -qa | grep -iE '^mysql-community-'); do
         yum remove "$package" -y
-        check_command "卸载失败: $package"
-        printf "${green}成功卸载: $package${white}\n"
+        check_command "卸载失败:$package"
+        printf "${green}成功卸载:$package${white}\n"
     done
 
     printf "${yellow}删除与MySQL相关的文件${white}\n"
@@ -446,10 +417,6 @@ mysql_uninstall() {
         "/usr/lib64/"
         "/usr/share/vim/"
     )
-
-    # 获取脚本路径
-    local SCRIPT_PATH
-    SCRIPT_PATH=$(get_script_path)
 
     # 定义删除文件和目录的函数
     delete_with_exclusions() {
@@ -465,17 +432,11 @@ mysql_uninstall() {
         items_to_delete=$(find / -name "*mysql*" -print 2>/dev/null | grep -Pv "$exclude_dirs_pattern")
 
         for item in $items_to_delete; do
-            # 跳过脚本本身
-            if [[ $item == "$SCRIPT_PATH" ]]; then
-                printf "${yellow}跳过脚本本身: $item${white}\n"
-                continue
-            fi
-
             # 跳过排除目录中的项
             local exclude=0
             for exclude_dir in "${EXCLUDE_DIRS[@]}"; do
                 if [[ $item == $exclude_dir* ]]; then
-                    printf "${yellow}跳过排除目录中的项: $item${white}\n"
+                    printf "${yellow}跳过排除目录中的项:$item${white}\n"
                     exclude=1
                     break
                 fi
@@ -484,13 +445,13 @@ mysql_uninstall() {
             # 如果未被排除，则删除文件或目录
             if [ $exclude -eq 0 ]; then
                 if [ -d "$item" ]; then
-                    printf "${yellow}删除目录: $item${white}\n"
+                    printf "${yellow}删除目录:$item${white}\n"
                     rm -fr "$item"
-                    check_command "删除目录 $item 失败"
+                    check_command "删除目录$item失败"
                 elif [ -f "$item" ]; then
-                    printf "${yellow}删除文件: $item${white}\n"
+                    printf "${yellow}删除文件:$item${white}\n"
                     rm -f "$item"
-                    check_command "删除文件 $item 失败"
+                    check_command "删除文件$item失败"
                 fi
             fi
         done
@@ -503,9 +464,9 @@ mysql_uninstall() {
 
         for file in $files; do
             if [ -e "$file" ]; then
-                printf "${yellow}删除文件: $file${white}\n"
+                printf "${yellow}删除文件:$file${white}\n"
                 rm -f "$file"
-                check_command "删除文件 $file 失败"
+                check_command "删除文件$file失败"
             fi
         done
     }
@@ -514,7 +475,7 @@ mysql_uninstall() {
     delete_with_exclusions
     delete_specific_files
 
-    printf "${green}MySQL卸载完成${white}\n"
+    check_command "MySQL卸载失败" || printf "${green}MySQL卸载完成${white}\n"
 }
 
 # MySQL函数7
@@ -638,7 +599,7 @@ main() {
 		printf "${cyan}=================================${white}\n"
 		printf "${cyan}              主菜单             ${white}\n"
 		printf "${cyan}=================================${white}\n"
-		printf "${cyan}1. MySQL管理${white}\n"
+		printf "${cyan}1. MySQL管理菜单${white}\n"
 		printf "${cyan}2. 退出${white}\n"
 		printf "${cyan}=================================${white}\n"
 
