@@ -173,7 +173,7 @@ optimize_mysql_performance() {
 		# 使用 sed 修改配置文件中的参数
 		sed -ri "s/^$param=.*/$param=$value/" "$file"
 		# 打印修改结果
-		echo "已将$param修改为$value"
+		echo "$param修改为$value"
 	}
 
 	# 根据内存和CPU核数调整MySQL参数
