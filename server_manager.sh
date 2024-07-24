@@ -168,7 +168,7 @@ install_mysql_version() {
 	if ! check_mysql_installed >/dev/null 2>&1; then
 		printf "${yellow}正在${os_release}上安装! ${white}\n"
 	else
-		printf "${red}MySQL已安装,请别发癫${white}\n"
+		printf "${red}MySQL已安装${white}\n"
 		return # 返回mysql菜单
 	fi
 
@@ -244,11 +244,11 @@ install_mysql_version() {
 	# 安装MySQL,按顺序执行
 	for package in "${packages[@]}"; do
 		if [ -f "$package" ]; then
-			yum localinstall "$package" -y && printf "${green}MySQL安装包安装成功:${package}${white}\n" || printf "${red}MySQL安装包安装失败:${package}${white}\n"
+			yum localinstall "$package" -y && printf "${green}MySQL安装包: ${package} 安装成功${white}\n" || printf "${red}MySQL安装包安装失败:${package}${white}\n"
 			# 删除已安装的包文件
 			rm -f "$package"
 		else
-			printf "${yellow}未找到或不被需要的安装包:${package},本次跳过${white}\n"
+			printf "${yellow}未找到安装包: ${package} 也许不被需要${white}\n"
 		fi
 	done
 
