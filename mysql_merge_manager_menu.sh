@@ -18,8 +18,9 @@ BACKUP_DIR="/opt/backup"
 
 # 检查命令是否成功执行
 check_command() {
+	local message=$1
 	if [ $? -ne 0 ]; then
-		printf "${red}$1${white}\n"
+		printf "${red}${message}${white}\n"
 		return 1
 	fi
 }
@@ -207,8 +208,8 @@ install_mysql_version() {
 	# 检查并卸载冲突的包
 	for package in mariadb-libs mysql-libs; do
 		if rpm -q $package >/dev/null 2>&1; then
+			printf "${yellow}卸载冲突文件:${package}${white}\n"
 			yum remove $package -y >/dev/null 2>&1
-			printf "${yellow}正在卸载冲突文件:${package}${white}\n"
 		fi
 	done
 
@@ -216,7 +217,7 @@ install_mysql_version() {
 	for package in libaio net-tools wget; do
 		if ! rpm -q $package >/dev/null 2>&1; then
 			yum install $package -y >/dev/null 2>&1
-			printf "${yellow}安装并检查依赖:${package}${white}\n"
+			printf "${yellow} 安装并检查依赖:${package}${white}\n"
 		fi
 	done
 
@@ -248,7 +249,7 @@ install_mysql_version() {
 			# 删除已安装的包文件
 			rm -f "$package"
 		else
-			printf "${yellow}未找到安装包:${package},本次跳过${white}\n"
+			printf "${yellow}未找到或不被需要的安装包:${package},本次跳过${white}\n"
 		fi
 	done
 
@@ -391,8 +392,6 @@ mysql_uninstall() {
         return # 返回mysql菜单
     fi
 
-    local MAXDEPTH=5
-
     printf "${yellow}停止并禁用MySQL服务${white}\n"
 	if systemctl is-active mysqld >/dev/null 2>&1; then
 		systemctl disable mysqld --now >/dev/null 2>&1
@@ -410,26 +409,66 @@ mysql_uninstall() {
         fi
     done
 
-	# 删除MySQL日志文件
 	printf "${yellow}删除与MySQL相关的文件${white}\n"
-	if [ -f /var/log/mysqld.log ]; then
-		rm -f /var/log/mysqld.log
-		check_command "删除/var/log/mysqld.log失败"
-	fi
+	
+	# 定义排除目录的数组
+	local EXCLUDE_DIRS=(
+		"/etc/selinux/"
+		"/usr/lib/firewalld/services/"
+		"/usr/lib64/"
+		"/usr/share/vim/"
+	)
 
-	# 删除MySQL配置文件
-	if [ -f /etc/my.cnf ]; then
-		rm -f /etc/my.cnf
-		check_command "删除/etc/my.cnf失败"
-	fi
+	# 排除脚本本身
+	local SCRIPT_PATH=$(readlink -f "${BASH_SOURCE[0]}")
 
-	# 删除MySQL备份配置文件
-	if [ -f /etc/my.cnf.bak ]; then
-		rm -f /etc/my.cnf.bak
-		check_command "删除/etc/my.cnf.bak失败"
-	fi
+	local delete_with_exclusions
+	delete_with_exclusions() {
+		local exclude_dirs_pattern
+		local items_to_delete
+		local item
+		
+		# 将排除目录数组转换为正则表达式模式
+		# 将每个目录添加到排除模式中,并确保正则表达式正确处理
+		exclude_dirs_pattern=$(printf "%s|" "${EXCLUDE_DIRS[@]}" | sed 's/|$//')
+		exclude_dirs_pattern="^($exclude_dirs_pattern).*"
 
-    printf "${green}MySQL卸载完成${white}\n"
+		# 查找文件和目录,排除指定目录及其子目录
+		items_to_delete=$(find / -name "*mysql*" -print 2>/dev/null | grep -Pv "$exclude_dirs_pattern" | grep -vF "$SCRIPT_PATH")
+
+		for item in $items_to_delete; do
+			if [ -d "$item" ]; then
+				printf "${yellow}删除目录: $item${white}\n"
+				rm -fr "$item"
+				check_command "删除目录 $item 失败"
+			elif [ -f "$item" ]; then
+				printf "${yellow}删除文件: $item${white}\n"
+				rm -f "$item"
+				check_command "删除文件 $item 失败"
+			fi
+		done
+	}
+
+	# 删除特定的 MySQL 配置文件
+	local delete_specific_files
+	delete_specific_files() {
+		local files
+		files=$(ls /etc/my.cnf.* 2>/dev/null)
+
+		for file in $files; do
+			if [ -e "$file" ]; then
+				printf "${yellow}删除文件:$file${white}\n"
+				rm -f "$file"
+				check_command "删除文件$file失败"
+			fi
+		done
+	}
+
+	# 调用局部函数进行删除操作
+	delete_with_exclusions
+	delete_specific_files
+
+	printf "${green}MySQL卸载完成${white}\n"
 }
 
 # MySQL函数7
@@ -442,13 +481,19 @@ control_mysql() {
 			if ! check_mysql_installed; then
 				return # 返回mysql菜单
 			fi
-
+		
 			# 查找MySQL进程
-			if pgrep -x mysqld >/dev/null 2>&1; then
-				printf "${yellow}MySQL进程信息:\n$(ps -p $(pgrep -x mysqld) -o pid,cmd)${white}\n"
+			if ps -ef | grep '[m]ysqld' >/dev/null 2>&1; then
+				printf "${yellow}MySQL进程信息:\n$(ps -ef | grep '[m]ysqld')${white}\n"
 				systemctl status mysqld
 			else
-				printf "${red}MySQL未运行${white}\n"
+				printf "${red}未找到MySQL进程信息${white}\n"
+				# 检查服务状态
+				if systemctl is-active mysqld >/dev/null 2>&1; then
+					printf "${yellow}MySQL服务正在运行,但未找到进程信息${white}\n"
+				else
+					printf "${yellow}MySQL服务未启动${white}\n"
+				fi
 			fi
 			;;
 		start)
@@ -456,24 +501,40 @@ control_mysql() {
 				return # 返回mysql菜单
 			fi
 
-			printf "${yellow}启动MySQL服务${white}\n"
-			systemctl enable mysqld --now
-			check_command "启动MySQL服务失败"
+			# 检查MySQL是否已经在运行
+			if systemctl is-active mysqld >/dev/null 2>&1; then
+				printf "${yellow}MySQL已经在运行中,无需启动${white}\n"
+			else
+				systemctl enable mysqld --now >/dev/null 2>&1
+				if systemctl is-active mysqld >/dev/null 2>&1; then
+					printf "${green}MySQL启动成功!${white}\n"
+				else
+					printf "${red}MySQL启动失败${white}\n"
+				fi
+			fi
 			;;
 		stop)
 			if ! check_mysql_installed; then
 				return # 返回mysql菜单
 			fi
 
-			printf "${yellow}停止MySQL服务${white}\n"
-			systemctl disable mysqld --now
-			check_command "停止MySQL服务失败"
+			if ! systemctl is-active mysqld >/dev/null 2>&1; then
+				printf "${yellow}MySQL已经停止,无需停止${white}\n"
+			else
+				systemctl disable mysqld --now >/dev/null 2>&1
+				if ! systemctl is-active mysqld >/dev/null 2>&1; then
+					printf "${green}MySQL停止成功!${white}\n"
+				else
+					printf "${red}MySQL停止失败!${white}\n"
+				fi
+			fi
 			;;
 		*)
-			printf "${red}无效操作:${action}${white}\n"
-			return
+			printf "${red}无效的操作参数: ${action}${white}\n"
+			return 1
 			;;
 	esac
+	return 0
 }
 
 # mysql菜单
@@ -531,7 +592,7 @@ main() {
         printf "${cyan}=================================${white}\n"
         printf "${cyan}              主菜单             ${white}\n"
         printf "${cyan}=================================${white}\n"
-        printf "${cyan}1. MySQL管理菜单${white}\n"
+        printf "${cyan}1. MySQL管理${white}\n"
         printf "${cyan}2. 退出${white}\n"
         printf "${cyan}=================================${white}\n"
 
