@@ -350,9 +350,9 @@ mysql_version_selection_menu() {
 		printf "${cyan}=================================${white}\n"
 		printf "${cyan}         选择MySQL版本           ${white}\n"
 		printf "${cyan}=================================${white}\n"
-		printf "${cyan}1. 安装MySQL8.0.26${white}\n"
-		printf "${cyan}2. 安装MySQL8.0.28${white}\n"
-		printf "${cyan}3. 安装MySQL8.0.30${white}\n"
+		printf "${cyan}1. 安装MySQL 8.0.26${white}\n"
+		printf "${cyan}2. 安装MySQL 8.0.28${white}\n"
+		printf "${cyan}3. 安装MySQL 8.0.30${white}\n"
 		printf "${cyan}4. 返回上一级菜单${white}\n"
 		printf "${cyan}=================================${white}\n"
 
@@ -599,8 +599,9 @@ main() {
 		printf "${cyan}=================================${white}\n"
 		printf "${cyan}              主菜单             ${white}\n"
 		printf "${cyan}=================================${white}\n"
-		printf "${cyan}1. MySQL管理菜单${white}\n"
-		printf "${cyan}2. 退出${white}\n"
+		printf "${cyan}1. 工具管理菜单${white}\n"
+		printf "${cyan}2. MySQL管理菜单${white}\n"
+		printf "${cyan}3. 退出${white}\n"
 		printf "${cyan}=================================${white}\n"
 
 		printf "${cyan}请输入选项并按回车:${white}"
@@ -608,9 +609,13 @@ main() {
 
 		case "$choice" in
 			1)
-				mysql_menu
+				echo "return"
+				#tools_menu
 				;;
 			2)
+				mysql_menu
+				;;
+			3)
 				printf "${yellow}Bey!${white}\n"
 				exit 0  # 退出脚本
 				;;
