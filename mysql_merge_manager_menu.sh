@@ -21,7 +21,7 @@ check_command() {
 	local message=$1
 	if [ $? -ne 0 ]; then
 		printf "${red}${message}${white}\n"
-		return 1
+		return
 	fi
 }
 
@@ -244,7 +244,7 @@ install_mysql_version() {
 	# 安装MySQL,按顺序执行
 	for package in "${packages[@]}"; do
 		if [ -f "$package" ]; then
-			rpm -ivh "$package" && printf "${green}MySQL安装包安装成功:${package}${white}\n" || printf "${red}MySQL安装包安装失败:${package}${white}\n"
+			yum localinstall "$package" -y && printf "${green}MySQL安装包安装成功:${package}${white}\n" || printf "${red}MySQL安装包安装失败:${package}${white}\n"
 			# 删除已安装的包文件
 			rm -f "$package"
 		else
@@ -437,13 +437,13 @@ mysql_uninstall() {
 
 		for item in $items_to_delete; do
 			if [ -d "$item" ]; then
-				printf "${yellow}删除目录: $item${white}\n"
+				printf "${yellow}删除目录:$item${white}\n"
 				rm -fr "$item"
-				check_command "删除目录 $item 失败"
+				check_command "删除目录$item 失败"
 			elif [ -f "$item" ]; then
-				printf "${yellow}删除文件: $item${white}\n"
+				printf "${yellow}删除文件:$item${white}\n"
 				rm -f "$item"
-				check_command "删除文件 $item 失败"
+				check_command "删除文件$item 失败"
 			fi
 		done
 	}
