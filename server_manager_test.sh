@@ -333,7 +333,7 @@ install_mysql_version() {
 	for package in libaio net-tools wget; do
 		if ! rpm -q $package >/dev/null 2>&1; then
 			yum install $package -y >/dev/null 2>&1
-			printf "${yellow} 安装并检查依赖:${package}${white}\n"
+			printf "${yellow}安装并检查依赖:${package}${white}\n"
 		fi
 	done
 
