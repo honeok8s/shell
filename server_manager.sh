@@ -59,13 +59,34 @@ check_mysql_installed() {
 }
 
 # MySQL函数2
-# 优化和自动生成 MySQL 配置文件
+# 优化和自动生成MySQL配置文件
 generate_mysql_config() {
-	if wget -q -O /etc/my.cnf https://raw.githubusercontent.com/honeok8s/conf/main/mysql/mysql_server_manager_config.cnf; then
-		printf "${green}MySQL配置文件已成功下载${white}\n"
-	else
-	# 如果下载失败,使用EOF语法生成文件
-		cat <<EOF > /etc/my.cnf
+	local url="https://raw.githubusercontent.com/honeok8s/conf/main/mysql/mysql_server_manager_config.cnf"
+	local dest="/etc/my.cnf"
+	local expected_checksum="b0a5cf17be27e3797cc9118fe81393d3e82d1339257a6823542df5287b3ad3ba"
+
+	# 尝试下载文件并进行完整性校验
+	for i in {1..3}; do
+		# 下载文件
+		if wget -q -O "$dest" "$url"; then
+			printf "${green}MySQL配置文件已成功下载${white}\n"
+
+			# 校验文件完整性
+			if echo "$expected_checksum $dest" | sha256sum -c -; then
+				printf "${green}文件完整性校验通过${white}\n"
+				return
+			else
+				printf "${red}文件完整性校验失败${white}\n"
+			fi
+		else
+			printf "${red}从Github拉取配置文件失败,第$i次重试${white}\n"
+		fi
+	done
+
+	# 如果所有重试都失败,则使用EOF语法生成文件
+	printf "${yellow}下载失败,重试次数已用尽,使用默认配置生成文件${white}\n"
+
+	cat <<EOF > "$dest"
 # For advice on how to change settings please see
 # http://dev.mysql.com/doc/refman/8.0/en/server-configuration-defaults.html
 [mysql]
@@ -114,7 +135,6 @@ sql_mode = STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
 default-character-set=utf8mb4
 socket=/var/lib/mysql/mysql.sock
 EOF
-	fi
 }
 
 # MySQL函数3
@@ -153,7 +173,7 @@ optimize_mysql_performance() {
         printf "${yellow}检测到当前8GB内存且CPU核数为4至6,使用默认配置${white}\n"
 	# 1核1GB内存
 	elif [ "$memory_size" -ge 950 ] && [ "$memory_size" -le 1024 ] && [ "$num_cores" -eq 1 ]; then
-		printf "${yellow}检测到当前1GB内存且CPU核数为1,调整配置如下${white}\n"
+		printf "${yellow}检测到当前1GB内存且CPU核数为1,已调整配置文件${white}\n"
 		sed -i -r '
 			s/^[[:space:]]*max_connections[[:space:]]*=[[:space:]]*[0-9]+/max_connections = 50/
 			s/^[[:space:]]*tmp_table_size[[:space:]]*=[[:space:]]*[0-9]+[KMG]?/tmp_table_size = 4M/
@@ -172,7 +192,7 @@ optimize_mysql_performance() {
 		printf "${green}MySQL配置文件已更新并根据服务器配置动态调整完成${white}\n"
 	# 1核2GB内存
 	elif [ "$memory_size" -ge 1800 ] && [ "$memory_size" -le 2048 ] && [ "$num_cores" -eq 1 ]; then
-		printf "${yellow}检测到当前2GB内存且CPU核数为1,调整配置如下${white}\n"
+		printf "${yellow}检测到当前2GB内存且CPU核数为1,已调整配置文件${white}\n"
 		sed -i -r '
 			s/^[[:space:]]*max_connections[[:space:]]*=[[:space:]]*[0-9]+/max_connections = 100/
 			s/^[[:space:]]*tmp_table_size[[:space:]]*=[[:space:]]*[0-9]+[KMG]?/tmp_table_size = 8M/
@@ -191,7 +211,7 @@ optimize_mysql_performance() {
 		printf "${green}MySQL配置文件已更新并根据服务器配置动态调整完成${white}\n"
 	# 2核2GB内存
 	elif [ "$memory_size" -ge 1800 ] && [ "$memory_size" -le 2048 ] && [ "$num_cores" -eq 2 ]; then
-		printf "${yellow}检测到当前2GB内存且CPU核数为2,调整配置如下${white}\n"
+		printf "${yellow}检测到当前2GB内存且CPU核数为2,已调整配置文件${white}\n"
 		sed -i -r '
 			s/^[[:space:]]*max_connections[[:space:]]*=[[:space:]]*[0-9]+/max_connections = 150/
 			s/^[[:space:]]*tmp_table_size[[:space:]]*=[[:space:]]*[0-9]+[KMG]?/tmp_table_size = 8M/
@@ -210,7 +230,7 @@ optimize_mysql_performance() {
 		printf "${green}MySQL配置文件已更新并根据服务器配置动态调整完成${white}\n"
 	# 2核4GB内存
 	elif [ "$memory_size" -ge 3600 ] && [ "$memory_size" -le 4096 ] && [ "$num_cores" -eq 2 ]; then
-		printf "${yellow}检测到当前4GB内存且CPU核数为2,调整配置如下${white}\n"
+		printf "${yellow}检测到当前4GB内存且CPU核数为2,已调整配置文件${white}\n"
 		sed -i -r '
 			s/^[[:space:]]*max_connections[[:space:]]*=[[:space:]]*[0-9]+/max_connections = 200/
 			s/^[[:space:]]*tmp_table_size[[:space:]]*=[[:space:]]*[0-9]+[KMG]?/tmp_table_size = 16M/
@@ -229,7 +249,7 @@ optimize_mysql_performance() {
 		printf "${green}MySQL配置文件已更新并根据服务器配置动态调整完成${white}\n"
 	# 4核4GB内存
 	elif [ "$memory_size" -ge 3600 ] && [ "$memory_size" -le 4096 ] && [ "$num_cores" -eq 4 ]; then
-		printf "${yellow}检测到当前4GB内存且CPU核数为4,调整配置如下${white}\n"
+		printf "${yellow}检测到当前4GB内存且CPU核数为4,已调整配置文件${white}\n"
 		sed -i -r '
 			s/^[[:space:]]*max_connections[[:space:]]*=[[:space:]]*[0-9]+/max_connections = 300/
 			s/^[[:space:]]*tmp_table_size[[:space:]]*=[[:space:]]*[0-9]+[KMG]?/tmp_table_size = 16M/
