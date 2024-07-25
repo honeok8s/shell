@@ -875,6 +875,7 @@ mysql_version_selection_menu() {
 				install_mysql_version "8.0.30"
 				;;
 			4)
+				printf "${yellow}返回上一级菜单${white}\n"
 				return
 				;;
 			*)
@@ -907,7 +908,7 @@ mysql_uninstall() {
 
     printf "${yellow}卸载MySQL软件包${white}\n"
     for package in $(rpm -qa | grep -iE '^mysql-community-'); do
-        yum remove "$package" -y
+        yum remove "$package" -y >/dev/null 2>&1
         check_command "卸载失败:$package"
         printf "${green}成功卸载:$package${white}\n"
     done
@@ -1079,7 +1080,6 @@ mysql_menu() {
 				;;
 			4)
 				mysql_version_selection_menu
-				control_mysql status
 				;;
 			5)
 				mysql_uninstall
