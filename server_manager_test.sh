@@ -681,5 +681,23 @@ main() {
 	done
 }
 
+####################
+# 检查脚本是否以root用户身份运行
+if [[ $EUID -ne 0 ]]; then
+	printf "${red}此脚本必须以root用户身份运行.${white}\n"
+	exit 1
+fi
+
+# 检查操作系统是否受支持(CentOS)
+case "$os_release" in
+	*CentOS*|*centos*)
+		# 不输出任何消息,直接继续执行
+		;;
+	*)
+		printf "${red}此脚本不支持的Linux发行版:$os_release ${white}\n"
+		exit 1
+		;;
+esac
+
 main
 exit 0
