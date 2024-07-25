@@ -842,7 +842,7 @@ mysql_menu() {
 	while true; do
 		clear
 		printf "${cyan}=================================${white}\n"
-		printf "${cyan}          MySQL 管理菜单         ${white}\n"
+		printf "${cyan}           MySQL管理菜单         ${white}\n"
 		printf "${cyan}=================================${white}\n"
 		printf "${cyan}1. 查看MySQL服务${white}\n"
 		printf "${cyan}2. 启动MySQL服务${white}\n"
@@ -884,7 +884,39 @@ mysql_menu() {
 	done
 }
 ################################### MySQL END ###################################
+# 数据库管理菜单
+database_menu() {
+    local choice
+    while true; do
+        clear
+        printf "${cyan}=================================${white}\n"
+        printf "${cyan}         数据库管理菜单           ${white}\n"
+        printf "${cyan}=================================${white}\n"
+        printf "${cyan}1. MySQL管理${white}\n"
+        printf "${cyan}2. 返回主菜单${white}\n"
+        printf "${cyan}=================================${white}\n"
 
+        printf "${cyan}请输入选项并按回车:${white}"
+        read -r choice
+
+        case "$choice" in
+            1)
+                mysql_menu
+                ;;
+            2)
+                printf "${yellow}返回主菜单${white}\n"
+                return
+                ;;
+            *)
+                printf "${red}无效选项,请重新输入${white}\n"
+                ;;
+        esac
+        printf "${cyan}按任意键继续${white}\n"
+        read -n 1 -s -r
+    done
+}
+
+#################################################################################
 # 主菜单
 main() {
 	local choice
@@ -894,7 +926,7 @@ main() {
 		printf "${cyan}              主菜单             ${white}\n"
 		printf "${cyan}=================================${white}\n"
 		printf "${cyan}1. 工具管理菜单${white}\n"
-		printf "${cyan}2. MySQL管理菜单${white}\n"
+		printf "${cyan}2. 数据库管理菜单${white}\n"
 		printf "${cyan}3. 退出${white}\n"
 		printf "${cyan}=================================${white}\n"
 
@@ -906,7 +938,7 @@ main() {
 				tools_menu
 				;;
 			2)
-				mysql_menu
+				database_menu
 				;;
 			3)
 				printf "${yellow}Bey!${white}\n"
