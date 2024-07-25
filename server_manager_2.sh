@@ -223,7 +223,7 @@ glibc_menu() {
         printf "${cyan}          Glibc管理菜单          ${white}\n"
         printf "${cyan}=================================${white}\n"
         printf "${cyan}1. 安装/更新系统组件${white}\n"
-        printf "${cyan}2. 返回主菜单${white}\n"
+        printf "${cyan}2. 返回上一级菜单${white}\n"
         printf "${cyan}=================================${white}\n"
 
         printf "${cyan}请输入选项并按回车:${white}"
@@ -400,7 +400,7 @@ make_menu() {
 		printf "${cyan}=================================${white}\n"
 		printf "${cyan}1. 查看当前make版本${white}\n"
 		printf "${cyan}2. 选择make版本并安装${white}\n"
-		printf "${cyan}3. 返回主菜单${white}\n"
+		printf "${cyan}3. 返回上一级菜单${white}\n"
 		printf "${cyan}=================================${white}\n"
 		printf "${cyan}请输入选项并按回车:${white}"
 		read -r choice
@@ -1061,7 +1061,7 @@ mysql_menu() {
 		printf "${cyan}3. 停止MySQL服务${white}\n"
 		printf "${cyan}4. 安装MySQL服务${white}\n"
 		printf "${cyan}5. 卸载MySQL服务${white}\n"
-		printf "${cyan}6. 返回主菜单${white}\n"
+		printf "${cyan}6. 返回上一级菜单${white}\n"
 		printf "${cyan}=================================${white}\n"
 
 		printf "${cyan}请输入选项并按回车:${white}"
@@ -1084,7 +1084,6 @@ mysql_menu() {
 				mysql_uninstall
 				;;
 			6)
-				printf "${yellow}返回主菜单${white}\n"
 				return
 				;;
 			*)
