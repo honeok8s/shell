@@ -1079,6 +1079,7 @@ mysql_menu() {
 				;;
 			4)
 				mysql_version_selection_menu
+				control_mysql status
 				;;
 			5)
 				mysql_uninstall
