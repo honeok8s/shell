@@ -585,7 +585,7 @@ control_mysql() {
 
 			# 检查MySQL是否已经在运行
 			if systemctl is-active mysqld >/dev/null 2>&1; then
-				printf "${yellow}MySQL已经在运行中,无需启动${white}\n"
+				printf "${red}MySQL已运行,请不要重复启动!${white}\n"
 			else
 				systemctl enable mysqld --now >/dev/null 2>&1
 				if systemctl is-active mysqld >/dev/null 2>&1; then
