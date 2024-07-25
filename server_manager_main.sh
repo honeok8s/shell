@@ -787,7 +787,7 @@ install_mysql_version() {
 	# 安装MySQL,按顺序执行
 	for package in "${packages[@]}"; do
 		if [ -f "$package" ]; then
-			yum localinstall "$package" -y && printf "${green}MySQL安装包: ${package} 安装成功${white}\n" || printf "${red}MySQL安装包安装失败:${package}${white}\n"
+			yum localinstall "$package" -y >/dev/null 2>&1 && printf "${green}MySQL安装包: ${package} 安装成功${white}\n" || printf "${red}MySQL安装包安装失败:${package}${white}\n"
 			# 删除已安装的包文件
 			rm -f "$package"
 		else
