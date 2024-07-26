@@ -700,6 +700,7 @@ optimize_mysql_performance() {
     fi
 }
 
+# MySQL自定义安装路径/data/mysql
 customize_mysql_installation_path() {
     # 默认安装路径
     local default_path="/data/mysql"
