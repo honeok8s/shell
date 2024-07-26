@@ -34,7 +34,7 @@ curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/docker_clear
 ```shell
 bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/server_manager_main.sh)
 ```
-                                              或
+
 ```shell
 curl -fsSL https://raw.githubusercontent.com/honeok8s/shell/main/server_manager_main.sh | bash -
 ```
