@@ -280,9 +280,10 @@ customize_mysql_installation_path() {
     local my_cnf="/etc/my.cnf"
 
     while true; do
-		echo ""
-		printf "${cyan}是否定义安装路径为 /data/mysql?(yes|y)[回车跳过使用默认路径]:${white}"
-		echo ""
+        # 打印空行以增加可读性
+        printf "\n"
+
+		printf "${cyan}是否定义安装路径为 /data/mysql? (输入yes|y) [回车跳过使用默认路径]:${white}"
 		local customize_path
 		read -r customize_path
 
