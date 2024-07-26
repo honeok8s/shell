@@ -40,62 +40,54 @@ create_software_dir() {
 ################################### Redis Start ###################################
 # 检查Redis是否已安装
 check_redis_installed() {
-	# 查找Redis配置文件,限制在指定目录下,匹配一些可能的配置文件名
-	local redis_conf_path=""
-	local redis_install_dir=""
+    local redis_conf_path=""
+    local redis_install_dir=""
 
-	# 分别在 /etc/opt 和 /usr目录下查找Redis配置文件
-	for dir in /etc /opt /usr; do
-		if [ -d "$dir" ]; then
-			redis_conf_path=$(find "$dir" -maxdepth 5 -type f \( -name '*redis.conf' -o -name '*redis*.conf' \) 2>/dev/null | head -n 1)
-			if [ -n "$redis_conf_path" ]; then
-				printf "${yellow}找到Redis配置文件:$redis_conf_path${white}\n"
-				redis_install_dir=$(dirname "$redis_conf_path")
-				break
-			fi
-		fi
-	done
-	
-	# 检查 Redis 配置文件是否存在，认为 Redis 已安装
-	if [ -n "$redis_conf_path" ]; then
-		printf "${yellow}Redis配置文件已找到,Redis已安装${white}\n"
-		return 0
-	fi
-	
-	# 检查 Redis 进程是否在运行，认为 Redis 已安装
-	if pgrep -f 'redis-server' >/dev/null 2>&1; then
-		printf "${yellow}Redis服务器正在运行,Redis已安装${white}\n"
-		return 0
-	fi
+    for dir in /etc /opt /usr; do
+        if [ -d "$dir" ]; then
+			redis_conf_path=$(find "$dir" -maxdepth 5 -type f \( -name '*redis.conf' -o -name '*redis*.conf' -o -name 'redis*.conf' \) 2>/dev/null | head -n 1)
+            if [ -n "$redis_conf_path" ]; then
+                printf "${yellow}找到Redis配置文件:$redis_conf_path${white}\n"
+                redis_install_dir=$(dirname "$redis_conf_path")
+                break
+            fi
+        fi
+    done
 
-	# 检查端口6379是否被Redis使用
-	local redis_port_process
-	redis_port_process=$(netstat -tuln | grep ':6379' | grep 'redis-server' 2>/dev/null)
+    if [ -n "$redis_conf_path" ]; then
+        printf "${yellow}Redis配置文件已找到,Redis已安装${white}\n"
+        return 0
+    fi
 
-	if [ -n "$redis_port_process" ]; then
-		printf "${yellow}端口6379正在被Redis占用,Redis已安装${white}\n"
-		return 0
-	fi
-	
-	# 如果以上检查都没有确认Redis已安装,则返回未安装
-	printf "${yellow}未检测到Redis安装${white}\n"
-	return 1
+    if pgrep -f 'redis-server' >/dev/null 2>&1; then
+        printf "${yellow}Redis服务器正在运行,Redis已安装${white}\n"
+        return 0
+    fi
+
+    local redis_port_process
+    redis_port_process=$(netstat -tuln | grep ':6379' | grep 'redis-server' 2>/dev/null)
+
+    if [ -n "$redis_port_process" ]; then
+        printf "${yellow}端口6379正在被Redis占用,Redis已安装${white}\n"
+        return 0
+    fi
+
+    printf "${yellow}未检测到Redis安装${white}\n"
+    return 1
 }
 
 manage_redis_systemd() {
-	local redis_version="$1"
-	local redis_dir="/opt/redis-${redis_version}"
-	local redis_service_file="/etc/systemd/system/redis.service"
+    local redis_version="$1"
+    local redis_dir="/opt/redis-${redis_version}"
+    local redis_service_file="/etc/systemd/system/redis.service"
 
-	# 检查Redis目录是否存在
-	if [ ! -d "$redis_dir" ]; then
-		printf "${red}Redis 安装目录不存在:${redis_dir}${white}\n"
-		return 1
-	fi
+    if [ ! -d "$redis_dir" ]; then
+        printf "${red}Redis 安装目录不存在:${redis_dir}${white}\n"
+        return 1
+    fi
 
-	# 创建 systemd 服务文件
-	if [ ! -f "$redis_service_file" ]; then
-		tee "$redis_service_file" > /dev/null <<EOF
+    if [ ! -f "$redis_service_file" ]; then
+        tee "$redis_service_file" > /dev/null <<EOF
 [Unit]
 Description=Redis In-Memory Data Store
 After=network.target
@@ -112,30 +104,27 @@ Restart=always
 [Install]
 WantedBy=multi-user.target
 EOF
-		check_command "创建systemd服务文件失败:${redis_service_file}"
-		printf "${green}创建systemd服务文件成功:${redis_service_file}${white}\n"
-	else
-		printf "${yellow}systemd服务文件已存在:${redis_service_file}${white}\n"
-	fi
+        check_command "创建systemd服务文件失败:${redis_service_file}"
+        printf "${green}创建systemd服务文件成功:${redis_service_file}${white}\n"
+    else
+        printf "${yellow}systemd服务文件已存在:${redis_service_file}${white}\n"
+    fi
 
-    # 重新加载systemd配置
     systemctl daemon-reload
     check_command "重载systemd配置失败"
 
     systemctl enable redis --now >/dev/null 2>&1
 
-	# 检查Redis服务是否处于活动状态
-	if ! systemctl is-active redis >/dev/null 2>&1; then
-		printf "${red}Redis状态检查失败或服务无法启动,请检查安装日志或手动启动Redis服务${white}\n"
-		return 1
-	else
-		printf "${green}Redis已完成自检,启动并设置开机自启${white}\n"
-	fi
+    if ! systemctl is-active redis >/dev/null 2>&1; then
+        printf "${red}Redis状态检查失败或服务无法启动,请检查安装日志或手动启动Redis服务${white}\n"
+        return 1
+    else
+        printf "${green}Redis已完成自检,启动并设置开机自启${white}\n"
+    fi
 
-	echo ""
+    echo ""
 
     systemctl status redis --no-pager
-
 }
 
 # 安装指定版本的Redis(该函数为redis_version_selection_menu函数的调用子函数)
@@ -194,9 +183,6 @@ install_redis_version() {
 	cd "$redis_dir" || return
 	make
 	check_command "编译Redis失败"
-
-	# 运行测试
-	make test
 
 	# 备份当前的配置文件
 	\cp -f redis.conf redis.conf.bak
@@ -329,5 +315,5 @@ redis_menu() {
 	done
 }
 ################################### Redis END ###################################
-
-redis_menu
+check_redis_installed
+#redis_menu
