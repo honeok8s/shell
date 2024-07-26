@@ -29,3 +29,8 @@ curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/docker_clear
 curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/docker_clear_log_pro.sh && chmod +x ./docker_clear_log_pro.sh
 (crontab -l;echo "0 0 * * * /root/docker_clear_log_pro.sh >/dev/null 2>&1 ") | crontab
 ```
+
+## JDS Games CentOS7游戏服务器组件和服务管理脚本
+```shell
+bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/server_manager_main.sh)
+```
