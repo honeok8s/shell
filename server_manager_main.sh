@@ -1085,6 +1085,7 @@ mysql_menu() {
 				mysql_uninstall
 				;;
 			6)
+				printf "${yellow}返回上一级菜单${white}\n"
 				return
 				;;
 			*)
