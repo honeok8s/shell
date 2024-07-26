@@ -94,7 +94,6 @@ generate_mysql_config() {
 default-character-set=utf8mb4
 
 [mysqld]
-
 port=3306
 default-storage-engine=INNODB # 默认存储引擎
 character-set-server=utf8mb4  # 字符集设置

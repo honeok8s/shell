@@ -522,7 +522,6 @@ generate_mysql_config() {
 default-character-set=utf8mb4
 
 [mysqld]
-
 port=3306
 default-storage-engine=INNODB # 默认存储引擎
 character-set-server=utf8mb4  # 字符集设置
@@ -701,6 +700,63 @@ optimize_mysql_performance() {
     fi
 }
 
+customize_mysql_installation_path() {
+    # 默认安装路径
+    local default_path="/data/mysql"
+    # MySQL 配置文件路径
+    local my_cnf="/etc/my.cnf"
+
+    while true; do
+        # 打印空行以增加可读性
+        printf "\n"
+
+		printf "${cyan}是否定义安装路径为 /data/mysql? (输入yes|y) [回车跳过使用默认路径]:${white}"
+		local customize_path
+		read -r customize_path
+
+		# 将用户输入转换为小写以便处理
+		local lower_path=$(echo "$customize_path" | awk '{print tolower($0)}')
+
+        # 验证用户输入
+        if [[ -z "$lower_path" || "$lower_path" =~ ^(y(es)?|yes)$ ]]; then
+            break
+        else
+            printf "${red}无效输入,请输入'yes'或'y',或直接回车跳过使用默认路径${white}\n"
+        fi
+    done
+
+    if [[ "$lower_path" =~ ^(y(es)?|yes)$ ]]; then
+        # 检查MySQL配置文件是否存在
+        if [ -f "$my_cnf" ]; then
+            # 检查路径是否存在
+            if [ -d "$default_path" ]; then
+                # 如果路径存在,直接删除目录
+                rm -fr "$default_path"
+                printf "${yellow}目录$default_path已存在并已被删除${white}\n"
+            fi
+
+            # 创建目录
+            mkdir -p "$default_path" || check_command "创建目录$default_path失败"
+            printf "${green}目录$default_path已创建${white}\n"
+
+            # 修改配置文件中的路径
+            sed -i -r \
+                -e "s|^datadir\s*=.*|datadir = $default_path|" \
+                -e "s|^socket\s*=.*|socket = $default_path/mysql.sock|" \
+                -e "s|^slow_query_log_file\s*=.*|slow_query_log_file = $default_path/slow.log|" \
+                -e "/^\[client\]/,/^$/s|^socket\s*=.*|socket = $default_path/mysql.sock|" \
+                "$my_cnf"
+            check_command "修改MySQL配置文件失败"
+
+            printf "${green}MySQL配置文件$my_cnf已更新${white}\n"
+        else
+            check_command "MySQL配置文件$my_cnf不存在,无法进行配置更新"
+        fi
+    else
+        printf "${yellow}未自定义安装路径,使用默认配置文件${white}\n"
+    fi
+}
+
 # MySQL函数4
 # 安装指定版本的MySQL(该函数为mysql_version_selection_menu函数的调用子函数),包含下载路径的判断,配置文件的调优(支持:8G/4G/2G内存自动判断并优化),数据库初始化
 install_mysql_version() {
@@ -809,6 +865,9 @@ install_mysql_version() {
 
 	# 性能调优
 	optimize_mysql_performance
+
+	# 自定义安装目录判断
+	customize_mysql_installation_path
 
 	# 调用函数进行MySQL初始化
 	if initialize_mysql; then
