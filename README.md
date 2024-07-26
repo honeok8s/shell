@@ -33,4 +33,6 @@ curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/docker_clear
 ## JDS Games CentOS7游戏服务器组件和服务管理脚本
 ```shell
 bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/server_manager_main.sh)
+                                              或
+curl -fsSL https://raw.githubusercontent.com/honeok8s/shell/main/server_manager_main.sh | bash -
 ```
