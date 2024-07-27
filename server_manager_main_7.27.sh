@@ -234,7 +234,7 @@ glibc_menu() {
                 install_and_upgrade
                 ;;
             2)
-                printf "${yellow}返回主菜单${white}\n"
+                printf "${yellow}返回上一级菜单${white}\n"
                 return
                 ;;
             *)
@@ -416,7 +416,7 @@ make_menu() {
 				fi
 				;;
 			3)
-				printf "${yellow}返回主菜单${white}\n"
+				printf "${yellow}返回上一级菜单${white}\n"
 				return
 				;;
 			*)
@@ -1809,7 +1809,7 @@ redis_menu() {
 		printf "${cyan}3. 停止Redis服务${white}\n"
 		printf "${cyan}4. 安装Redis服务${white}\n"
 		printf "${cyan}5. 卸载Redis服务${white}\n"
-		printf "${cyan}6. 返回主菜单${white}\n"
+		printf "${cyan}6. 返回上一级菜单${white}\n"
 		printf "${cyan}=================================${white}\n"
 
 		printf "${cyan}请输入选项并按回车:${white}"
@@ -1832,9 +1832,8 @@ redis_menu() {
 				uninstall_redis
 				;;
 			6)
-				printf "${yellow}返回主菜单${white}\n"
-				#return
-				exit
+				printf "${yellow}返回上一级菜单${white}\n"
+				return
 				;;
 			*)
 				printf "${red}无效选项, 重新选择!${white}\n"
