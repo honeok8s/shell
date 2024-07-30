@@ -1,3 +1,7 @@
+```shell
+bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/honeok.sh)
+```
+
 ## Serverstatus探针，客户端探针存活监控
 * 项目地址：https://github.com/cppla/serverstatus
 ```shell
