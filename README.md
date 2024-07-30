@@ -4,12 +4,12 @@
 # 下载完成后自行修改Server端服务器IP地址
 
 # KVM & XEN
-sed -i 's/127\.0\.0\.1/107.174.0.197/g' ./serverstatus_kvm.sh
 curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/serverstatus_kvm.sh && chmod +x ./serverstatus_kvm.sh
+sed -i 's/127\.0\.0\.1/107.174.0.197/g' ./serverstatus_kvm.sh
 
 # LXC & OpenVZ
-sed -i 's/127\.0\.0\.1/107.174.0.197/g' ./serverstatus_lxc.sh
 curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/serverstatus_lxc.sh && chmod +x ./serverstatus_lxc.sh
+sed -i 's/127\.0\.0\.1/107.174.0.197/g' ./serverstatus_lxc.sh
 ```
 ## NGINX日志管理
 ```shell
@@ -17,7 +17,7 @@ curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/serverstatus
 # LOG_DIR="/usr/local/nginx/logs"              日志路径可自行定义
 # BAK_DIR="/usr/local/nginx/logs/backup"       日志备份路径可自行定义
 
-curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/logrotate_ngx.sh && chmod +x ./logrotate_ngx.sh
+curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/nginx/logrotate_ngx.sh && chmod +x ./logrotate_ngx.sh
 ```
 ## Docker日志截断
 ```shell
@@ -32,9 +32,9 @@ curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/docker_clear
 
 ## JDS Games CentOS7游戏服务器组件和服务管理脚本
 ```shell
-bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/server_manager_main.sh)
+bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/jds/server_manager_main_7.27.sh)
 ```
 
 ```shell
-curl -fsSL https://raw.githubusercontent.com/honeok8s/shell/main/server_manager_main.sh | bash -
+curl -fsSL https://raw.githubusercontent.com/honeok8s/shell/main/jds/server_manager_main_7.27.sh | bash -
 ```
