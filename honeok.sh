@@ -1,5 +1,7 @@
 #!/bin/bash
 # Author: honeok
+# Project: https://github.com/honeok8s
+# Blog: https://www.honeok.com
 
 set -o errexit
 clear
@@ -14,6 +16,14 @@ cyan='\033[1;36m'    # 特殊信息
 purple='\033[1;35m'  # 紫色或粉色信息
 gray='\033[1;30m'    # 灰色信息
 white='\033[0m'      # 结束颜色设置
+_yellow() { echo -e ${yellow}$@${white}; }
+_red() { echo -e ${red}$@${white}; }
+_magenta() { echo -e ${magenta}$@${white}; }
+_green() { echo -e ${green}$@${white}; }
+_blue() { echo -e ${blue}$@${white}; }
+_cyan() { echo -e ${cyan}$@${white}; }
+_purple() { echo -e ${purple}$@${white}; }
+_gray() { echo -e ${gray}$@${white}; }
 
 system_info() {
 	local hostname=$(hostnamectl | sed -n 's/^[[:space:]]*Static hostname:[[:space:]]*\(.*\)$/\1/p')
@@ -109,7 +119,7 @@ system_info() {
 	local uptime_str=$(uptime | awk -F'up ' '{print $2}' | awk -F', ' '{days=$1; hours_minutes=$2; gsub(/[^0-9 ]/, "", days); split(hours_minutes, a, ":"); hours=a[1]; minutes=a[2]; printf "%d天 %d时 %d分\n", days, hours, minutes}')
 
 	echo ""
-	echo -e "${yellow}系统信息查询${white}"
+	_yellow "系统信息查询"
 	echo "-------------------------"
 	echo "主机名: ${hostname}"
 	echo "运营商: ${isp_info}"
