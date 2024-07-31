@@ -16,21 +16,32 @@ white='\033[0m'     # 结束颜色设置
 
 system_info() {
 	local hostname=$(hostnamectl | sed -n 's/^[[:space:]]*Static hostname:[[:space:]]*\(.*\)$/\1/p')
+	# 获取运营商信息
 	local isp_info=$(curl -s ipinfo.io/org)
 
+	# 获取操作系统版本信息
 	local os_release=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d '"' -f 2)
+	# 获取内核版本信息
 	local kernel_version=$(hostnamectl | sed -n 's/^[[:space:]]*Kernel:[[:space:]]*\(.*\)$/\1/p')
 
+	# 获取CPU架构,型号和核心数
 	local cpu_architecture=$(uname -m)
 	local cpu_model=$(lscpu | sed -n 's/^Model name:[[:space:]]*\(.*\)$/\1/p')
 	local cpu_cores=$(lscpu | sed -n 's/^CPU(s):[[:space:]]*\(.*\)$/\1/p')
 
+	# 计算CPU使用率,处理可能的除零错误
 	local cpu_usage=$(awk -v OFMT='%0.2f' '
 		NR==1 {idle1=$5; total1=$2+$3+$4+$5+$6+$7+$8+$9}
 		NR==2 {
 			idle2=$5
 			total2=$2+$3+$4+$5+$6+$7+$8+$9
-			cpu_usage=100*(1-(idle2-idle1)/(total2-total1))
+			diff_idle = idle2 - idle1
+			diff_total = total2 - total1
+			if (diff_total == 0) {
+				cpu_usage=0
+			} else {
+				cpu_usage=100*(1-(diff_idle/diff_total))
+			}
 			printf "%.2f%%\n", cpu_usage
 		}' <(sleep 1; cat /proc/stat))
 	local mem_usage=$(free -b | awk 'NR==2{printf "%.2f/%.2f MB (%.2f%%)", $3/1024/1024, $2/1024/1024, $3*100/$2}')
@@ -49,12 +60,15 @@ system_info() {
 		echo "$tb TB / $gb GB"
 	}
 
+	# 获取网络拥塞控制算法和队列算法
 	local congestion_algorithm=$(sysctl -n net.ipv4.tcp_congestion_control)
 	local queue_algorithm=$(sysctl -n net.core.default_qdisc)
 
+	# 获取公网IPv4和IPv6地址
 	local ipv4_address=$(curl -s ipv4.ip.sb)
 	local ipv6_address=$(curl -s --max-time 1 ipv6.ip.sb || true)
 
+	# 获取地理位置,系统时区,系统时间和运行时长
 	local location=$(curl -s ipinfo.io/city)
 	local system_time=$(timedatectl | grep 'Time zone' | awk '{print $3}' | awk '{gsub(/^[[:space:]]+|[[:space:]]+$/,""); print}')
 	local current_time=$(date +"%Y-%m-%d %H:%M:%S")
@@ -76,6 +90,23 @@ system_info() {
 	printf "${yellow}CPU占用率: %s${white}\n" "${cpu_usage}"
 	printf "${yellow}物理内存: %s${white}\n" "${mem_usage}"
 	printf "${yellow}虚拟内存: %s${white}\n" "${swap_usage}"
+
+	# 获取并格式化磁盘空间使用情况
+	local disk_info=$(df -h --output=source,size,used,pcent | grep -E "^/dev/" | grep -vE "tmpfs|devtmpfs|overlay|swap|loop")
+	local disk_output=""
+
+	while read -r line; do
+		local disk=$(echo "$line" | awk '{print $1}')
+		local size=$(echo "$line" | awk '{print $2}')
+		local used=$(echo "$line" | awk '{print $3}')
+		local percent=$(echo "$line" | awk '{print $4}')
+		
+		# 拼接磁盘信息
+		disk_output+="${disk} ${used}/${size} (${percent})  "
+	done <<< "$disk_info"
+	# 打印硬盘空间
+	printf "${yellow}硬盘空间: %s${white}\n" "${disk_output}"
+
 	printf "${yellow}-------------------------${white}\n"
 	printf "${yellow}网络接收数据量: $(convert_bytes $rx_bytes)${white}\n"
 	printf "${yellow}网络发送数据量: $(convert_bytes $tx_bytes)${white}\n"
