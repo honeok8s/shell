@@ -21,10 +21,10 @@ sed -i 's/127\.0\.0\.1/107.174.0.197/g' ./serverstatus_lxc.sh
 # LOG_DIR="/usr/local/nginx/logs"              日志路径可自行定义
 # BAK_DIR="/usr/local/nginx/logs/backup"       日志备份路径可自行定义
 
-curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/nginx/logrotate_ngx.sh && chmod +x ./logrotate_ngx.sh
+curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/nginx/ngx_logrotate.sh && chmod +x ./logrotate_ngx.sh
 ```
 
-## JDS Games CentOS7游戏服务器组件和服务管理脚本
+## JDS Games
 ```shell
 bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/jds/server_manager_main.sh)
 ```
