@@ -26,5 +26,5 @@ curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/nginx/logrot
 
 ## JDS Games CentOS7游戏服务器组件和服务管理脚本
 ```shell
-bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/jds/server_manager_main_7.27.sh)
+bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/jds/server_manager_main.sh)
 ```
