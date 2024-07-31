@@ -6,7 +6,6 @@
 set -o errexit
 clear
 
-# ANSI颜色码,用于彩色输出
 yellow='\033[1;33m'  # 提示信息
 red='\033[1;31m'     # 警告信息
 magenta='\033[0;35m' # 品红色
