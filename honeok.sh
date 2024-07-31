@@ -18,7 +18,7 @@ white='\033[0m'      # 结束颜色设置
 system_info() {
 	local hostname=$(hostnamectl | sed -n 's/^[[:space:]]*Static hostname:[[:space:]]*\(.*\)$/\1/p')
 	# 获取运营商信息
-	local isp_info=$(curl -s ipinfo.io/org)
+	local isp_info=$(curl -s https://ipinfo.io | grep '"org":' | awk -F'"' '{print $4}')
 
 	# 获取操作系统版本信息
 	local os_release=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d '"' -f 2)
@@ -62,7 +62,7 @@ system_info() {
 		disk_output+="${disk} ${used}/${size} (${percent})  "
 	done <<< "$disk_info"
 
-	# 将字节数转换为GB
+	# 将字节数转换为GB(获取出网入网数据)
 	bytes_to_gb() {
 		local bytes=$1
 		# 使用整数除法计算 GB
@@ -99,15 +99,13 @@ system_info() {
 	local congestion_algorithm=$(sysctl -n net.ipv4.tcp_congestion_control)
 	local queue_algorithm=$(sysctl -n net.core.default_qdisc)
 
-	# 获取公网IPv4和IPv6地址
 	local ipv4_address=$(curl -s ipv4.ip.sb)
-	local ipv6_address=$(curl -s --max-time 1 ipv6.ip.sb || true)
+	local ipv6_address=$(curl -s --max-time 1 ipv6.ip.sb)
 
 	# 获取地理位置,系统时区,系统时间和运行时长
 	local location=$(curl -s ipinfo.io/city)
 	local system_time=$(timedatectl | grep 'Time zone' | awk '{print $3}' | awk '{gsub(/^[[:space:]]+|[[:space:]]+$/,""); print}')
 	local current_time=$(date +"%Y-%m-%d %H:%M:%S")
-
 	local uptime_str=$(uptime | awk -F'up ' '{print $2}' | awk -F', ' '{days=$1; hours_minutes=$2; gsub(/[^0-9 ]/, "", days); split(hours_minutes, a, ":"); hours=a[1]; minutes=a[2]; printf "%d天 %d时 %d分\n", days, hours, minutes}')
 
 	echo ""
