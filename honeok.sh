@@ -47,38 +47,38 @@ system_info() {
 	local mem_usage=$(free -b | awk 'NR==2{printf "%.2f/%.2f MB (%.2f%%)", $3/1024/1024, $2/1024/1024, $3*100/$2}')
 	local swap_usage=$(free -m | awk 'NR==3{used=$3; total=$2; if (total == 0) {percentage=0} else {percentage=used*100/total}; printf "%dMB/%dMB (%d%%)", used, total, percentage}')
 
-    # 将字节数转换为GB
-    bytes_to_gb() {
-        local bytes=$1
-        # 使用整数除法计算 GB
-        local gb=$((bytes / 1024 / 1024 / 1024))
-        # 计算余数以获取小数部分
-        local remainder=$((bytes % (1024 * 1024 * 1024)))
-        local fraction=$((remainder * 100 / (1024 * 1024 * 1024)))
-        echo "$gb.$fraction GB"
-    }
+	# 将字节数转换为GB
+	bytes_to_gb() {
+		local bytes=$1
+		# 使用整数除法计算 GB
+		local gb=$((bytes / 1024 / 1024 / 1024))
+		# 计算余数以获取小数部分
+		local remainder=$((bytes % (1024 * 1024 * 1024)))
+		local fraction=$((remainder * 100 / (1024 * 1024 * 1024)))
+		echo "$gb.$fraction GB"
+	}
 
-    # 初始化总接收字节数和总发送字节数
-    local total_recv_bytes=0
-    local total_sent_bytes=0
+	# 初始化总接收字节数和总发送字节数
+	local total_recv_bytes=0
+	local total_sent_bytes=0
 
-    # 遍历/proc/net/dev文件中的每一行
-    while read -r line; do
-        # 提取接口名(接口名后面是冒号)
-        local interface=$(echo "$line" | awk -F: '{print $1}' | xargs)
-        
-        # 过滤掉不需要的行(只处理接口名)
-        if [ -n "$interface" ] && [ "$interface" != "Inter-| Receive | Transmit" ] && [ "$interface" != "face |bytes packets errs drop fifo frame compressed multicast|bytes packets errs drop fifo colls carrier compressed" ]; then
-            # 提取接收和发送字节数
-            local stats=$(echo "$line" | awk -F: '{print $2}' | xargs)
-            local recv_bytes=$(echo "$stats" | awk '{print $1}')
-            local sent_bytes=$(echo "$stats" | awk '{print $9}')
+	# 遍历/proc/net/dev文件中的每一行
+	while read -r line; do
+		# 提取接口名(接口名后面是冒号)
+		local interface=$(echo "$line" | awk -F: '{print $1}' | xargs)
+		
+		# 过滤掉不需要的行(只处理接口名)
+		if [ -n "$interface" ] && [ "$interface" != "Inter-| Receive | Transmit" ] && [ "$interface" != "face |bytes packets errs drop fifo frame compressed multicast|bytes packets errs drop fifo colls carrier compressed" ]; then
+			# 提取接收和发送字节数
+			local stats=$(echo "$line" | awk -F: '{print $2}' | xargs)
+			local recv_bytes=$(echo "$stats" | awk '{print $1}')
+			local sent_bytes=$(echo "$stats" | awk '{print $9}')
 
-            # 累加接收和发送字节数
-            total_recv_bytes=$((total_recv_bytes + recv_bytes))
-            total_sent_bytes=$((total_sent_bytes + sent_bytes))
-        fi
-    done < /proc/net/dev
+			# 累加接收和发送字节数
+			total_recv_bytes=$((total_recv_bytes + recv_bytes))
+			total_sent_bytes=$((total_sent_bytes + sent_bytes))
+		fi
+	done < /proc/net/dev
 
 	# 获取网络拥塞控制算法和队列算法
 	local congestion_algorithm=$(sysctl -n net.ipv4.tcp_congestion_control)
@@ -128,8 +128,8 @@ system_info() {
 	printf "${yellow}硬盘空间: %s${white}\n" "${disk_output}"
 
 	printf "${yellow}-------------------------${white}\n"
-    printf "${yellow}网络接收数据量: $(bytes_to_gb $total_recv_bytes)${white}\n"
-    printf "${yellow}网络发送数据量: $(bytes_to_gb $total_sent_bytes)${white}\n"
+	printf "${yellow}网络接收数据量: $(bytes_to_gb $total_recv_bytes)${white}\n"
+	printf "${yellow}网络发送数据量: $(bytes_to_gb $total_sent_bytes)${white}\n"
 	printf "${yellow}-------------------------${white}\n"
 	printf "${yellow}网络拥塞控制算法: ${congestion_algorithm} ${queue_algorithm}${white}\n"
 	printf "${yellow}-------------------------${white}\n"
