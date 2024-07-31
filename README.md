@@ -8,11 +8,11 @@ bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/honeok.sh
 # 下载完成后自行修改Server端服务器IP地址
 
 # KVM & XEN
-curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/serverstatus_kvm.sh && chmod +x ./serverstatus_kvm.sh
+curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/serverstatus/serverstatus_kvm.sh && chmod +x ./serverstatus_kvm.sh
 sed -i 's/127\.0\.0\.1/107.174.0.197/g' ./serverstatus_kvm.sh
 
 # LXC & OpenVZ
-curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/serverstatus_lxc.sh && chmod +x ./serverstatus_lxc.sh
+curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/serverstatus/serverstatus_lxc.sh && chmod +x ./serverstatus_lxc.sh
 sed -i 's/127\.0\.0\.1/107.174.0.197/g' ./serverstatus_lxc.sh
 ```
 ## NGINX日志管理
