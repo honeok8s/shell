@@ -23,22 +23,8 @@ sed -i 's/127\.0\.0\.1/107.174.0.197/g' ./serverstatus_lxc.sh
 
 curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/nginx/logrotate_ngx.sh && chmod +x ./logrotate_ngx.sh
 ```
-## Docker日志截断
-```shell
-# 自用
-curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/docker_clear_log_own.sh && chmod +x ./docker_clear_log_own.sh
-(crontab -l;echo "0 0 * * * /root/docker_clear_log_own.sh >/dev/null 2>&1 ") | crontab
-
-# 生产
-curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/docker_clear_log_pro.sh && chmod +x ./docker_clear_log_pro.sh
-(crontab -l;echo "0 0 * * * /root/docker_clear_log_pro.sh >/dev/null 2>&1 ") | crontab
-```
 
 ## JDS Games CentOS7游戏服务器组件和服务管理脚本
 ```shell
 bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/jds/server_manager_main_7.27.sh)
-```
-
-```shell
-curl -fsSL https://raw.githubusercontent.com/honeok8s/shell/main/jds/server_manager_main_7.27.sh | bash -
 ```
