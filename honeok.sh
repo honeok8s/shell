@@ -115,7 +115,7 @@ system_info() {
 	local location=$(curl -s ipinfo.io/city)
 	local system_time=$(timedatectl | grep 'Time zone' | awk '{print $3}' | awk '{gsub(/^[[:space:]]+|[[:space:]]+$/,""); print}')
 	local current_time=$(date +"%Y-%m-%d %H:%M:%S")
-	local uptime_str=$(uptime | awk -F'up ' '{print $2}' | awk -F', ' '{days=$1; hours_minutes=$2; gsub(/[^0-9 ]/, "", days); split(hours_minutes, a, ":"); hours=a[1]; minutes=a[2]; printf "%d天 %d时 %d分\n", days, hours, minutes}')
+	local uptime_str=$(cat /proc/uptime | awk -F. '{run_days=int($1 / 86400);run_hours=int(($1 % 86400) / 3600);run_minutes=int(($1 % 3600) / 60); if (run_days > 0) printf("%d天 ", run_days); if (run_hours > 0) printf("%d时 ", run_hours); printf("%d分\n", run_minutes)}')
 
 	echo ""
 	_yellow "系统信息查询"
