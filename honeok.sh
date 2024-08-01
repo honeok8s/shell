@@ -169,4 +169,83 @@ system_info() {
 	echo
 }
 
-system_info
+server_test_script(){
+	local choice
+	while true; do
+		clear
+		echo "===== 测试脚本 ====="
+		echo ""
+		echo "----IP及解锁状态检测----"
+		echo "1. 流媒体解锁"
+		echo "8. VPS融合怪服务器测评"
+		echo "-------------------------"
+		echo "0. 返回菜单"
+		read -p "请输入选项并按Enter:" choice
+
+		case "$choice" in
+			1)
+				clear
+				bash <(curl -L -s check.unlock.media)
+				;;
+			8)
+				clear
+				curl -L https://gitlab.com/spiritysdx/za/-/raw/main/ecs.sh -o ecs.sh && chmod +x ecs.sh && bash ecs.sh
+				;;
+			0)
+				clear
+				return
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+		_cyan "按任意键继续"	
+		read -n 1 -s -r
+	done
+}
+
+honeok_sh(){
+	local choice
+	while true; do
+		# 打印带颜色的 ASCII 艺术文本
+		clear
+		# https://www.lddgo.net/string/text-to-ascii-art
+		_yellow "  _                            _    "
+		_yellow " | |                          | |   "
+		_yellow " | |__   ___  _ __   ___  ___ | | __"
+		_yellow " | '_ \ / _ \| '_ \ / _ \/ _ \| |/ /"
+		_yellow " | | | | (_) | | | |  __| (_) |   < "
+		_yellow " |_| |_|\___/|_| |_|\___|\___/|_|\_\""
+
+		_cyan "Author: honeok"
+		_cyan "Github: https://github.com/honeok8s/shell"
+
+		echo "-------------------------"
+		echo "1. 系统信息查询"
+		echo "8. 测试脚本合集"
+		echo "13. 系统工具"
+		echo "-------------------------"
+		
+		read -p "请输入选项并按Enter:" choice
+
+		case "$choice" in
+			1)
+				system_info
+				;;
+			8)
+				server_test_script
+				;;
+			0)
+				clear
+				exit 0
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+		_cyan "按任意键继续"	
+		read -n 1 -s -r
+	done
+}
+honeok_sh
+exit 0
