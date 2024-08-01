@@ -30,9 +30,26 @@ system_info() {
 	local isp_info=$(curl -s https://ipinfo.io | grep '"org":' | awk -F'"' '{print $4}')
 
 	# 获取操作系统版本信息
-	local os_release=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d '"' -f 2)
+	local os_release
+	if command -v lsb_release >/dev/null 2>&1; then
+		os_release=$(lsb_release -d | awk -F: '{print $2}' | xargs)
+	else
+		os_release=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d '"' -f 2)
+	fi
+	# 获取虚拟化类型
+	local virt_type
+	if command -v lscpu >/dev/null 2>&1; then
+		virt_type=$(lscpu | grep -i 'Hypervisor vendor:' | awk '{print $3}')
+	else
+		virt_type=$(grep -i 'virtualization' /sys/class/dmi/id/product_name 2>/dev/null || echo "Unknown")
+	fi
 	# 获取内核版本信息
-	local kernel_version=$(hostnamectl | sed -n 's/^[[:space:]]*Kernel:[[:space:]]*\(.*\)$/\1/p')
+	local kernel_version
+	if command -v hostnamectl >/dev/null 2>&1; then
+		kernel_version=$(hostnamectl | sed -n 's/^[[:space:]]*Kernel:[[:space:]]*Linux \?\(.*\)$/\1/p')
+	else
+		kernel_version=$(uname -r)
+	fi
 
 	# 获取CPU架构,型号和核心数
 	local cpu_architecture=$(uname -m)
@@ -124,6 +141,7 @@ system_info() {
 	echo "运营商: ${isp_info}"
 	echo "-------------------------"
 	echo "操作系统: ${os_release}"
+	echo "虚拟化: ${virt_type}"
 	echo "内核版本: ${kernel_version}"
 	echo "-------------------------"
 	echo "CPU架构: ${cpu_architecture}"
