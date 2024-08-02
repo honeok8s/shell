@@ -1,6 +1,5 @@
 #!/bin/bash
 # Author: honeok
-# Describe: 挖矿二测
 
 set -o errexit
 clear
@@ -107,6 +106,7 @@ all_start(){
 	fi 
 
 	_green "所有服务器启动成功"
+	print_process
 }
 
 # 停止所有服务器
@@ -153,6 +153,8 @@ all_stop() {
 	for dir in "${stop_dirs[@]}"; do
 		stop_server "$dir"
 	done
+	
+	print_process
 }
 
 all_reload(){
@@ -195,6 +197,8 @@ all_reload(){
 	done
 
 	_green "所有服务器重新加载成功"
+	
+	print_process
 }
 
 update_start(){
@@ -256,6 +260,8 @@ update_start(){
 	fi 
 
 	_green "所有服务器启动成功"
+	
+	print_process
 }
 
 down_update_start(){
@@ -368,6 +374,8 @@ down_update_start(){
 	fi 
 
 	_green "所有服务器启动成功"
+	
+	print_process
 }
 
 # 交互菜单
@@ -394,23 +402,18 @@ main(){
 				;;
 			2)
 				all_start
-				print_process
 				;;
 			3)
 				all_stop
-				print_process
 				;;
 			4)
 				all_reload
-				print_process
 				;;
 			5)
 				update_start
-				print_process
 				;;
 			6)
 				down_update_start
-				print_process
 				;;
 			0)
 				_yellow "Bye!"
@@ -443,17 +446,17 @@ else
 		\reload)
 			all_reload
 			;;
-		update_start)
+		updatestart)
 			update_start
 			;;
-		down_update_start)
+		downupdate_start)
 			down_update_start
 			;;
 		-h)
-			_yellow "可选参数: ps [查看游戏进程]/start[启动所有服务器]/stop[停止所有服务器]/reload[重读服务器]/update_start/down_update_start"
+			_yellow "可选参数: ps [查看游戏进程]/start[启动所有服务器]/stop[停止所有服务器]/reload[重读服务器]/updatestart/downupdate_start"
 			;;
 		*)
-			_yellow "可选参数: ps [查看游戏进程]/start[启动所有服务器]/stop[停止所有服务器]/reload[重读服务器]/update_start/down_update_start"
+			_red "无效的参数"
 			;;
 	esac
 fi
