@@ -32,7 +32,17 @@ update_file_center_ip="10.47.7.242"
 update_file_center_passwd="c4h?itwj5ENi"
 #################### function library ####################
 
-install_package() {
+print_logo(){
+    echo -e "${yellow}\
+       _     _        _____                      
+      | |   | |      / ____|                     
+      | | __| |___  | |  __  __ _ _ __ ___   ___ 
+  _   | |/ _\` / __| | | |_ |/ _\` | '_ \` _ \ / _ \\
+ | |__| | (_| \__ \ | |__| | (_| | | | | | |  __/
+  \____/ \__,_|___/  \_____|\\__,_|_| |_| |_|\___|${white}"
+}
+
+install_package(){
 	if [ $# -eq 0 ]; then
 		_red "未提供软件包参数"
 		return 1
@@ -365,6 +375,7 @@ main(){
 	local choice
 	while true; do
 		clear
+		print_logo
 		_purple "-------------------------"
 		_purple "1. 查看游戏进程"
 		_purple "2. 启动服务器"
