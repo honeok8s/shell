@@ -291,7 +291,7 @@ xanmod_bbr3(){
 			_purple "0. 返回上一级选单"
 			_purple "-------------------------"
 
-			_purple "请输入选项并按回车键确认：\c"  # 使用 \c 保持光标在同一行
+			_purple "请输入选项并按回车键确认:\c"  # 使用 \c 保持光标在同一行
 			read choice
 
 			case $choice in
@@ -424,7 +424,7 @@ reinstall_system() {
 		_purple "0. 返回上一级选单"
 		_purple "-------------------------"
 
-		_purple "请输入选项并按回车键确认：\c"  # 使用 \c 保持光标在同一行
+		_purple "请输入选项并按回车键确认:\c"  # 使用 \c 保持光标在同一行
 		read choice
 
 		case "$choice" in
@@ -507,7 +507,7 @@ server_test_script(){
 		_purple "-------------------------"
 		_purple "0. 返回菜单"
 
-		_purple "请输入选项并按回车键确认：\c"  # 使用 \c 保持光标在同一行
+		_purple "请输入选项并按回车键确认:\c"  # 使用 \c 保持光标在同一行
 		read choice
 
 		case "$choice" in
@@ -537,13 +537,13 @@ linux_system_tools(){
 		_yellow "系统工具"
 		echo ""
 		_purple "------------------------"
-		_purple "                                       8. 一键重装系统"
+		_purple "7. 占位置                              8. 一键重装系统"
 		_purple "0. 返回主菜单"
 		_purple "------------------------"
 		_purple "15. 系统时区调整                       16. 设置XanMod BBR3"
 		_purple "------------------------"
 
-		_purple "请输入选项并按回车键确认：\c"  # 使用 \c 保持光标在同一行
+		_purple "请输入选项并按回车键确认:\c"  # 使用 \c 保持光标在同一行
 		read choice
 
 		case $choice in
@@ -585,7 +585,7 @@ linux_system_tools(){
 					_purple "0. 返回上一级选单"
 					_purple "----------------------------"
 
-					_purple "请输入选项并按回车键确认：\c"  # 使用 \c 保持光标在同一行
+					_purple "请输入选项并按回车键确认:\c"  # 使用 \c 保持光标在同一行
 					read choice
 
 					case $choice in
@@ -629,13 +629,11 @@ honeok(){
 	local choice
 	while true; do
 		clear
-		_gray "##############################################################"
 		print_logo
 		_yellow "做最能缝合的脚本!"
 		_blue "Author: honeok"
-		_magenta "Github: https://github.com/honeok8s/shell"
+		_yellow "Github: https://github.com/honeok8s/shell"
 		_green "当前时间: $(date +"%Y-%m-%d %H:%M:%S")"
-		_gray "##############################################################"
 
 		_purple "-------------------------"
 		_purple "1. 系统信息查询"
@@ -644,7 +642,7 @@ honeok(){
 		_purple "13. 系统工具"
 		_purple "-------------------------"
 
-		_purple "请输入选项并按回车键确认：\c"  # 使用 \c 保持光标在同一行
+		_purple "请输入选项并按回车键确认:\c"  # 使用 \c 保持光标在同一行
 		read choice
 
 		case "$choice" in
