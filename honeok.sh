@@ -24,6 +24,16 @@ _cyan() { echo -e ${cyan}$@${white}; }
 _purple() { echo -e ${purple}$@${white}; }
 _gray() { echo -e ${gray}$@${white}; }
 
+print_logo(){
+echo -e "${cyan} _                            _    
+| |                          | |   
+| |__   ___  _ __   ___  ___ | | __
+| '_ \ / _ \| '_ \ / _ \/ _ \| |/ /
+| | | | (_) | | | |  __| (_) |   < 
+|_| |_|\___/|_| |_|\___|\___/|_|\_\
+									${white}"									
+}
+
 install_package(){
 	if [ $# -eq 0 ]; then
 		_red "未提供软件包参数"
@@ -355,14 +365,11 @@ honeok(){
 		# 打印带颜色的 ASCII 艺术文本
 		clear
 		# https://www.lddgo.net/string/text-to-ascii-art
-		_yellow "  _                            _    "
-		_yellow " | |                          | |   "
-		_yellow " | |__   ___  _ __   ___  ___ | | __"
-		_yellow " | '_ \ / _ \| '_ \ / _ \/ _ \| |/ /"
-		_yellow " | | | | (_) | | | |  __| (_) |   < "
-		_yellow " |_| |_|\___/|_| |_|\___|\___/|_|\_\""
-		_purple "Author: honeok"
-		_purple "Github: https://github.com/honeok8s/shell"
+		print_logo
+		echo ""
+		_gray "做最能缝合的脚本!"
+		_gray "Author: honeok"
+		_gray "Github: https://github.com/honeok8s/shell"
 
 		echo "-------------------------"
 		echo "1. 系统信息查询"
