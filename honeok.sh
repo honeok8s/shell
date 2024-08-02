@@ -286,7 +286,8 @@ xanmod_bbr3(){
 			echo ""
 			_yellow "内核管理"
 			_purple "-------------------------"
-			_purple "1. 更新BBRv3内核              2. 卸载BBRv3内核"
+			_purple "1. 更新BBRv3内核"
+			_purple "2. 卸载BBRv3内核"
 			_purple "-------------------------"
 			_purple "0. 返回上一级选单"
 			_purple "-------------------------"
@@ -415,11 +416,15 @@ reinstall_system() {
 	need_root
 		_yellow "请备份数据,将为你重装系统,预计花费15分钟"
 		_purple "-------------------------"
-		_purple "1. Debian 12                  2. Debian 11"
-		_purple "3. Debian 10                  4. Debian 9"
+		_purple "1. Debian 12"
+		_purple "2. Debian 11"
+		_purple "3. Debian 10"
+		_purple "4. Debian 9"
 		_purple "-------------------------"
-		_purple "11. Ubuntu 24.04              12. Ubuntu 22.04"
-		_purple "13. Ubuntu 20.04              14. Ubuntu 18.04"
+		_purple "11. Ubuntu 24.04"
+		_purple "12. Ubuntu 22.04"
+		_purple "13. Ubuntu 20.04"
+		_purple "14. Ubuntu 18.04"
 		_purple "-------------------------"
 		_purple "0. 返回上一级选单"
 		_purple "-------------------------"
@@ -537,7 +542,7 @@ linux_system_tools(){
 		_yellow "系统工具"
 		echo ""
 		_purple "------------------------"
-		_purple "7. 占位置                              8. 一键重装系统"
+		_purple "8. 一键重装系统"
 		_purple "0. 返回主菜单"
 		_purple "------------------------"
 		_purple "15. 系统时区调整                       16. 设置XanMod BBR3"
@@ -569,18 +574,28 @@ linux_system_tools(){
 					echo ""
 					_yellow "时区切换"
 					_purple "------------亚洲------------"
-					_purple "1. 中国上海时间              2. 中国香港时间"
-					_purple "3. 日本东京时间              4. 韩国首尔时间"
-					_purple "5. 新加坡时间                6. 印度加尔各答时间"
-					_purple "7. 阿联酋迪拜时间            8. 澳大利亚悉尼时间"
+					_purple "1. 中国上海时间"
+					_purple "2. 中国香港时间"
+					_purple "3. 日本东京时间"
+					_purple "4. 韩国首尔时间"
+					_purple "5. 新加坡时间"
+					_purple "6. 印度加尔各答时间"
+					_purple "7. 阿联酋迪拜时间"
+					_purple "8. 澳大利亚悉尼时间"
 					_purple "------------欧洲------------"
-					_purple "11. 英国伦敦时间             12. 法国巴黎时间"
-					_purple "13. 德国柏林时间             14. 俄罗斯莫斯科时间"
-					_purple "15. 荷兰尤特赖赫特时间       16. 西班牙马德里时间"
+					_purple "11. 英国伦敦时间"
+					_purple "12. 法国巴黎时间"
+					_purple "13. 德国柏林时间"
+					_purple "14. 俄罗斯莫斯科时间"
+					_purple "15. 荷兰尤特赖赫特时间"
+					_purple "16. 西班牙马德里时间"
 					_purple "------------美洲------------"
-					_purple "21. 美国西部时间             22. 美国东部时间"
-					_purple "23. 加拿大时间               24. 墨西哥时间"
-					_purple "25. 巴西时间                 26. 阿根廷时间"
+					_purple "21. 美国西部时间"
+					_purple "22. 美国东部时间"
+					_purple "23. 加拿大时间"
+					_purple "24. 墨西哥时间"
+					_purple "25. 巴西时间"
+					_purple "26. 阿根廷时间"
 					_purple "----------------------------"
 					_purple "0. 返回上一级选单"
 					_purple "----------------------------"
@@ -589,26 +604,26 @@ linux_system_tools(){
 					read choice
 
 					case $choice in
-						1) set_timedate Asia/Shanghai ;;
-						2) set_timedate Asia/Hong_Kong ;;
-						3) set_timedate Asia/Tokyo ;;
-						4) set_timedate Asia/Seoul ;;
-						5) set_timedate Asia/Singapore ;;
-						6) set_timedate Asia/Kolkata ;;
-						7) set_timedate Asia/Dubai ;;
-						8) set_timedate Australia/Sydney ;;
-						11) set_timedate Europe/London ;;
-						12) set_timedate Europe/Paris ;;
-						13) set_timedate Europe/Berlin ;;
-						14) set_timedate Europe/Moscow ;;
-						15) set_timedate Europe/Amsterdam ;;
-						16) set_timedate Europe/Madrid ;;
-						21) set_timedate America/Los_Angeles ;;
-						22) set_timedate America/New_York ;;
-						23) set_timedate America/Vancouver ;;
-						24) set_timedate America/Mexico_City ;;
-						25) set_timedate America/Sao_Paulo ;;
-						26) set_timedate America/Argentina/Buenos_Aires ;;
+						1) timedatectl set-timezone Asia/Shanghai ;;
+						2) timedatectl set-timezone Asia/Hong_Kong ;;
+						3) timedatectl set-timezone Asia/Tokyo ;;
+						4) timedatectl set-timezone Asia/Seoul ;;
+						5) timedatectl set-timezone Asia/Singapore ;;
+						6) timedatectl set-timezone Asia/Kolkata ;;
+						7) timedatectl set-timezone Asia/Dubai ;;
+						8) timedatectl set-timezone Australia/Sydney ;;
+						11) timedatectl set-timezone Europe/London ;;
+						12) timedatectl set-timezone Europe/Paris ;;
+						13) timedatectl set-timezone Europe/Berlin ;;
+						14) timedatectl set-timezone Europe/Moscow ;;
+						15) timedatectl set-timezone Europe/Amsterdam ;;
+						16) timedatectl set-timezone Europe/Madrid ;;
+						21) timedatectl set-timezone America/Los_Angeles ;;
+						22) timedatectl set-timezone America/New_York ;;
+						23) timedatectl set-timezone America/Vancouver ;;
+						24) timedatectl set-timezone America/Mexico_City ;;
+						25) timedatectl set-timezone America/Sao_Paulo ;;
+						26) timedatectl set-timezone America/Argentina/Buenos_Aires ;;
 						0) break ;;
 						*) break ;;
 					esac
@@ -630,11 +645,11 @@ honeok(){
 	while true; do
 		clear
 		print_logo
+		_purple "-------------------------"
 		_yellow "做最能缝合的脚本!"
 		_blue "Author: honeok"
 		_yellow "Github: https://github.com/honeok8s/shell"
 		_green "当前时间: $(date +"%Y-%m-%d %H:%M:%S")"
-
 		_purple "-------------------------"
 		_purple "1. 系统信息查询"
 		_purple "7. WARP管理"
