@@ -26,5 +26,5 @@ curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/nginx/ngx_lo
 
 ## JDS Games
 ```shell
-bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/jds/server_manager_main.sh)
+bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/jds/main.sh)
 ```
