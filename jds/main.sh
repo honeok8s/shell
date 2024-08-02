@@ -213,7 +213,7 @@ main(){
 		_purple "5. 维护更新启动"
 		_purple "0. 退出脚本"
 		_purple "-------------------------"
-		echo -e "${cyan}请输入选项并按Enter: ${white}"
+		echo -n -e "${cyan}请输入选项并按Enter: ${white}"
 		read choice
 
 		case "$choice" in
