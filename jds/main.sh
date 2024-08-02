@@ -256,5 +256,33 @@ main(){
 	done
 }
 
-main
+if [ "$#" -eq 0 ]; then
+	# 如果没有参数,运行交互式逻辑
+	main
+else
+	# 如果有参数,执行相应函数
+	case $1 in
+		all_ps)
+			print_process
+			;;
+		all_start)
+			all_start
+			;;
+		all_stop)
+			all_stop
+			;;
+		all_reload)
+			all_reload
+			;;
+		update_start)
+			update_start
+			;;
+		-h)
+			_yellow "可选参数: all_ps/all_start/all_stop/all_reload/update_start"
+			;;
+		*)
+			_yellow "可选参数: all_ps/all_start/all_stop/all_reload/update_start"
+			;;
+	esac
+fi
 exit 0
