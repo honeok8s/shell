@@ -296,7 +296,7 @@ server_test_script(){
 	local choice
 	while true; do
 		clear
-		echo "===== 测试脚本 ====="
+		_yellow "VPS测试脚本"
 		echo ""
 		echo "----IP及解锁状态检测----"
 		echo "1. 流媒体解锁"
@@ -331,8 +331,7 @@ linux_system_tools(){
 	local choice
 	while true; do
 		clear
-		# send_stats "系统工具"
-		echo "▶ 系统工具"
+		_yellow "系统工具"
 		echo "------------------------"
 		_yellow "8. 一键重装系统"
 		echo "0. 返回主菜单"
@@ -350,7 +349,7 @@ linux_system_tools(){
 	done
 }
 
-honeok_sh(){
+honeok(){
 	local choice
 	while true; do
 		# 打印带颜色的 ASCII 艺术文本
@@ -362,7 +361,6 @@ honeok_sh(){
 		_yellow " | '_ \ / _ \| '_ \ / _ \/ _ \| |/ /"
 		_yellow " | | | | (_) | | | |  __| (_) |   < "
 		_yellow " |_| |_|\___/|_| |_|\___|\___/|_|\_\""
-		echo "-------------------------"
 		_purple "Author: honeok"
 		_purple "Github: https://github.com/honeok8s/shell"
 
@@ -397,5 +395,5 @@ honeok_sh(){
 		read -n 1 -s -r
 	done
 }
-honeok_sh
+honeok
 exit 0
