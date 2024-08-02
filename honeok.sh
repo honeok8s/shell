@@ -578,6 +578,7 @@ server_script(){
 				clear
 				_yellow "ChatGPT解锁状态检测"
 				bash <(curl -Ls https://cdn.jsdelivr.net/gh/missuo/OpenAI-Checker/openai.sh)
+				;;
 			2)
 				clear
 				_yellow "Region流媒体解锁测试"
