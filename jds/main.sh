@@ -32,6 +32,38 @@ update_file_center_ip="10.47.7.242"
 update_file_center_passwd="c4h?itwj5ENi"
 #################### function library ####################
 
+install_package() {
+	if [ $# -eq 0 ]; then
+		_red "未提供软件包参数"
+		return 1
+	fi
+
+	for package in "$@"; do
+		if ! command -v "$package" &>/dev/null; then
+			_yellow "正在安装 $package"
+			if command -v dnf &>/dev/null; then
+				dnf install -y "$package"
+			elif command -v yum &>/dev/null; then
+				yum -y install "$package"
+			elif command -v apt &>/dev/null; then
+				apt install -y "$package"
+			elif command -v apk &>/dev/null; then
+				apk add "$package"
+			elif command -v pacman &>/dev/null; then
+				pacman -S --noconfirm "$package"
+			elif command -v zypper &>/dev/null; then
+				zypper install -y "$package"
+			else
+				_red "未知的包管理器"
+				return 1
+			fi
+		else
+			_green "$package已经安装"
+		fi
+	done
+	return 0
+}
+
 print_process(){
 	ps aux | grep -E 'lv_app|p8_app|p9_app|npm|mysql|BS|processcontrol|tarlog|node (www|app.js)|dops.sh|redis|filebeat|python3\.9 main\.py|logbus|sh start\.sh' | grep -v 'grep'
 }
@@ -123,6 +155,8 @@ all_reload(){
 		_yellow "目录/data/update/为空"
 	fi
 
+	install_package sshpass
+
 	if ! sshpass -p "${update_file_center_passwd}" scp -o StrictHostKeyChecking=no root@${update_file_center_ip}:/data/update/updategame.tar.gz ./; then
 		_red "文件下载失败"; exit 1
 	fi
@@ -170,6 +204,8 @@ update_start(){
 	else
 		_yellow "目录/data/update/为空"
 	fi
+
+	install_package sshpass
 
 	if ! sshpass -p "${update_file_center_passwd}" scp -o StrictHostKeyChecking=no root@${update_file_center_ip}:/data/update/updategame.tar.gz ./; then
 		_red "文件下载失败"; exit 1
@@ -268,6 +304,8 @@ down_update_start(){
 	else
 		_yellow "目录/data/update/为空"
 	fi
+
+	install_package sshpass
 
 	if ! sshpass -p "${update_file_center_passwd}" scp -o StrictHostKeyChecking=no root@${update_file_center_ip}:/data/update/updategame.tar.gz ./; then
 		_red "文件下载失败"; exit 1
