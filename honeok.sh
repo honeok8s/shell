@@ -25,6 +25,7 @@ _purple() { echo -e ${purple}$@${white}; }
 _gray() { echo -e ${gray}$@${white}; }
 
 print_logo(){
+# https://www.lddgo.net/string/text-to-ascii-art
 echo -e "${cyan} _                            _    
 | |                          | |   
 | |__   ___  _ __   ___  ___ | | __
@@ -39,7 +40,7 @@ need_root(){
 	[ "$EUID" -ne 0 ] && _red "该功能需要root用户才能运行" && end_of && honeok
 }
 
-# 循环结尾任意键结束
+# 结尾任意键结束
 end_of(){
 	_green "操作完成"
 	_yellow "按任意键继续"
@@ -383,9 +384,7 @@ linux_system_tools(){
 honeok(){
 	local choice
 	while true; do
-		# 打印带颜色的 ASCII 艺术文本
 		clear
-		# https://www.lddgo.net/string/text-to-ascii-art
 		print_logo
 		echo ""
 		_gray "做最能缝合的脚本!"
