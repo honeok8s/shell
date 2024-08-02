@@ -139,7 +139,8 @@ sysctl -p
 
 server_reboot(){
 	local choice
-	read -p "_purple \"现在重启服务器吗?(Y/N):\" " choice
+	echo -n "$(_blue '现在重启服务器吗?(Y/N): ')"
+	read -r choice
 
 	case "$choice" in
 		[Yy])
@@ -312,14 +313,15 @@ xanmod_bbr3(){
 
 			echo ""
 			_yellow "内核管理"
-			_purple "-------------------------"
-			_purple "1. 更新BBRv3内核"
-			_purple "2. 卸载BBRv3内核"
-			_purple "-------------------------"
-			_purple "0. 返回上一级选单"
-			_purple "-------------------------"
+			echo "-------------------------"
+			echo "1. 更新BBRv3内核"
+			echo "2. 卸载BBRv3内核"
+			echo "-------------------------"
+			echo "0. 返回上一级选单"
+			echo "-------------------------"
 
-			read -p "_blue \"请输入选项并按回车键确认: \" " choice
+			echo -n "$(_blue '请输入选项并按回车键确认: ')"
+			read -r choice
 
 			case $choice in
 				1)
@@ -361,12 +363,13 @@ xanmod_bbr3(){
 		# 未安装则安装
 		clear
 		_yellow "请备份数据,将为你升级Linux内核开启XanMod BBR3"
-		_purple "------------------------------------------------"
-		_purple "仅支持Debian/Ubuntu 仅支持x86_64架构"
-		_purple "VPS是512M内存的,请提前添加1G虚拟内存,防止因内存不足失联!"
-		_purple "------------------------------------------------"
+		echo "------------------------------------------------"
+		echo "仅支持Debian/Ubuntu 仅支持x86_64架构"
+		echo "VPS是512M内存的,请提前添加1G虚拟内存,防止因内存不足失联!"
+		echo "------------------------------------------------"
 
-		read -p "_blue \"确定继续吗?(Y/N)\" " choice
+		echo -n "$(_blue '确定继续吗?(Y/N)')"
+		read -r choice
 
 		case "$choice" in
 			[Yy])
@@ -458,7 +461,8 @@ reinstall_system(){
 		echo "0. 返回上一级菜单"
 		echo "-------------------------"
 
-		read -p "_blue \"请输入选项并按回车键确认: \" " choice
+		echo -n "$(_blue '请输入选项并按回车键确认: ')"
+		read -r choice
 
 		case "$choice" in
 			1)
@@ -527,28 +531,168 @@ reinstall_system(){
 	done
 }
 
-server_test_script(){
+server_script(){
 	local choice
 	while true; do
 		clear
-		_yellow "VPS测试脚本"
+		_yellow "VPS脚本合集"
 		echo ""
 		echo "-----IP及解锁状态检测----"
-		echo "1. 流媒体解锁"
-		echo "8. VPS融合怪服务器测评"
+		echo "1. ChatGPT解锁状态检测"
+		echo "2. Region流媒体解锁测试"
+		echo "3. Yeahwu流媒体解锁检测"
+		_purple "4. xykt_IP质量体检脚本"
+		echo ""
+		echo "------网络线路测速-------"
+		echo "12. besttrace三网回程延迟路由测试"
+		echo "13. mtr_trace三网回程线路测试"
+		echo "14. Superspeed三网测速"
+		echo "15. nxtrace快速回程测试脚本"
+		echo "16. nxtrace指定IP回程测试脚本"
+		echo "17. ludashi2020三网线路测试"
+		echo "18. i-abc多功能测速脚本"
+		echo ""
+		echo "-------硬件性能测试------"
+		echo "20. yabs性能测试"
+		echo "21. icu/gb5 CPU性能测试脚本"
+		echo ""
+		echo "--------综合性测试-------"
+		echo "30. bench性能测试"
+		_purple "31. Spiritysdx融合怪测评"
+		echo ""
+		echo "--------节点搭建---------"
+		echo "40. fscarmen/sing-box"
+		echo "41. 233boy/sing-box"
+		echo "45. vaxilu/x-ui"
+		echo "46. FranzKafkaYu/x-ui"
+		echo ""
 		echo "-------------------------"
 		echo "0. 返回菜单"
+		echo "-------------------------"
 
-		read -p "_blue \"请输入选项并按回车键确认: \" " choice
+		echo -n "$(_blue '请输入选项并按回车键确认: ')"
+		read -r choice
 
 		case "$choice" in
 			1)
 				clear
+				_yellow "ChatGPT解锁状态检测"
+				bash <(curl -Ls https://cdn.jsdelivr.net/gh/missuo/OpenAI-Checker/openai.sh)
+			2)
+				clear
+				_yellow "Region流媒体解锁测试"
 				bash <(curl -L -s check.unlock.media)
 				;;
-			8)
+			3)
 				clear
+				_yellow "Yeahwu流媒体解锁检测"
+				install_package wget
+				wget -qO- https://github.com/yeahwu/check/raw/main/check.sh | bash
+				;;
+			4)
+				clear
+				_yellow "xykt_IP质量体检脚本"
+				bash <(curl -Ls IP.Check.Place)
+				;;
+			12)
+				clear
+				_yellow "besttrace三网回程延迟路由测试"
+				install_package wget
+				wget -qO- git.io/besttrace | bash
+				;;
+			13)
+				clear
+				_yellow "mtr_trace三网回程线路测试"
+				curl https://raw.githubusercontent.com/zhucaidan/mtr_trace/main/mtr_trace.sh | bash
+				;;
+			14)
+				clear
+				_yellow "Superspeed三网测速"
+				bash <(curl -Lso- https://git.io/superspeed_uxh)
+				;;
+			15)
+				clear
+				_yellow "nxtrace快速回程测试脚本"
+				curl nxtrace.org/nt |bash
+				nexttrace --fast-trace --tcp
+				;;
+			16)
+				clear
+				_yellow "nxtrace指定IP回程测试脚本"
+				echo "可参考的IP列表"
+				echo "-------------------------"
+				echo "北京电信: 219.141.136.12"
+				echo "北京联通: 202.106.50.1"
+				echo "北京移动: 221.179.155.161"
+				echo "上海电信: 202.96.209.133"
+				echo "上海联通: 210.22.97.1"
+				echo "上海移动: 211.136.112.200"
+				echo "广州电信: 58.60.188.222"
+				echo "广州联通: 210.21.196.6"
+				echo "广州移动: 120.196.165.24"
+				echo "成都电信: 61.139.2.69"
+				echo "成都联通: 119.6.6.6"
+				echo "成都移动: 211.137.96.205"
+				echo "湖南电信: 36.111.200.100"
+				echo "湖南联通: 42.48.16.100"
+				echo "湖南移动: 39.134.254.6"
+				echo "-------------------------"
+
+				read -p "输入一个指定IP: " testip
+				curl nxtrace.org/nt |bash
+				nexttrace $testip
+				;;
+			17)
+				clear
+				_yellow "ludashi2020三网线路测试"
+				curl https://raw.githubusercontent.com/ludashi2020/backtrace/main/install.sh -sSf | sh
+				;;
+			18)
+				clear
+				_yellow "i-abc多功能测速脚本"
+				bash <(curl -sL bash.icu/speedtest)
+				;;
+			20)
+				clear
+				_yellow "yabs性能测试"
+				#check_swap
+				curl -sL yabs.sh | bash -s -- -i -5
+				;;
+			21)
+				clear
+				_yellow "icu/gb5 CPU性能测试脚本"
+				#check_swap
+				bash <(curl -sL bash.icu/gb5)
+				;;
+			30)
+				clear
+				_yellow "bench性能测试"
+				curl -Lso- bench.sh | bash
+				;;
+			31)
+				clear
+				_yellow "Spiritysdx融合怪测评"
 				curl -L https://gitlab.com/spiritysdx/za/-/raw/main/ecs.sh -o ecs.sh && chmod +x ecs.sh && bash ecs.sh
+				;;
+			40)
+				clear
+				_yellow "fscarmen/sing-box"
+				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/sing-box/main/sing-box.sh)
+				;;
+			41)
+				clear
+				_yellow "233boy/sing-box"
+				bash <(wget -qO- -o- https://github.com/233boy/sing-box/raw/main/install.sh)
+				;;
+			45)
+				clear
+				_yellow "vaxilu/x-ui"
+				bash <(curl -Ls https://raw.githubusercontent.com/vaxilu/x-ui/master/install.sh)
+				;;
+			46)
+				clear
+				_yellow "FranzKafkaYu/x-ui"
+				bash <(curl -Ls https://raw.githubusercontent.com/FranzKafkaYu/x-ui/master/install.sh)
 				;;
 			0)
 				break
@@ -575,7 +719,8 @@ linux_system_tools(){
 		echo "16. 设置XanMod BBR3"
 		echo "------------------------"
 
-		read -p "_blue \"请输入选项并按回车键确认: \" " choice
+		echo -n "$(_blue '请输入选项并按回车键确认: ')"
+		read -r choice
 
 		case $choice in
 			8)
@@ -626,7 +771,8 @@ linux_system_tools(){
 					echo "0. 返回上一级选单"
 					echo "----------------------------"
 
-					read -p "_blue \"请输入选项并按回车键确认: \" " choice
+					echo -n "$(_blue '请输入选项并按回车键确认: ')"
+					read -r choice
 
 					case $choice in
 						1) set_timedate Asia/Shanghai ;;
@@ -679,13 +825,14 @@ honeok(){
 		_purple "-------------------------"
 		_purple "1. 系统信息查询"
 		_purple "7. WARP管理"
-		_purple "8. 测试脚本合集"
+		_purple "8. VPS脚本合集"
 		_purple "13. 系统工具"
 		_purple "-------------------------"
 		_purple "0. 退出"
 		_purple "-------------------------"
 
-		read -p "_blue \"请输入选项并按回车键确认: \" " choice
+		echo -n "$(_blue '请输入选项并按回车键确认: ')"
+		read -r choice
 
 		case "$choice" in
 			1)
@@ -698,7 +845,7 @@ honeok(){
 				wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh [option] [lisence/url/token]
 				;;
 			8)
-				server_test_script
+				server_script
 				;;
 			13)
 				linux_system_tools
