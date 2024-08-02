@@ -203,6 +203,7 @@ update_start(){
 }
 
 main(){
+	clear
 	local choice
 	while true; do
 		_purple "-------------------------"
