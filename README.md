@@ -28,3 +28,6 @@ curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/nginx/ngx_lo
 ```shell
 bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/jds/main.sh)
 ```
+```shell
+curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/jds/main.sh && chmod +x ./main.sh
+```
