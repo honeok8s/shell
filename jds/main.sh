@@ -26,23 +26,27 @@ _cyan() { echo -e ${cyan}$@${white}; }
 _purple() { echo -e ${purple}$@${white}; }
 _gray() { echo -e ${gray}$@${white}; }
 
+print_process(){
+	ps aux | grep -E 'lv_app|p8_app|p9_app|npm|mysql|BS|processcontrol|tarlog|node (www|app.js)|dops.sh|redis|filebeat|python3\.9 main\.py|logbus|sh start\.sh' | grep -v 'grep'
+}
+
 # 启动所有服务器
 all_start(){
-    # 动态生成服务器目录
-    local start_dirs=()
-    for i in {1..5}; do
-        start_dirs+=("/data/server${i}/game/")
-    done
-    start_dirs+=("/data/server/gate/")
-    start_dirs+=("/data/server/login/")
+	# 动态生成服务器目录
+	local start_dirs=()
+	for i in {1..5}; do
+		start_dirs+=("/data/server${i}/game/")
+	done
+	start_dirs+=("/data/server/gate/")
+	start_dirs+=("/data/server/login/")
 
-    # 启动
-    for dir in "${start_dirs[@]}"; do
-        cd "$dir"
-        rm -f nohup.txt
-        ./server.sh start
-        echo ""
-    done
+	# 启动
+	for dir in "${start_dirs[@]}"; do
+		cd "$dir"
+		rm -f nohup.txt
+		./server.sh start
+		echo ""
+	done
 
 	sleep 5
 
@@ -59,133 +63,133 @@ all_start(){
 
 # 停止所有服务器
 all_stop() {
-    # 检查并停止守护进程
-    cd /data/tool/
-    if pgrep -f 'processcontrol-allserver' > /dev/null; then
-        kill -9 $(pgrep -f 'processcontrol-allserver' | head -n 1)
-        > control.txt
-        > dump.txt
-        _green "processcontrol-allserver 守护进程停止成功!"
-    else
-        _yellow "processcontrol-allserver 守护进程不存在无需停止"
-    fi
+	# 检查并停止守护进程
+	cd /data/tool/
+	if pgrep -f 'processcontrol-allserver' > /dev/null; then
+		kill -9 $(pgrep -f 'processcontrol-allserver' | head -n 1)
+		> control.txt
+		> dump.txt
+		_green "processcontrol-allserver 守护进程停止成功!"
+	else
+		_yellow "processcontrol-allserver 守护进程不存在无需停止"
+	fi
 
-    # 停止服务器
-    stop_server() {
-        local dir=$1
-        cd "$dir"
-        ./server.sh flush
-        sleep 60
-        ./server.sh stop
-        _green "在 $dir 停止成功"
-    }
+	# 停止服务器
+	stop_server() {
+		local dir=$1
+		cd "$dir"
+		./server.sh flush
+		sleep 60
+		./server.sh stop
+		_green "在 $dir 停止成功"
+	}
 
-    # 停止登录服务器
-    cd /data/server/login/
-    ./server.sh stop
-    _green "Login 停止成功"
+	# 停止登录服务器
+	cd /data/server/login/
+	./server.sh stop
+	_green "Login 停止成功"
 
-    # 停止网关服务器
-    cd /data/server/gate/
-    ./server.sh stop
-    sleep 120
-    _green "Gate 停止成功"
+	# 停止网关服务器
+	cd /data/server/gate/
+	./server.sh stop
+	sleep 120
+	_green "Gate 停止成功"
 
-    # 动态生成游戏服务器目录
-    local stop_dirs=()
-    for i in {1..5}; do
-        stop_dirs+=("/data/server${i}/game/")
-    done
+	# 动态生成游戏服务器目录
+	local stop_dirs=()
+	for i in {1..5}; do
+		stop_dirs+=("/data/server${i}/game/")
+	done
 
-    # 停止所有游戏服务器
-    for dir in "${stop_dirs[@]}"; do
-        stop_server "$dir"
-    done
+	# 停止所有游戏服务器
+	for dir in "${stop_dirs[@]}"; do
+		stop_server "$dir"
+	done
 }
 
 all_reload(){
 	cd /data/update/ || { _red "无法进入目录 $dir"; exit 1; }
 
-    if [ "$(ls -A)" ]; then
-        rm -rf *
+	if [ "$(ls -A)" ]; then
+		rm -rf *
 		_green "目录/data/update/已清空"
 	else
 		_yellow "目录/data/update/为空"
     fi
 
-    sshpass -p 'c4h?itwj5ENi' scp -o StrictHostKeyChecking=no root@10.47.7.242:/data/update/updategame.tar.gz ./
-    if [ $? -ne 0 ]; then
-        _red "文件下载失败"; exit 1
-    fi
+	sshpass -p 'c4h?itwj5ENi' scp -o StrictHostKeyChecking=no root@10.47.7.242:/data/update/updategame.tar.gz ./
+	if [ $? -ne 0 ]; then
+		_red "文件下载失败"; exit 1
+	fi
 
 	tar xvf updategame.tar.gz
 
-    # 定义服务器目录
-    local reload_dirs=()
-    for i in {1..5}; do
-        reload_dirs+=("/data/server${i}/game/")
-    done
+	# 定义服务器目录
+	local reload_dirs=()
+	for i in {1..5}; do
+		reload_dirs+=("/data/server${i}/game/")
+	done
 
-    # 复制更新文件到每个服务器目录
-    for dir in "${server_dirs[@]}"; do
-        \cp -rf /data/update/app/* "$dir"
-    done
+	# 复制更新文件到每个服务器目录
+	for dir in "${server_dirs[@]}"; do
+		\cp -rf /data/update/app/* "$dir"
+	done
 
-    # 重新加载
-    for dir in "${reload_dirs[@]}"; do
-        cd "$dir" || { _red "无法进入目录 $dir"; exit 1; }
-        ./server.sh reload
+	# 重新加载
+	for dir in "${reload_dirs[@]}"; do
+		cd "$dir" || { _red "无法进入目录 $dir"; exit 1; }
+		./server.sh reload
 		_green "$dir 重新加载成功"
-    done
+	done
 
 	_green "所有服务器重新加载成功"
 }
 
 update_start(){
-    # 动态生成服务器目录
-    local updatestart_dirs=()
-    for i in {1..5}; do
-        updatestart_dirs+=("/data/server${i}/game/")
-    done
-    updatestart_dirs+=("/data/server/gate/")
-    updatestart_dirs+=("/data/server/login/")
+	# 动态生成服务器目录
+	local updatestart_dirs=()
+	for i in {1..5}; do
+		updatestart_dirs+=("/data/server${i}/game/")
+	done
+	updatestart_dirs+=("/data/server/gate/")
+	updatestart_dirs+=("/data/server/login/")
 
 	cd /data/update/ || { _red "无法进入目录/data/update/"; exit 1; }
 
-    if [ "$(ls -A)" ]; then
-        rm -rf *
+	if [ "$(ls -A)" ]; then
+		rm -rf *
 		_green "目录/data/update/已清空"
 	else
 		_yellow "目录/data/update/为空"
-    fi
+	fi
 
-    sshpass -p 'c4h?itwj5ENi' scp -o StrictHostKeyChecking=no root@10.47.7.242:/data/update/updategame.tar.gz ./
-    if [ $? -ne 0 ]; then
-        _red "文件下载失败"; exit 1
-    fi
+	sshpass -p 'c4h?itwj5ENi' scp -o StrictHostKeyChecking=no root@10.47.7.242:/data/update/updategame.tar.gz ./
+	if [ $? -ne 0 ]; then
+		_red "文件下载失败"; exit 1
+	fi
 
 	tar xvf updategame.tar.gz
 
-    # 复制更新文件到每个服务器目录
-    for dir in "${updatestart_dirs[@]}"; do
-        \cp -rf /data/update/app/* "$dir"
-    done
+	# 复制更新文件到每个服务器目录
+	for dir in "${updatestart_dirs[@]}"; do
+		\cp -rf /data/update/app/* "$dir"
+	done
 
-    # 启动服务器
-    start_server() {
-        local dir=$1
-        cd "$dir" || { _red "无法进入目录 $dir"; exit 1; }
-        rm -f nohup.txt
-        ./server.sh start
-        if [ $? -ne 0 ]; then
-            _red "$dir 启动失败"; exit 1
-        fi
-        _green "$dir 启动成功"
+	# 启动服务器
+	start_server() {
+		local dir=$1
+		cd "$dir" || { _red "无法进入目录 $dir"; exit 1; }
+		rm -f nohup.txt
+		./server.sh start
+		if [ $? -ne 0 ]; then
+			_red "$dir 启动失败"; exit 1
+		fi
+		_green "$dir 启动成功"
     }
 
-    for dir in "${updatestart_dirs[@]}"; do
-        start_server "$dir"
-    done
+	for dir in "${updatestart_dirs[@]}"; do
+		start_server "$dir"
+	done
 
 	cd /data/tool/ || { _red "无法进入目录 /data/tool/"; exit 1; }
 	if ! pgrep -f 'processcontrol-allserver' > /dev/null; then
@@ -214,19 +218,23 @@ main(){
 
 		case "$choice" in
 			1)
-				ps aux | grep -E 'lv_app|p8_app|p9_app|npm|mysql|BS|processcontrol|tarlog|node (www|app.js)|dops.sh|redis|filebeat|python3\.9 main\.py|logbus|sh start\.sh' | grep -v 'grep'
+				print_process
 				;;
 			2)
 				all_start
+				print_process
 				;;
 			3)
 				all_stop
+				print_process
 				;;
 			4)
 				all_reload
+				print_process
 				;;
 			5)
 				update_start
+				print_process
 				;;
 			0)
 				_yellow "Bye!"
