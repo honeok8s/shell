@@ -53,6 +53,8 @@ install_package(){
 }
 
 system_info() {
+	clear
+
 	local hostname=$(hostnamectl | sed -n 's/^[[:space:]]*Static hostname:[[:space:]]*\(.*\)$/\1/p')
 	# 获取运营商信息
 	local isp_info=$(curl -s https://ipinfo.io | grep '"org":' | awk -F'"' '{print $4}')
