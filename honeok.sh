@@ -320,8 +320,8 @@ xanmod_bbr3(){
 			_purple "0. 返回上一级选单"
 			_purple "-------------------------"
 
-			_purple "请输入选项并按回车键确认: "
-			read -p "" choice
+			_blue "请输入选项并按回车键确认: "
+			read -r choice
 
 			case $choice in
 				1)
@@ -461,8 +461,8 @@ reinstall_system(){
 		echo "0. 返回上一级菜单"
 		echo "-------------------------"
 
-		_purple "请输入选项并按回车键确认: "
-		read -p "" choice
+		_blue "请输入选项并按回车键确认: "
+        read -r choice
 
 		case "$choice" in
 			1)
@@ -543,8 +543,8 @@ server_test_script(){
 		echo "-------------------------"
 		echo "0. 返回菜单"
 
-		_purple "请输入选项并按回车键确认: "
-		read -p "" choice
+		_blue "请输入选项并按回车键确认: "
+        read -r choice
 
 		case "$choice" in
 			1)
@@ -580,8 +580,8 @@ linux_system_tools(){
 		echo "16. 设置XanMod BBR3"
 		echo "------------------------"
 
-		_purple "请输入选项并按回车键确认: "
-		read -p "" choice
+		_blue "请输入选项并按回车键确认: "
+        read -r choice
 
 		case $choice in
 			8)
@@ -632,8 +632,8 @@ linux_system_tools(){
 					echo "0. 返回上一级选单"
 					echo "----------------------------"
 
-					_purple "请输入选项并按回车键确认: "
-					read -p "" choice
+					_blue "请输入选项并按回车键确认: "
+					read -r choice
 
 					case $choice in
 						1) set_timedate Asia/Shanghai ;;
@@ -692,8 +692,8 @@ honeok(){
 		_purple "0. 退出"
 		_purple "-------------------------"
 
-		_purple "请输入选项并按回车键确认: "
-		read -p "" choice
+		_blue "请输入选项并按回车键确认: "
+        read -r choice
 
 		case "$choice" in
 			1)
