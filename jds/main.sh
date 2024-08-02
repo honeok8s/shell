@@ -207,6 +207,7 @@ update_start(){
 	_green "所有服务器启动成功"
 }
 
+# 交互菜单
 main(){
 	local choice
 	while true; do
