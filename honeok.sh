@@ -34,6 +34,20 @@ echo -e "${cyan} _                            _
 									${white}"									
 }
 
+need_root(){
+	clear
+	[ "$EUID" -ne 0 ] && _red "该功能需要root用户才能运行" && end_of && honeok
+}
+
+# 循环结尾任意键结束
+end_of(){
+	_green "操作完成"
+	_yellow "按任意键继续"
+	read -n 1 -s -r -p ""
+	echo ""
+	clear
+}
+
 install_package(){
 	if [ $# -eq 0 ]; then
 		_red "未提供软件包参数"
@@ -209,6 +223,12 @@ system_info() {
 }
 
 reinstall_system() {
+	# 禁止大陆服务器重装
+	if [ "$(curl -s https://ipinfo.io/country)" == 'CN' ]; then
+		_red "IP属地为中国,不建议重装服务器"
+		break
+	fi
+
 	mollyLau_reinstall_script(){
 		wget --no-check-certificate -qO InstallNET.sh 'https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh' && chmod a+x InstallNET.sh
 	}
@@ -223,6 +243,7 @@ reinstall_system() {
 
 	local choice
 	while true; do
+	need_root
 		_red "请备份数据,将为你重装系统,预计花费15分钟"
 		echo "-------------------------"
 		echo "1. Debian 12                  2. Debian 11"
@@ -297,6 +318,7 @@ reinstall_system() {
 				;;
 			*)
 				_red "无效选项,请重新输入"
+				break
 				;;
 		esac
 	done
@@ -331,9 +353,7 @@ server_test_script(){
 				_red "无效选项,请重新输入"
 				;;
 		esac
-		_green "操作完成"
-		_yellow "按任意键继续"
-		read -n 1 -s -r
+		end_of
 	done
 }
 
@@ -353,9 +373,10 @@ linux_system_tools(){
 				reinstall_system
 				;;
 			0)
-				break
+				honeok
 				;;
 		esac
+		end_of
 	done
 }
 
@@ -397,9 +418,7 @@ honeok(){
 				_red "无效选项,请重新输入"
 				;;
 		esac
-		_green "操作完成"
-		_yellow "按任意键继续"
-		read -n 1 -s -r
+		end_of
 	done
 }
 honeok
