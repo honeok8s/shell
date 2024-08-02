@@ -33,12 +33,7 @@ echo -e "${cyan}
 | '_ \ / _ \| '_ \ / _ \/ _ \| |/ /
 | | | | (_) | | | |  __| (_) |   < 
 |_| |_|\___/|_| |_|\___|\___/|_|\_\
-									${white}"									
-}
-
-need_root(){
-	clear
-	[ "$EUID" -ne 0 ] && _red "该功能需要root用户才能运行" && end_of && honeok
+${white}"
 }
 
 # 结尾任意键结束
@@ -50,59 +45,91 @@ end_of(){
 	clear
 }
 
+# 检查用户是否为root
+need_root(){
+	clear
+	if [ "$EUID" -ne 0 ]; then
+		_red "该功能需要root用户才能运行"
+		end_of
+		# 回调主菜单
+		honeok
+	fi
+}
+
+# 查看当前服务器时区
+current_timezone(){
+	if grep -q 'Alpine' /etc/issue; then
+		date +"%Z %z"
+	else
+		timedatectl | grep "Time zone" | awk '{print $3}'
+	fi
+}
+
+# 设置时区
+set_timedate(){
+	local timezone="$1"
+	if grep -q 'Alpine' /etc/issue; then
+		install_package tzdata
+		cp /usr/share/zoneinfo/${timezone} /etc/localtime
+		hwclock --systohc
+	else
+		timedatectl set-timezone ${timezone}
+	fi
+}
+
 install_package(){
-	if [ $# -eq 0 ]; then
-		_red "未提供软件包参数"
-		return 1
-	fi
+    if [ $# -eq 0 ]; then
+        _red "未提供软件包参数"
+        return 1
+    fi
 
-	for package in "$@"; do
-		if ! command -v "$package" &>/dev/null; then
-			_yellow "正在安装 $package"
-			if command -v dnf &>/dev/null; then
-				dnf install -y "$package"
-			elif command -v yum &>/dev/null; then
-				yum -y install "$package"
-			elif command -v apt &>/dev/null; then
-				apt install -y "$package"
-			elif command -v apk &>/dev/null; then
-				apk add "$package"
-			else
-				_red "未知的包管理器"
-				return 1
-			fi
-		else
-			_green "$package已经安装"
-		fi
-	done
-	return 0
+    for package in "$@"; do
+        if ! command -v "$package" &>/dev/null; then
+            _yellow "正在安装 $package"
+            if command -v dnf &>/dev/null; then
+                dnf install -y "$package"
+            elif command -v yum &>/dev/null; then
+                yum -y install "$package"
+            elif command -v apt &>/dev/null; then
+                apt update && apt install -y "$package"
+            elif command -v apk &>/dev/null; then
+                apk add "$package"
+            else
+                _red "未知的包管理器"
+                return 1
+            fi
+        else
+            _green "$package 已经安装"
+        fi
+    done
+    return 0
 }
 
-remove() {
-	if [ $# -eq 0 ]; then
-		_red "未提供软件包参数"
-		return 1
-	fi
+remove_package(){
+    if [ $# -eq 0 ]; then
+        _red "未提供软件包参数"
+        return 1
+    fi
 
-	for package in "$@"; do
-		_yellow "正在卸载 $package"
-		if command -v dnf &>/dev/null; then
-			dnf remove -y "${package}"*
-		elif command -v yum &>/dev/null; then
-			yum remove -y "${package}"*
-		elif command -v apt &>/dev/null; then
-			apt purge -y "${package}"*
-		elif command -v apk &>/dev/null; then
-			apk del "${package}*"
-		else
-			_red "未知的包管理器!"
-			return 1
-		fi
-	done
-	return 0
+    for package in "$@"; do
+        _yellow "正在卸载 $package"
+        if command -v dnf &>/dev/null; then
+            dnf remove -y "${package}"*
+        elif command -v yum &>/dev/null; then
+            yum remove -y "${package}"*
+        elif command -v apt &>/dev/null; then
+            apt purge -y "${package}"*
+        elif command -v apk &>/dev/null; then
+            apk del "${package}"*
+        else
+            _red "未知的包管理器"
+            return 1
+        fi
+    done
+    return 0
 }
 
-bbr_on() {
+bbr_on(){
 cat > /etc/sysctl.conf << EOF
 net.ipv4.tcp_congestion_control=bbr
 EOF
@@ -110,14 +137,14 @@ EOF
 sysctl -p
 }
 
-server_reboot() {
+server_reboot(){
 	local choice
-	_purple "现在重启服务器吗?\c"  # 使用 \c 保持光标在同一行
-	read choice
+	_purple "现在重启服务器吗?(Y/N):"
+	read -r choice
 
 	case "$choice" in
 		[Yy])
-			_green "已重启"
+			_green "已执行"
 			reboot
 			;;
 		*)
@@ -126,7 +153,8 @@ server_reboot() {
 	esac
 }
 
-system_info() {
+# 查看系统信息
+system_info(){
 	local hostname=$(hostnamectl | sed -n 's/^[[:space:]]*Static hostname:[[:space:]]*\(.*\)$/\1/p')
 	# 获取运营商信息
 	local isp_info=$(curl -s https://ipinfo.io | grep '"org":' | awk -F'"' '{print $4}')
@@ -292,7 +320,7 @@ xanmod_bbr3(){
 			_purple "0. 返回上一级选单"
 			_purple "-------------------------"
 
-			_purple "请输入选项并按回车键确认:\c"  # 使用 \c 保持光标在同一行
+			_purple "请输入选项并按回车键确认: "
 			read choice
 
 			case $choice in
@@ -327,78 +355,79 @@ xanmod_bbr3(){
 					break  # 跳出循环,退出菜单
 					;;
 				*)
-					break  # 跳出循环,退出菜单
+					_red "无效选项,请重新输入"
 					;;
 			esac
 		done
 	else
 		# 未安装则安装
 		clear
-			_yellow "请备份数据,将为你升级Linux内核开启XanMod BBR3"
-			_purple "------------------------------------------------"
-			_purple "仅支持Debian/Ubuntu 仅支持x86_64架构"
-			_purple "VPS是512M内存的,请提前添加1G虚拟内存,防止因内存不足失联!"
-			_purple "------------------------------------------------"
-			
-			_purple "确定继续吗?(Y/N)\c"  # 使用 \c 保持光标在同一行
-			read choice
+		_yellow "请备份数据,将为你升级Linux内核开启XanMod BBR3"
+		_purple "------------------------------------------------"
+		_purple "仅支持Debian/Ubuntu 仅支持x86_64架构"
+		_purple "VPS是512M内存的,请提前添加1G虚拟内存,防止因内存不足失联!"
+		_purple "------------------------------------------------"
 
-			case "$choice" in
-				[Yy])
-					if [ -r /etc/os-release ]; then
-						. /etc/os-release
-							if [ "$ID" != "debian" ] && [ "$ID" != "ubuntu" ]; then
-								_red "当前环境不支持,仅支持Debian和Ubuntu系统"
-								end_of
-								linux_system_tools
-							fi
-					else
-						_red "无法确定操作系统类型"
+		_purple "确定继续吗?(Y/N):"
+		read -r choice
+
+		case "$choice" in
+			[Yy])
+				if [ -r /etc/os-release ]; then
+					. /etc/os-release
+					if [ "$ID" != "debian" ] && [ "$ID" != "ubuntu" ]; then
+						_red "当前环境不支持,仅支持Debian和Ubuntu系统"
 						end_of
 						linux_system_tools
 					fi
+				else
+					_red "无法确定操作系统类型"
+					end_of
+					linux_system_tools
+				fi
 
-					# 检查系统架构
-					local arch=$(dpkg --print-architecture)
-					if [ "$arch" != "amd64" ]; then
-						_red "当前环境不支持，仅支持x86_64架构"
-						end_of
-						linux_system_tools
-					fi
+				# 检查系统架构
+				local arch=$(dpkg --print-architecture)
+				if [ "$arch" != "amd64" ]; then
+					_red "当前环境不支持,仅支持x86_64架构"
+					end_of
+					linux_system_tools
+				fi
 
-					#check_swap
-					install wget gnupg
+				#check_swap
+				install_package wget gnupg
 
-					# wget -qO - https://dl.xanmod.org/archive.key | gpg --dearmor -o /usr/share/keyrings/xanmod-archive-keyring.gpg --yes
-					wget -qO - https://raw.githubusercontent.com/kejilion/sh/main/archive.key | gpg --dearmor -o /usr/share/keyrings/xanmod-archive-keyring.gpg --yes
+				# wget -qO - https://dl.xanmod.org/archive.key | gpg --dearmor -o /usr/share/keyrings/xanmod-archive-keyring.gpg --yes
+				wget -qO - https://raw.githubusercontent.com/kejilion/sh/main/archive.key | gpg --dearmor -o /usr/share/keyrings/xanmod-archive-keyring.gpg --yes
 
-					# 添加存储库
-					echo 'deb [signed-by=/usr/share/keyrings/xanmod-archive-keyring.gpg] http://deb.xanmod.org releases main' | tee /etc/apt/sources.list.d/xanmod-release.list
+				# 添加存储库
+				echo 'deb [signed-by=/usr/share/keyrings/xanmod-archive-keyring.gpg] http://deb.xanmod.org releases main' | tee /etc/apt/sources.list.d/xanmod-release.list
 
-					# kernel_version=$(wget -q https://dl.xanmod.org/check_x86-64_psabi.sh && chmod +x check_x86-64_psabi.sh && ./check_x86-64_psabi.sh | grep -oP 'x86-64-v\K\d+|x86-64-v\d+')
-					local kernel_version=$(wget -q https://raw.githubusercontent.com/kejilion/sh/main/check_x86-64_psabi.sh && chmod +x check_x86-64_psabi.sh && ./check_x86-64_psabi.sh | grep -oP 'x86-64-v\K\d+|x86-64-v\d+')
+				# kernel_version=$(wget -q https://dl.xanmod.org/check_x86-64_psabi.sh && chmod +x check_x86-64_psabi.sh && ./check_x86-64_psabi.sh | grep -oP 'x86-64-v\K\d+|x86-64-v\d+')
+				local kernel_version=$(wget -q https://raw.githubusercontent.com/kejilion/sh/main/check_x86-64_psabi.sh && chmod +x check_x86-64_psabi.sh && ./check_x86-64_psabi.sh | grep -oP 'x86-64-v\K\d+|x86-64-v\d+')
 
-					apt update -y
-					apt install -y linux-xanmod-x64v$kernel_version
+				apt update -y
+				apt install -y linux-xanmod-x64v$kernel_version
 
-					bbr_on
+				bbr_on
 
-					_green "XanMod内核安装并BBR3启用成功。重启后生效"
-					rm -f /etc/apt/sources.list.d/xanmod-release.list
-					rm -f check_x86-64_psabi.sh*
-					server_reboot
-					;;
-				[Nn])
-					_yellow "已取消"
-					;;
-				*)
-					_red "无效的选择,请输入Y或N"
-					;;
-			esac
+				_green "XanMod内核安装并BBR3启用成功,重启后生效"
+				rm -f /etc/apt/sources.list.d/xanmod-release.list
+				rm -f check_x86-64_psabi.sh*
+				
+				server_reboot
+				;;
+			[Nn])
+				_yellow "已取消"
+				;;
+			*)
+				_red "无效的选择,请输入Y或N"
+				;;
+		esac
 	fi
 }
 
-reinstall_system() {
+reinstall_system(){
 	mollyLau_reinstall_script(){
 		wget --no-check-certificate -qO InstallNET.sh 'https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh' && chmod a+x InstallNET.sh
 	}
@@ -411,79 +440,82 @@ reinstall_system() {
 		mollyLau_reinstall_script
 	}
 
+	# 重装系统
 	local choice
 	while true; do
-	need_root
+		need_root
+		clear
 		_yellow "请备份数据,将为你重装系统,预计花费15分钟"
-		_purple "-------------------------"
-		_purple "1. Debian 12"
-		_purple "2. Debian 11"
-		_purple "3. Debian 10"
-		_purple "4. Debian 9"
-		_purple "-------------------------"
-		_purple "11. Ubuntu 24.04"
-		_purple "12. Ubuntu 22.04"
-		_purple "13. Ubuntu 20.04"
-		_purple "14. Ubuntu 18.04"
-		_purple "-------------------------"
-		_purple "0. 返回上一级选单"
-		_purple "-------------------------"
+		_yellow "感谢MollyLau和bin456789以及科技lion的脚本支持!"
+		echo "-------------------------"
+		echo "1. Debian 12"
+		echo "2. Debian 11"
+		echo "3. Debian 10"
+		echo "4. Debian 9"
+		echo "-------------------------"
+		echo "11. Ubuntu 24.04"
+		echo "12. Ubuntu 22.04"
+		echo "13. Ubuntu 20.04"
+		echo "14. Ubuntu 18.04"
+		echo "-------------------------"
+		echo "0. 返回上一级菜单"
+		echo "-------------------------"
 
-		_purple "请输入选项并按回车键确认:\c"  # 使用 \c 保持光标在同一行
+		_purple "请输入选项并按回车键确认: "
 		read choice
 
 		case "$choice" in
 			1)
-				_yellow "重装debian 12"
+				_yellow "重装 Debian 12"
 				dd_system_mollyLau
 				bash InstallNET.sh -debian 12
 				reboot
 				exit 0
 				;;
-			2)
-				_yellow "重装debian 11"
+			2) 
+				_yellow "重装 Debian 11"
 				dd_system_mollyLau
 				bash InstallNET.sh -debian 11
 				reboot
 				exit 0
 				;;
-			3)
-				_yellow "重装debian 10"
+			3) 
+				_yellow "重装 Debian 10"
 				dd_system_mollyLau
 				bash InstallNET.sh -debian 10
 				reboot
 				exit 0
 				;;
 			4)
-				_yellow "重装debian 9"
+				_yellow "重装 Debian 9"
 				dd_system_mollyLau
 				bash InstallNET.sh -debian 9
 				reboot
 				exit 0
 				;;
 			11)
-				_yellow "重装ubuntu 24.04"
+				_yellow "重装 Ubuntu 24.04"
 				dd_system_mollyLau
 				bash InstallNET.sh -ubuntu 24.04
 				reboot
 				exit 0
 				;;
 			12)
-				_yellow "重装ubuntu 22.04"
+				_yellow "重装 Ubuntu 22.04"
 				dd_system_mollyLau
 				bash InstallNET.sh -ubuntu 22.04
 				reboot
 				exit 0
 				;;
 			13)
-				_yellow "重装ubuntu 20.04"
+				_yellow "重装 Ubuntu 20.04"
 				dd_system_mollyLau
 				bash InstallNET.sh -ubuntu 20.04
 				reboot
 				exit 0
 				;;
 			14)
-				_yellow "重装ubuntu 18.04"
+				_yellow "重装 Ubuntu 18.04"
 				dd_system_mollyLau
 				bash InstallNET.sh -ubuntu 18.04
 				reboot
@@ -494,7 +526,6 @@ reinstall_system() {
 				;;
 			*)
 				_red "无效选项,请重新输入"
-				break
 				;;
 		esac
 	done
@@ -506,13 +537,13 @@ server_test_script(){
 		clear
 		_yellow "VPS测试脚本"
 		echo ""
-		_purple "-----IP及解锁状态检测----"
-		_purple "1. 流媒体解锁"
-		_purple "8. VPS融合怪服务器测评"
-		_purple "-------------------------"
-		_purple "0. 返回菜单"
+		echo "-----IP及解锁状态检测----"
+		echo "1. 流媒体解锁"
+		echo "8. VPS融合怪服务器测评"
+		echo "-------------------------"
+		echo "0. 返回菜单"
 
-		_purple "请输入选项并按回车键确认:\c"  # 使用 \c 保持光标在同一行
+		_purple "请输入选项并按回车键确认: "
 		read choice
 
 		case "$choice" in
@@ -541,14 +572,15 @@ linux_system_tools(){
 		clear
 		_yellow "系统工具"
 		echo ""
-		_purple "------------------------"
-		_purple "8. 一键重装系统"
-		_purple "0. 返回主菜单"
-		_purple "------------------------"
-		_purple "15. 系统时区调整                       16. 设置XanMod BBR3"
-		_purple "------------------------"
+		echo "------------------------"
+		echo "8. 一键重装系统"
+		echo "0. 返回主菜单"
+		echo "------------------------"
+		echo "15. 系统时区调整"
+		echo "16. 设置XanMod BBR3"
+		echo "------------------------"
 
-		_purple "请输入选项并按回车键确认:\c"  # 使用 \c 保持光标在同一行
+		_purple "请输入选项并按回车键确认: "
 		read choice
 
 		case $choice in
@@ -573,60 +605,61 @@ linux_system_tools(){
 
 					echo ""
 					_yellow "时区切换"
-					_purple "------------亚洲------------"
-					_purple "1. 中国上海时间"
-					_purple "2. 中国香港时间"
-					_purple "3. 日本东京时间"
-					_purple "4. 韩国首尔时间"
-					_purple "5. 新加坡时间"
-					_purple "6. 印度加尔各答时间"
-					_purple "7. 阿联酋迪拜时间"
-					_purple "8. 澳大利亚悉尼时间"
-					_purple "------------欧洲------------"
-					_purple "11. 英国伦敦时间"
-					_purple "12. 法国巴黎时间"
-					_purple "13. 德国柏林时间"
-					_purple "14. 俄罗斯莫斯科时间"
-					_purple "15. 荷兰尤特赖赫特时间"
-					_purple "16. 西班牙马德里时间"
-					_purple "------------美洲------------"
-					_purple "21. 美国西部时间"
-					_purple "22. 美国东部时间"
-					_purple "23. 加拿大时间"
-					_purple "24. 墨西哥时间"
-					_purple "25. 巴西时间"
-					_purple "26. 阿根廷时间"
-					_purple "----------------------------"
-					_purple "0. 返回上一级选单"
-					_purple "----------------------------"
+					echo "------------亚洲------------"
+					echo "1. 中国上海时间"
+					echo "2. 中国香港时间"
+					echo "3. 日本东京时间"
+					echo "4. 韩国首尔时间"
+					echo "5. 新加坡时间"
+					echo "6. 印度加尔各答时间"
+					echo "7. 阿联酋迪拜时间"
+					echo "8. 澳大利亚悉尼时间"
+					echo "------------欧洲------------"
+					echo "11. 英国伦敦时间"
+					echo "12. 法国巴黎时间"
+					echo "13. 德国柏林时间"
+					echo "14. 俄罗斯莫斯科时间"
+					echo "15. 荷兰尤特赖赫特时间"
+					echo "16. 西班牙马德里时间"
+					echo "------------美洲------------"
+					echo "21. 美国西部时间"
+					echo "22. 美国东部时间"
+					echo "23. 加拿大时间"
+					echo "24. 墨西哥时间"
+					echo "25. 巴西时间"
+					echo "26. 阿根廷时间"
+					echo "----------------------------"
+					echo "0. 返回上一级选单"
+					echo "----------------------------"
 
-					_purple "请输入选项并按回车键确认:\c"  # 使用 \c 保持光标在同一行
+					_purple "请输入选项并按回车键确认: "
 					read choice
 
 					case $choice in
-						1) timedatectl set-timezone Asia/Shanghai ;;
-						2) timedatectl set-timezone Asia/Hong_Kong ;;
-						3) timedatectl set-timezone Asia/Tokyo ;;
-						4) timedatectl set-timezone Asia/Seoul ;;
-						5) timedatectl set-timezone Asia/Singapore ;;
-						6) timedatectl set-timezone Asia/Kolkata ;;
-						7) timedatectl set-timezone Asia/Dubai ;;
-						8) timedatectl set-timezone Australia/Sydney ;;
-						11) timedatectl set-timezone Europe/London ;;
-						12) timedatectl set-timezone Europe/Paris ;;
-						13) timedatectl set-timezone Europe/Berlin ;;
-						14) timedatectl set-timezone Europe/Moscow ;;
-						15) timedatectl set-timezone Europe/Amsterdam ;;
-						16) timedatectl set-timezone Europe/Madrid ;;
-						21) timedatectl set-timezone America/Los_Angeles ;;
-						22) timedatectl set-timezone America/New_York ;;
-						23) timedatectl set-timezone America/Vancouver ;;
-						24) timedatectl set-timezone America/Mexico_City ;;
-						25) timedatectl set-timezone America/Sao_Paulo ;;
-						26) timedatectl set-timezone America/Argentina/Buenos_Aires ;;
+						1) set_timedate Asia/Shanghai ;;
+						2) set_timedate Asia/Hong_Kong ;;
+						3) set_timedate Asia/Tokyo ;;
+						4) set_timedate Asia/Seoul ;;
+						5) set_timedate Asia/Singapore ;;
+						6) set_timedate Asia/Kolkata ;;
+						7) set_timedate Asia/Dubai ;;
+						8) set_timedate Australia/Sydney ;;
+						11) set_timedate Europe/London ;;
+						12) set_timedate Europe/Paris ;;
+						13) set_timedate Europe/Berlin ;;
+						14) set_timedate Europe/Moscow ;;
+						15) set_timedate Europe/Amsterdam ;;
+						16) set_timedate Europe/Madrid ;;
+						21) set_timedate America/Los_Angeles ;;
+						22) set_timedate America/New_York ;;
+						23) set_timedate America/Vancouver ;;
+						24) set_timedate America/Mexico_City ;;
+						25) set_timedate America/Sao_Paulo ;;
+						26) set_timedate America/Argentina/Buenos_Aires ;;
 						0) break ;;
-						*) break ;;
+						*) _red "无效选项,请重新输入" ;;
 					esac
+					end_of
 				done
 				;;
 			16)
@@ -656,8 +689,10 @@ honeok(){
 		_purple "8. 测试脚本合集"
 		_purple "13. 系统工具"
 		_purple "-------------------------"
+		_purple "0. 退出"
+		_purple "-------------------------"
 
-		_purple "请输入选项并按回车键确认:\c"  # 使用 \c 保持光标在同一行
+		_purple "请输入选项并按回车键确认: "
 		read choice
 
 		case "$choice" in
@@ -687,5 +722,7 @@ honeok(){
 		end_of
 	done
 }
+
+# 脚本入口
 honeok
 exit 0
