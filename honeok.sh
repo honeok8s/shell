@@ -139,8 +139,7 @@ sysctl -p
 
 server_reboot(){
 	local choice
-	_purple "现在重启服务器吗?(Y/N):"
-	read -r choice
+	read -p "_purple \"现在重启服务器吗?(Y/N):\" " choice
 
 	case "$choice" in
 		[Yy])
@@ -320,7 +319,7 @@ xanmod_bbr3(){
 			_purple "0. 返回上一级选单"
 			_purple "-------------------------"
 
-			_blue "请输入选项并按回车键确认: " && read -r choice
+			read -p "_blue \"请输入选项并按回车键确认: \" " choice
 
 			case $choice in
 				1)
@@ -367,8 +366,7 @@ xanmod_bbr3(){
 		_purple "VPS是512M内存的,请提前添加1G虚拟内存,防止因内存不足失联!"
 		_purple "------------------------------------------------"
 
-		_purple "确定继续吗?(Y/N):"
-		read -r choice
+		read -p "_blue \"确定继续吗?(Y/N)\" " choice
 
 		case "$choice" in
 			[Yy])
@@ -460,7 +458,7 @@ reinstall_system(){
 		echo "0. 返回上一级菜单"
 		echo "-------------------------"
 
-		_blue "请输入选项并按回车键确认: " && read -r choice
+		read -p "_blue \"请输入选项并按回车键确认: \" " choice
 
 		case "$choice" in
 			1)
@@ -541,7 +539,7 @@ server_test_script(){
 		echo "-------------------------"
 		echo "0. 返回菜单"
 
-		_blue "请输入选项并按回车键确认: " && read -r choice
+		read -p "_blue \"请输入选项并按回车键确认: \" " choice
 
 		case "$choice" in
 			1)
@@ -577,7 +575,7 @@ linux_system_tools(){
 		echo "16. 设置XanMod BBR3"
 		echo "------------------------"
 
-		_blue "请输入选项并按回车键确认: " && read -r choice
+		read -p "_blue \"请输入选项并按回车键确认: \" " choice
 
 		case $choice in
 			8)
@@ -628,7 +626,7 @@ linux_system_tools(){
 					echo "0. 返回上一级选单"
 					echo "----------------------------"
 
-					_blue "请输入选项并按回车键确认: " && read -r choice
+					read -p "_blue \"请输入选项并按回车键确认: \" " choice
 
 					case $choice in
 						1) set_timedate Asia/Shanghai ;;
@@ -687,7 +685,7 @@ honeok(){
 		_purple "0. 退出"
 		_purple "-------------------------"
 
-		_blue "请输入选项并按回车键确认: " && read -r choice
+		read -p "_blue \"请输入选项并按回车键确认: \" " choice
 
 		case "$choice" in
 			1)
