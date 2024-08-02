@@ -1,6 +1,6 @@
 #!/bin/bash
 # Author: honeok
-# Describe: 挖矿二测main
+# Describe: 挖矿二测
 
 set -o errexit
 clear
@@ -44,9 +44,9 @@ all_start(){
         echo ""
     done
 
-	sleep 5s
+	sleep 5
 
-	cd /data/tool/
+	cd /data/tool/ || { _red "无法进入目录 /data/tool/"; exit 1; }
 	if ! pgrep -f 'processcontrol-allserver' > /dev/null; then
 		sh processcontrol-allserver.sh > /dev/null 2>&1 &
 		_green "processcontrol-allserver 启动成功"
@@ -54,7 +54,7 @@ all_start(){
 		_yellow "processcontrol-allserver 正在运行"
 	fi 
 
-	_green "GameServer全部启动成功"
+	_green "所有服务器启动成功"
 }
 
 # 停止所有服务器
@@ -75,7 +75,7 @@ all_stop() {
         local dir=$1
         cd "$dir"
         ./server.sh flush
-        sleep 60s
+        sleep 60
         ./server.sh stop
         _green "在 $dir 停止成功"
     }
@@ -88,7 +88,7 @@ all_stop() {
     # 停止网关服务器
     cd /data/server/gate/
     ./server.sh stop
-    sleep 120s
+    sleep 120
     _green "Gate 停止成功"
 
     # 动态生成游戏服务器目录
@@ -142,7 +142,15 @@ all_reload(){
 }
 
 update_start(){
-	cd /data/update/ || { _red "无法进入目录 $dir"; exit 1; }
+    # 动态生成服务器目录
+    local updatestart_dirs=()
+    for i in {1..5}; do
+        updatestart_dirs+=("/data/server${i}/game/")
+    done
+    updatestart_dirs+=("/data/server/gate/")
+    updatestart_dirs+=("/data/server/login/")
+
+	cd /data/update/ || { _red "无法进入目录/data/update/"; exit 1; }
 
     if [ "$(ls -A)" ]; then
         rm -rf *
@@ -158,76 +166,47 @@ update_start(){
 
 	tar xvf updategame.tar.gz
 
-\cp -rf /data/update/app/* /data/server1/game/
+    # 复制更新文件到每个服务器目录
+    for dir in "${updatestart_dirs[@]}"; do
+        \cp -rf /data/update/app/* "$dir"
+    done
 
-\cp -rf /data/update/app/* /data/server2/game/
+    # 启动服务器
+    start_server() {
+        local dir=$1
+        cd "$dir" || { _red "无法进入目录 $dir"; exit 1; }
+        rm -f nohup.txt
+        ./server.sh start
+        if [ $? -ne 0 ]; then
+            _red "$dir 启动失败"; exit 1
+        fi
+        _green "$dir 启动成功"
+    }
 
-\cp -rf /data/update/app/* /data/server3/game/
+    for dir in "${updatestart_dirs[@]}"; do
+        start_server "$dir"
+    done
 
-\cp -rf /data/update/app/* /data/server4/game/
+	cd /data/tool/ || { _red "无法进入目录 /data/tool/"; exit 1; }
+	if ! pgrep -f 'processcontrol-allserver' > /dev/null; then
+		sh processcontrol-allserver.sh > /dev/null 2>&1 &
+		_green "processcontrol-allserver 启动成功"
+	else
+		_yellow "processcontrol-allserver 正在运行"
+	fi 
 
-\cp -rf /data/update/app/* /data/server5/game/
-
-\cp -rf /data/update/app/* /data/server/gate/
-
-\cp -rf /data/update/app/* /data/server/login/
-
-cd /data/server1/game/
-rm -rf nohup.txt
-./server.sh start
-echo
-
-cd /data/server2/game/
-rm -rf nohup.txt
-./server.sh start
-echo
-
-cd /data/server3/game/
-rm -rf nohup.txt
-./server.sh start
-echo
-
-cd /data/server4/game/
-rm -rf nohup.txt
-./server.sh start
-echo
-
-cd /data/server5/game/
-rm -rf nohup.txt
-./server.sh start
-echo
-
-cd /data/server/gate/
-rm -rf nohup.txt
-./server.sh start
-echo
-
-cd /data/server/login/
-rm -rf nohup.txt
-./server.sh start
-echo
-sleep 5s
-
-cd /data/tool/
-sa=`ps -aux | grep 'processcontrol-allserver' | grep -v grep`
-if [ "$?" != "0" ];
-then
-sh processcontrol-allserver.sh > /dev/null 2>&1 & 
-else
-echo "processcontrol-allserver-is-runing"
-fi 
-
-echo ALLsuccess
+	_green "所有服务器启动成功"
 }
 
 main(){
 	local choice
 	while true; do
 		_purple "-------------------------"
-		_purple "1. 启动服务器"
-		_purple "2. 停止服务器(默认执行存盘)"
-		_purple "3. 重读服务器"
-		_purple "4. 维护更新启动"
+		_purple "1. 查看游戏进程"
+		_purple "2. 启动服务器"
+		_purple "3. 停止服务器(默认执行存盘)"
+		_purple "4. 重读服务器"
+		_purple "5. 维护更新启动"
 		_purple "0. 退出脚本"
 		_purple "-------------------------"
 		echo -e "${cyan}请输入选项并按Enter: ${white}"
@@ -235,16 +214,20 @@ main(){
 
 		case "$choice" in
 			1)
-				all_start
+				ps aux | grep -E 'lv_app|p8_app|p9_app|npm|mysql|BS|processcontrol|tarlog|node (www|app.js)|dops.sh|redis|filebeat|python3\.9 main\.py|logbus|sh start\.sh' | grep -v 'grep'
 				;;
 			2)
-				all_stop
+				all_start
 				;;
 			3)
-				all_reload
+				all_stop
 				;;
 			4)
+				all_reload
+				;;
+			5)
 				update_start
+				;;
 			0)
 				_yellow "Bye!"
 				exit 0
