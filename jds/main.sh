@@ -115,7 +115,7 @@ all_reload(){
 		_green "目录/data/update/已清空"
 	else
 		_yellow "目录/data/update/为空"
-    fi
+	fi
 
 	sshpass -p 'c4h?itwj5ENi' scp -o StrictHostKeyChecking=no root@10.47.7.242:/data/update/updategame.tar.gz ./
 	if [ $? -ne 0 ]; then
@@ -185,7 +185,7 @@ update_start(){
 			_red "$dir 启动失败"; exit 1
 		fi
 		_green "$dir 启动成功"
-    }
+	}
 
 	for dir in "${updatestart_dirs[@]}"; do
 		start_server "$dir"
@@ -203,9 +203,9 @@ update_start(){
 }
 
 main(){
-	clear
 	local choice
 	while true; do
+		clear
 		_purple "-------------------------"
 		_purple "1. 查看游戏进程"
 		_purple "2. 启动服务器"
