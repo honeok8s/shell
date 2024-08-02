@@ -26,7 +26,8 @@ _gray() { echo -e ${gray}$@${white}; }
 
 print_logo(){
 # https://www.lddgo.net/string/text-to-ascii-art
-echo -e "${cyan} _                            _    
+echo -e "${cyan}
+ _                            _    
 | |                          | |   
 | |__   ___  _ __   ___  ___ | | __
 | '_ \ / _ \| '_ \ / _ \/ _ \| |/ /
