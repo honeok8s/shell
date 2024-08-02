@@ -78,55 +78,55 @@ set_timedate(){
 }
 
 install_package(){
-    if [ $# -eq 0 ]; then
-        _red "未提供软件包参数"
-        return 1
-    fi
+	if [ $# -eq 0 ]; then
+		_red "未提供软件包参数"
+		return 1
+	fi
 
-    for package in "$@"; do
-        if ! command -v "$package" &>/dev/null; then
-            _yellow "正在安装 $package"
-            if command -v dnf &>/dev/null; then
-                dnf install -y "$package"
-            elif command -v yum &>/dev/null; then
-                yum -y install "$package"
-            elif command -v apt &>/dev/null; then
-                apt update && apt install -y "$package"
-            elif command -v apk &>/dev/null; then
-                apk add "$package"
-            else
-                _red "未知的包管理器"
-                return 1
-            fi
-        else
-            _green "$package 已经安装"
-        fi
-    done
-    return 0
+	for package in "$@"; do
+		if ! command -v "$package" &>/dev/null; then
+			_yellow "正在安装 $package"
+			if command -v dnf &>/dev/null; then
+				dnf install -y "$package"
+			elif command -v yum &>/dev/null; then
+				yum -y install "$package"
+			elif command -v apt &>/dev/null; then
+				apt update && apt install -y "$package"
+			elif command -v apk &>/dev/null; then
+				apk add "$package"
+			else
+				_red "未知的包管理器"
+				return 1
+			fi
+		else
+			_green "$package 已经安装"
+		fi
+	done
+	return 0
 }
 
 remove_package(){
-    if [ $# -eq 0 ]; then
-        _red "未提供软件包参数"
-        return 1
-    fi
+	if [ $# -eq 0 ]; then
+		_red "未提供软件包参数"
+		return 1
+	fi
 
-    for package in "$@"; do
-        _yellow "正在卸载 $package"
-        if command -v dnf &>/dev/null; then
-            dnf remove -y "${package}"*
-        elif command -v yum &>/dev/null; then
-            yum remove -y "${package}"*
-        elif command -v apt &>/dev/null; then
-            apt purge -y "${package}"*
-        elif command -v apk &>/dev/null; then
-            apk del "${package}"*
-        else
-            _red "未知的包管理器"
-            return 1
-        fi
-    done
-    return 0
+	for package in "$@"; do
+		_yellow "正在卸载 $package"
+		if command -v dnf &>/dev/null; then
+			dnf remove -y "${package}"*
+		elif command -v yum &>/dev/null; then
+			yum remove -y "${package}"*
+		elif command -v apt &>/dev/null; then
+			apt purge -y "${package}"*
+		elif command -v apk &>/dev/null; then
+			apk del "${package}"*
+		else
+			_red "未知的包管理器"
+			return 1
+		fi
+	done
+	return 0
 }
 
 bbr_on(){
