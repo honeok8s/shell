@@ -77,6 +77,54 @@ install_package(){
 	return 0
 }
 
+remove() {
+	if [ $# -eq 0 ]; then
+		_red "未提供软件包参数"
+		return 1
+	fi
+
+	for package in "$@"; do
+		_yellow "正在卸载 $package"
+		if command -v dnf &>/dev/null; then
+			dnf remove -y "${package}"*
+		elif command -v yum &>/dev/null; then
+			yum remove -y "${package}"*
+		elif command -v apt &>/dev/null; then
+			apt purge -y "${package}"*
+		elif command -v apk &>/dev/null; then
+			apk del "${package}*"
+		else
+			_red "未知的包管理器!"
+			return 1
+		fi
+	done
+	return 0
+}
+
+bbr_on() {
+cat > /etc/sysctl.conf << EOF
+net.ipv4.tcp_congestion_control=bbr
+EOF
+
+sysctl -p
+}
+
+server_reboot() {
+	local choice
+	_purple "现在重启服务器吗?\c"  # 使用 \c 保持光标在同一行
+	read choice
+
+	case "$choice" in
+		[Yy])
+			_green "已重启"
+			reboot
+			;;
+		*)
+			_yellow "已取消"
+			;;
+	esac
+}
+
 system_info() {
 	local hostname=$(hostnamectl | sed -n 's/^[[:space:]]*Static hostname:[[:space:]]*\(.*\)$/\1/p')
 	# 获取运营商信息
@@ -223,13 +271,132 @@ system_info() {
 	echo
 }
 
-reinstall_system() {
-	# 禁止大陆服务器重装
-	if [ "$(curl -s https://ipinfo.io/country)" == 'CN' ]; then
-		_red "IP属地为中国,不建议重装服务器"
-		break
-	fi
+xanmod_bbr3(){
+	local choice
+	need_root
+	_yellow "XanMod BBR3管理"
+	if dpkg -l | grep -q 'linux-xanmod'; then
+		while true; do
+			clear
+			local kernel_version=$(uname -r)
+			_yellow "您已安装XanMod的BBRv3内核"
+			_yellow "当前内核版本: $kernel_version"
 
+			echo ""
+			_yellow "内核管理"
+			_purple "-------------------------"
+			_purple "1. 更新BBRv3内核              2. 卸载BBRv3内核"
+			_purple "-------------------------"
+			_purple "0. 返回上一级选单"
+			_purple "-------------------------"
+
+			_purple "请输入选项并按回车键确认：\c"  # 使用 \c 保持光标在同一行
+			read choice
+
+			case $choice in
+				1)
+					apt purge -y 'linux-*xanmod1*'
+					update-grub
+					# wget -qO - https://dl.xanmod.org/archive.key | gpg --dearmor -o /usr/share/keyrings/xanmod-archive-keyring.gpg --yes
+					wget -qO - https://raw.githubusercontent.com/kejilion/sh/main/archive.key | gpg --dearmor -o /usr/share/keyrings/xanmod-archive-keyring.gpg --yes
+
+					# 添加存储库
+					echo 'deb [signed-by=/usr/share/keyrings/xanmod-archive-keyring.gpg] http://deb.xanmod.org releases main' | tee /etc/apt/sources.list.d/xanmod-release.list
+
+					# kernel_version=$(wget -q https://dl.xanmod.org/check_x86-64_psabi.sh && chmod +x check_x86-64_psabi.sh && ./check_x86-64_psabi.sh | grep -oP 'x86-64-v\K\d+|x86-64-v\d+')
+					local kernel_version=$(wget -q https://raw.githubusercontent.com/kejilion/sh/main/check_x86-64_psabi.sh && chmod +x check_x86-64_psabi.sh && ./check_x86-64_psabi.sh | grep -oP 'x86-64-v\K\d+|x86-64-v\d+')
+
+					apt update -y
+					apt install -y linux-xanmod-x64v$kernel_version
+
+					_green "XanMod内核已更新,重启后生效"
+					rm -f /etc/apt/sources.list.d/xanmod-release.list
+					rm -f check_x86-64_psabi.sh*
+
+					server_reboot
+					;;
+				2)
+					apt purge -y 'linux-*xanmod1*'
+					update-grub
+					_green "XanMod内核已卸载,重启后生效"
+					server_reboot
+					;;
+				0)
+					break  # 跳出循环,退出菜单
+					;;
+				*)
+					break  # 跳出循环,退出菜单
+					;;
+			esac
+		done
+	else
+		# 未安装则安装
+		clear
+			_yellow "请备份数据,将为你升级Linux内核开启XanMod BBR3"
+			_purple "------------------------------------------------"
+			_purple "仅支持Debian/Ubuntu 仅支持x86_64架构"
+			_purple "VPS是512M内存的,请提前添加1G虚拟内存,防止因内存不足失联!"
+			_purple "------------------------------------------------"
+			
+			_purple "确定继续吗?(Y/N)\c"  # 使用 \c 保持光标在同一行
+			read choice
+
+			case "$choice" in
+				[Yy])
+					if [ -r /etc/os-release ]; then
+						. /etc/os-release
+							if [ "$ID" != "debian" ] && [ "$ID" != "ubuntu" ]; then
+								_red "当前环境不支持,仅支持Debian和Ubuntu系统"
+								end_of
+								linux_system_tools
+							fi
+					else
+						_red "无法确定操作系统类型"
+						end_of
+						linux_system_tools
+					fi
+
+					# 检查系统架构
+					local arch=$(dpkg --print-architecture)
+					if [ "$arch" != "amd64" ]; then
+						_red "当前环境不支持，仅支持x86_64架构"
+						end_of
+						linux_system_tools
+					fi
+
+					#check_swap
+					install wget gnupg
+
+					# wget -qO - https://dl.xanmod.org/archive.key | gpg --dearmor -o /usr/share/keyrings/xanmod-archive-keyring.gpg --yes
+					wget -qO - https://raw.githubusercontent.com/kejilion/sh/main/archive.key | gpg --dearmor -o /usr/share/keyrings/xanmod-archive-keyring.gpg --yes
+
+					# 添加存储库
+					echo 'deb [signed-by=/usr/share/keyrings/xanmod-archive-keyring.gpg] http://deb.xanmod.org releases main' | tee /etc/apt/sources.list.d/xanmod-release.list
+
+					# kernel_version=$(wget -q https://dl.xanmod.org/check_x86-64_psabi.sh && chmod +x check_x86-64_psabi.sh && ./check_x86-64_psabi.sh | grep -oP 'x86-64-v\K\d+|x86-64-v\d+')
+					local kernel_version=$(wget -q https://raw.githubusercontent.com/kejilion/sh/main/check_x86-64_psabi.sh && chmod +x check_x86-64_psabi.sh && ./check_x86-64_psabi.sh | grep -oP 'x86-64-v\K\d+|x86-64-v\d+')
+
+					apt update -y
+					apt install -y linux-xanmod-x64v$kernel_version
+
+					bbr_on
+
+					_green "XanMod内核安装并BBR3启用成功。重启后生效"
+					rm -f /etc/apt/sources.list.d/xanmod-release.list
+					rm -f check_x86-64_psabi.sh*
+					server_reboot
+					;;
+				[Nn])
+					_yellow "已取消"
+					;;
+				*)
+					_red "无效的选择,请输入Y或N"
+					;;
+			esac
+	fi
+}
+
+reinstall_system() {
 	mollyLau_reinstall_script(){
 		wget --no-check-certificate -qO InstallNET.sh 'https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh' && chmod a+x InstallNET.sh
 	}
@@ -245,18 +412,20 @@ reinstall_system() {
 	local choice
 	while true; do
 	need_root
-		_red "请备份数据,将为你重装系统,预计花费15分钟"
-		echo "-------------------------"
-		echo "1. Debian 12                  2. Debian 11"
-		echo "3. Debian 10                  4. Debian 9"
-		echo "-------------------------"
-		echo "11. Ubuntu 24.04              12. Ubuntu 22.04"
-		echo "13. Ubuntu 20.04              14. Ubuntu 18.04"
-		echo "-------------------------"
-		echo "0. 返回上一级选单"
-		echo "-------------------------"
+		_yellow "请备份数据,将为你重装系统,预计花费15分钟"
+		_purple "-------------------------"
+		_purple "1. Debian 12                  2. Debian 11"
+		_purple "3. Debian 10                  4. Debian 9"
+		_purple "-------------------------"
+		_purple "11. Ubuntu 24.04              12. Ubuntu 22.04"
+		_purple "13. Ubuntu 20.04              14. Ubuntu 18.04"
+		_purple "-------------------------"
+		_purple "0. 返回上一级选单"
+		_purple "-------------------------"
 
-		read -p "请选择要重装的系统: " choice
+		_purple "请输入选项并按回车键确认：\c"  # 使用 \c 保持光标在同一行
+		read choice
+
 		case "$choice" in
 			1)
 				_yellow "重装debian 12"
@@ -331,12 +500,14 @@ server_test_script(){
 		clear
 		_yellow "VPS测试脚本"
 		echo ""
-		echo "----IP及解锁状态检测----"
-		echo "1. 流媒体解锁"
-		echo "8. VPS融合怪服务器测评"
-		echo "-------------------------"
-		echo "0. 返回菜单"
-		read -p "请输入选项并按Enter:" choice
+		_purple "-----IP及解锁状态检测----"
+		_purple "1. 流媒体解锁"
+		_purple "8. VPS融合怪服务器测评"
+		_purple "-------------------------"
+		_purple "0. 返回菜单"
+
+		_purple "请输入选项并按回车键确认：\c"  # 使用 \c 保持光标在同一行
+		read choice
 
 		case "$choice" in
 			1)
@@ -363,15 +534,87 @@ linux_system_tools(){
 	while true; do
 		clear
 		_yellow "系统工具"
-		echo "------------------------"
-		_yellow "8. 一键重装系统"
-		echo "0. 返回主菜单"
-		echo "------------------------"
-		read -p "请输入选项并按Enter:" choice
+		echo ""
+		_purple "------------------------"
+		_purple "                                       8. 一键重装系统"
+		_purple "0. 返回主菜单"
+		_purple "------------------------"
+		_purple "15. 系统时区调整                       16. 设置XanMod BBR3"
+		_purple "------------------------"
+
+		_purple "请输入选项并按回车键确认：\c"  # 使用 \c 保持光标在同一行
+		read choice
 
 		case $choice in
 			8)
 				reinstall_system
+				;;
+			15)
+				need_root
+				while true; do
+					clear
+					_yellow "系统时间信息"
+
+					# 获取当前系统时区
+					local timezone=$(current_timezone)
+
+					# 获取当前系统时间
+					local current_time=$(date +"%Y-%m-%d %H:%M:%S")
+
+					# 显示时区和时间
+					_yellow "当前系统时区：$timezone"
+					_yellow "当前系统时间：$current_time"
+
+					echo ""
+					_yellow "时区切换"
+					_purple "------------亚洲------------"
+					_purple "1. 中国上海时间              2. 中国香港时间"
+					_purple "3. 日本东京时间              4. 韩国首尔时间"
+					_purple "5. 新加坡时间                6. 印度加尔各答时间"
+					_purple "7. 阿联酋迪拜时间            8. 澳大利亚悉尼时间"
+					_purple "------------欧洲------------"
+					_purple "11. 英国伦敦时间             12. 法国巴黎时间"
+					_purple "13. 德国柏林时间             14. 俄罗斯莫斯科时间"
+					_purple "15. 荷兰尤特赖赫特时间       16. 西班牙马德里时间"
+					_purple "------------美洲------------"
+					_purple "21. 美国西部时间             22. 美国东部时间"
+					_purple "23. 加拿大时间               24. 墨西哥时间"
+					_purple "25. 巴西时间                 26. 阿根廷时间"
+					_purple "----------------------------"
+					_purple "0. 返回上一级选单"
+					_purple "----------------------------"
+
+					_purple "请输入选项并按回车键确认：\c"  # 使用 \c 保持光标在同一行
+					read choice
+
+					case $choice in
+						1) set_timedate Asia/Shanghai ;;
+						2) set_timedate Asia/Hong_Kong ;;
+						3) set_timedate Asia/Tokyo ;;
+						4) set_timedate Asia/Seoul ;;
+						5) set_timedate Asia/Singapore ;;
+						6) set_timedate Asia/Kolkata ;;
+						7) set_timedate Asia/Dubai ;;
+						8) set_timedate Australia/Sydney ;;
+						11) set_timedate Europe/London ;;
+						12) set_timedate Europe/Paris ;;
+						13) set_timedate Europe/Berlin ;;
+						14) set_timedate Europe/Moscow ;;
+						15) set_timedate Europe/Amsterdam ;;
+						16) set_timedate Europe/Madrid ;;
+						21) set_timedate America/Los_Angeles ;;
+						22) set_timedate America/New_York ;;
+						23) set_timedate America/Vancouver ;;
+						24) set_timedate America/Mexico_City ;;
+						25) set_timedate America/Sao_Paulo ;;
+						26) set_timedate America/Argentina/Buenos_Aires ;;
+						0) break ;;
+						*) break ;;
+					esac
+				done
+				;;
+			16)
+				
 				;;
 			0)
 				honeok
@@ -385,23 +628,33 @@ honeok(){
 	local choice
 	while true; do
 		clear
+		_gray "##############################################################"
 		print_logo
-		echo ""
-		_gray "做最能缝合的脚本!"
-		_gray "Author: honeok"
-		_gray "Github: https://github.com/honeok8s/shell"
+		_yellow "做最能缝合的脚本!"
+		_blue "Author: honeok"
+		_magenta "Github: https://github.com/honeok8s/shell"
+		_green "当前时间: $(date +"%Y-%m-%d %H:%M:%S")"
+		_gray "##############################################################"
 
-		echo "-------------------------"
-		echo "1. 系统信息查询"
-		echo "8. 测试脚本合集"
-		echo "13. 系统工具"
-		echo "-------------------------"
-		
-		read -p "请输入选项并按Enter:" choice
+		_purple "-------------------------"
+		_purple "1. 系统信息查询"
+		_purple "7. WARP管理"
+		_purple "8. 测试脚本合集"
+		_purple "13. 系统工具"
+		_purple "-------------------------"
+
+		_purple "请输入选项并按回车键确认：\c"  # 使用 \c 保持光标在同一行
+		read choice
 
 		case "$choice" in
 			1)
 				system_info
+				;;
+			7)
+				clear
+				_yellow "warp管理"
+				install_package wget
+				wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh [option] [lisence/url/token]
 				;;
 			8)
 				server_test_script
