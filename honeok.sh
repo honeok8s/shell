@@ -24,6 +24,34 @@ _cyan() { echo -e ${cyan}$@${white}; }
 _purple() { echo -e ${purple}$@${white}; }
 _gray() { echo -e ${gray}$@${white}; }
 
+install_package(){
+	if [ $# -eq 0 ]; then
+		_red "未提供软件包参数"
+		return 1
+	fi
+
+	for package in "$@"; do
+		if ! command -v "$package" &>/dev/null; then
+			_yellow "正在安装 $package"
+			if command -v dnf &>/dev/null; then
+				dnf install -y "$package"
+			elif command -v yum &>/dev/null; then
+				yum -y install "$package"
+			elif command -v apt &>/dev/null; then
+				apt install -y "$package"
+			elif command -v apk &>/dev/null; then
+				apk add "$package"
+			else
+				_red "未知的包管理器"
+				return 1
+			fi
+		else
+			_green "$package已经安装"
+		fi
+	done
+	return 0
+}
+
 system_info() {
 	local hostname=$(hostnamectl | sed -n 's/^[[:space:]]*Static hostname:[[:space:]]*\(.*\)$/\1/p')
 	# 获取运营商信息
@@ -169,6 +197,100 @@ system_info() {
 	echo
 }
 
+reinstall_system() {
+	mollyLau_reinstall_script(){
+		wget --no-check-certificate -qO InstallNET.sh 'https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh' && chmod a+x InstallNET.sh
+	}
+
+	dd_system_mollyLau(){
+		_yellow "重装后初始用户名: \"root\"  初始密码: \"LeitboGi0ro\"  初始端口: \"22\""
+		_yellow "按任意键继续"
+		read -n 1 -s -r -p ""
+		install_package wget
+		mollyLau_reinstall_script
+	}
+
+	local choice
+	while true; do
+		_red "请备份数据,将为你重装系统,预计花费15分钟"
+		echo "-------------------------"
+		echo "1. Debian 12                  2. Debian 11"
+		echo "3. Debian 10                  4. Debian 9"
+		echo "-------------------------"
+		echo "11. Ubuntu 24.04              12. Ubuntu 22.04"
+		echo "13. Ubuntu 20.04              14. Ubuntu 18.04"
+		echo "-------------------------"
+		echo "0. 返回上一级选单"
+		echo "-------------------------"
+
+		read -p "请选择要重装的系统: " choice
+		case "$choice" in
+			1)
+				_yellow "重装debian 12"
+				dd_system_mollyLau
+				bash InstallNET.sh -debian 12
+				reboot
+				exit 0
+				;;
+			2)
+				_yellow "重装debian 11"
+				dd_system_mollyLau
+				bash InstallNET.sh -debian 11
+				reboot
+				exit 0
+				;;
+			3)
+				_yellow "重装debian 10"
+				dd_system_mollyLau
+				bash InstallNET.sh -debian 10
+				reboot
+				exit 0
+				;;
+			4)
+				_yellow "重装debian 9"
+				dd_system_mollyLau
+				bash InstallNET.sh -debian 9
+				reboot
+				exit 0
+				;;
+			11)
+				_yellow "重装ubuntu 24.04"
+				dd_system_mollyLau
+				bash InstallNET.sh -ubuntu 24.04
+				reboot
+				exit 0
+				;;
+			12)
+				_yellow "重装ubuntu 22.04"
+				dd_system_mollyLau
+				bash InstallNET.sh -ubuntu 22.04
+				reboot
+				exit 0
+				;;
+			13)
+				_yellow "重装ubuntu 20.04"
+				dd_system_mollyLau
+				bash InstallNET.sh -ubuntu 20.04
+				reboot
+				exit 0
+				;;
+			14)
+				_yellow "重装ubuntu 18.04"
+				dd_system_mollyLau
+				bash InstallNET.sh -ubuntu 18.04
+				reboot
+				exit 0
+				;;
+			0)
+				break
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+	done
+}
+
 server_test_script(){
 	local choice
 	while true; do
@@ -192,15 +314,37 @@ server_test_script(){
 				curl -L https://gitlab.com/spiritysdx/za/-/raw/main/ecs.sh -o ecs.sh && chmod +x ecs.sh && bash ecs.sh
 				;;
 			0)
-				clear
-				return
+				break
 				;;
 			*)
 				_red "无效选项,请重新输入"
 				;;
 		esac
-		_cyan "按任意键继续"	
+		_yellow "按任意键继续"
 		read -n 1 -s -r
+	done
+}
+
+linux_system_tools(){
+	local choice
+	while true; do
+		clear
+		# send_stats "系统工具"
+		echo "▶ 系统工具"
+		echo "------------------------"
+		_yellow "8. 一键重装系统"
+		echo "0. 返回主菜单"
+		echo "------------------------"
+		read -p "请输入选项并按Enter:" choice
+
+		case $choice in
+			8)
+				reinstall_system
+				;;
+			0)
+				break
+				;;
+		esac
 	done
 }
 
@@ -217,8 +361,8 @@ honeok_sh(){
 		_yellow " | | | | (_) | | | |  __| (_) |   < "
 		_yellow " |_| |_|\___/|_| |_|\___|\___/|_|\_\""
 
-		_cyan "Author: honeok"
-		_cyan "Github: https://github.com/honeok8s/shell"
+		_purple "Author: honeok"
+		_purple "Github: https://github.com/honeok8s/shell"
 
 		echo "-------------------------"
 		echo "1. 系统信息查询"
@@ -235,6 +379,9 @@ honeok_sh(){
 			8)
 				server_test_script
 				;;
+			13)
+				linux_system_tools
+				;;
 			0)
 				clear
 				exit 0
@@ -243,7 +390,7 @@ honeok_sh(){
 				_red "无效选项,请重新输入"
 				;;
 		esac
-		_cyan "按任意键继续"	
+		_yellow "按任意键继续"
 		read -n 1 -s -r
 	done
 }
