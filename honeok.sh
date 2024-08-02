@@ -321,7 +321,7 @@ xanmod_bbr3(){
 			_purple "-------------------------"
 
 			_purple "请输入选项并按回车键确认: "
-			read choice
+			read -p "" choice
 
 			case $choice in
 				1)
@@ -462,7 +462,7 @@ reinstall_system(){
 		echo "-------------------------"
 
 		_purple "请输入选项并按回车键确认: "
-		read choice
+		read -p "" choice
 
 		case "$choice" in
 			1)
@@ -544,7 +544,7 @@ server_test_script(){
 		echo "0. 返回菜单"
 
 		_purple "请输入选项并按回车键确认: "
-		read choice
+		read -p "" choice
 
 		case "$choice" in
 			1)
@@ -581,7 +581,7 @@ linux_system_tools(){
 		echo "------------------------"
 
 		_purple "请输入选项并按回车键确认: "
-		read choice
+		read -p "" choice
 
 		case $choice in
 			8)
@@ -633,7 +633,7 @@ linux_system_tools(){
 					echo "----------------------------"
 
 					_purple "请输入选项并按回车键确认: "
-					read choice
+					read -p "" choice
 
 					case $choice in
 						1) set_timedate Asia/Shanghai ;;
@@ -693,7 +693,7 @@ honeok(){
 		_purple "-------------------------"
 
 		_purple "请输入选项并按回车键确认: "
-		read choice
+		read -p "" choice
 
 		case "$choice" in
 			1)
