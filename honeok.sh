@@ -53,8 +53,6 @@ install_package(){
 }
 
 system_info() {
-	clear
-
 	local hostname=$(hostnamectl | sed -n 's/^[[:space:]]*Static hostname:[[:space:]]*\(.*\)$/\1/p')
 	# 获取运营商信息
 	local isp_info=$(curl -s https://ipinfo.io | grep '"org":' | awk -F'"' '{print $4}')
@@ -164,6 +162,7 @@ system_info() {
 	local current_time=$(date +"%Y-%m-%d %H:%M:%S")
 	local uptime_str=$(cat /proc/uptime | awk -F. '{run_days=int($1 / 86400);run_hours=int(($1 % 86400) / 3600);run_minutes=int(($1 % 3600) / 60); if (run_days > 0) printf("%d天 ", run_days); if (run_hours > 0) printf("%d时 ", run_hours); printf("%d分\n", run_minutes)}')
 
+	clear
 	echo ""
 	_yellow "系统信息查询"
 	echo "-------------------------"
@@ -322,6 +321,7 @@ server_test_script(){
 				_red "无效选项,请重新输入"
 				;;
 		esac
+		_green "操作完成"
 		_yellow "按任意键继续"
 		read -n 1 -s -r
 	done
@@ -362,7 +362,7 @@ honeok_sh(){
 		_yellow " | '_ \ / _ \| '_ \ / _ \/ _ \| |/ /"
 		_yellow " | | | | (_) | | | |  __| (_) |   < "
 		_yellow " |_| |_|\___/|_| |_|\___|\___/|_|\_\""
-
+		echo "-------------------------"
 		_purple "Author: honeok"
 		_purple "Github: https://github.com/honeok8s/shell"
 
@@ -392,6 +392,7 @@ honeok_sh(){
 				_red "无效选项,请重新输入"
 				;;
 		esac
+		_green "操作完成"
 		_yellow "按任意键继续"
 		read -n 1 -s -r
 	done
