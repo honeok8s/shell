@@ -26,6 +26,11 @@ _cyan() { echo -e ${cyan}$@${white}; }
 _purple() { echo -e ${purple}$@${white}; }
 _gray() { echo -e ${gray}$@${white}; }
 
+##########################################################
+# 全局变量
+update_file_center_ip="10.47.7.242"
+update_file_center_passwd="c4h?itwj5ENi"
+#################### function library ####################
 print_process(){
 	ps aux | grep -E 'lv_app|p8_app|p9_app|npm|mysql|BS|processcontrol|tarlog|node (www|app.js)|dops.sh|redis|filebeat|python3\.9 main\.py|logbus|sh start\.sh' | grep -v 'grep'
 }
@@ -117,7 +122,7 @@ all_reload(){
 		_yellow "目录/data/update/为空"
 	fi
 
-	sshpass -p 'c4h?itwj5ENi' scp -o StrictHostKeyChecking=no root@10.47.7.242:/data/update/updategame.tar.gz ./
+	sshpass -p "${update_file_center_passwd}" scp -o StrictHostKeyChecking=no root@${update_file_center_ip}:/data/update/updategame.tar.gz ./
 	if [ $? -ne 0 ]; then
 		_red "文件下载失败"; exit 1
 	fi
@@ -163,7 +168,7 @@ update_start(){
 		_yellow "目录/data/update/为空"
 	fi
 
-	sshpass -p 'c4h?itwj5ENi' scp -o StrictHostKeyChecking=no root@10.47.7.242:/data/update/updategame.tar.gz ./
+	sshpass -p "${update_file_center_passwd}" scp -o StrictHostKeyChecking=no root@${update_file_center_ip}:/data/update/updategame.tar.gz ./
 	if [ $? -ne 0 ]; then
 		_red "文件下载失败"; exit 1
 	fi
