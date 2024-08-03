@@ -847,9 +847,11 @@ linux_system_tools(){
 				_yellow "设置虚拟内存"
 				 while true; do
 					clear
-					swap_used=$(free -m | awk 'NR==3{print $3}')
-					swap_total=$(free -m | awk 'NR==3{print $2}')
-					swap_info=$(free -m | awk 'NR==3{used=$3; total=$2; if (total == 0) {percentage=0} else {percentage=used*100/total}; printf "%dMB/%dMB (%d%%)", used, total, percentage}')
+
+					# 获取当前虚拟内存使用情况
+					local swap_used=$(free -m | awk 'NR==3{print $3}')
+					local swap_total=$(free -m | awk 'NR==3{print $2}')
+					local swap_info=$(free -m | awk 'NR==3{used=$3; total=$2; if (total == 0) {percentage=0} else {percentage=used*100/total}; printf "%dMB/%dMB (%d%%)", used, total, percentage}')
 
 					_yellow "当前虚拟内存: ${swap_info}"
 					echo "------------------------"
@@ -872,9 +874,13 @@ linux_system_tools(){
 							;;
 						3)
 							echo -n -e "${blue}请输入虚拟内存大小MB:${white}" new_swap
-							read new_swap	
-							add_swap
-							_green "已设置自定义虚拟内存为 ${new_swap}MB"
+							read new_swap
+							if [[ "$new_swap" =~ ^[0-9]+$ ]] && [ "$new_swap" -gt 0 ]; then
+								add_swap
+								_green "已设置自定义虚拟内存为 ${new_swap}MB"
+							else
+								_red "无效输入,请输入正整数"
+							fi
 							;;
 						0)
 							break
@@ -904,37 +910,34 @@ linux_system_tools(){
 					echo ""
 					_yellow "时区切换"
 					echo "------------亚洲------------"
-					echo "1. 中国上海时间"
-					echo "2. 中国香港时间"
-					echo "3. 日本东京时间"
-					echo "4. 韩国首尔时间"
-					echo "5. 新加坡时间"
-					echo "6. 印度加尔各答时间"
-					echo "7. 阿联酋迪拜时间"
-					echo "8. 澳大利亚悉尼时间"
+					echo "1. 中国上海时间              2. 中国香港时间"
+					echo "3. 日本东京时间              4. 韩国首尔时间"
+					echo "5. 新加坡时间                6. 印度加尔各答时间"
+					echo "7. 阿联酋迪拜时间            8. 澳大利亚悉尼时间"
+					echo "9. 以色列特拉维夫时间        10. 马尔代夫时间"
 					echo "------------欧洲------------"
-					echo "11. 英国伦敦时间"
-					echo "12. 法国巴黎时间"
-					echo "13. 德国柏林时间"
-					echo "14. 俄罗斯莫斯科时间"
-					echo "15. 荷兰尤特赖赫特时间"
-					echo "16. 西班牙马德里时间"
+					echo "11. 英国伦敦时间             12. 法国巴黎时间"
+					echo "13. 德国柏林时间             14. 俄罗斯莫斯科时间"
+					echo "15. 荷兰尤特赖赫特时间       16. 西班牙马德里时间"
+					echo "17. 瑞士苏黎世时间           18. 意大利罗马时间"
 					echo "------------美洲------------"
-					echo "21. 美国西部时间"
-					echo "22. 美国东部时间"
-					echo "23. 加拿大时间"
-					echo "24. 墨西哥时间"
-					echo "25. 巴西时间"
-					echo "26. 阿根廷时间"
+					echo "21. 美国西部时间             22. 美国东部时间"
+					echo "23. 加拿大时间               24. 墨西哥时间"
+					echo "25. 巴西时间                 26. 阿根廷时间"
+					echo "27. 智利时间                 28. 哥伦比亚时间"
+					echo "------------非洲------------"
+					echo "31. 南非约翰内斯堡时间       32. 埃及开罗时间"
+					echo "33. 摩洛哥拉巴特时间         34. 尼日利亚拉各斯时间"
 					echo "----------------------------"
 					echo "0. 返回上一级选单"
 					echo "----------------------------"
 
+					# 提示用户输入选项
 					echo -n -e "${blue}请输入选项并按回车键确认:${white}"
 					read choice
 
 					case $choice in
-						1)set_timedate Asia/Shanghai ;;
+						1) set_timedate Asia/Shanghai ;;
 						2) set_timedate Asia/Hong_Kong ;;
 						3) set_timedate Asia/Tokyo ;;
 						4) set_timedate Asia/Seoul ;;
@@ -942,19 +945,29 @@ linux_system_tools(){
 						6) set_timedate Asia/Kolkata ;;
 						7) set_timedate Asia/Dubai ;;
 						8) set_timedate Australia/Sydney ;;
+						9) set_timedate Asia/Tel_Aviv ;;
+						10) set_timedate Indian/Maldives ;;
 						11) set_timedate Europe/London ;;
 						12) set_timedate Europe/Paris ;;
 						13) set_timedate Europe/Berlin ;;
 						14) set_timedate Europe/Moscow ;;
 						15) set_timedate Europe/Amsterdam ;;
 						16) set_timedate Europe/Madrid ;;
+						17) set_timedate Europe/Zurich ;;
+						18) set_timedate Europe/Rome ;;
 						21) set_timedate America/Los_Angeles ;;
 						22) set_timedate America/New_York ;;
 						23) set_timedate America/Vancouver ;;
 						24) set_timedate America/Mexico_City ;;
 						25) set_timedate America/Sao_Paulo ;;
 						26) set_timedate America/Argentina/Buenos_Aires ;;
-						0) break ;;
+						27) set_timedate America/Santiago ;;
+						28) set_timedate America/Bogota ;;
+						31) set_timedate Africa/Johannesburg ;;
+						32) set_timedate Africa/Cairo ;;
+						33) set_timedate Africa/Casablanca ;;
+						34) set_timedate Africa/Lagos ;;
+						0) break ;;  # 退出循环
 						*) _red "无效选项,请重新输入" ;;
 					esac
 					end_of
