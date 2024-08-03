@@ -991,7 +991,7 @@ honeok(){
 		print_logo
 		_purple "-------------------------"
 		_yellow "做最能缝合的脚本!"
-		_gray "适配Ubuntu/Debian/CentOS/Alpine系统"
+		_magenta "适配Ubuntu/Debian/CentOS/Alpine系统"
 		_blue "Author: honeok"
 		_yellow "Github: https://github.com/honeok8s/shell"
 		_green "当前时间: $(date +"%Y-%m-%d %H:%M:%S")"
