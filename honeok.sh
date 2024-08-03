@@ -159,7 +159,7 @@ sysctl -p
 
 server_reboot(){
 	local choice
-	echo -n -e "${cyan}现在重启服务器吗?(Y/N):${white}"
+	echo -n -e "${yellow}现在重启服务器吗?(Y/N):${white}"
 	read choice
 
 	case "$choice" in
@@ -405,7 +405,7 @@ xanmod_bbr3(){
 			echo "0. 返回上一级选单"
 			echo "-------------------------"
 
-			echo -n -e "${blue}请输入选项并按回车键确认:${white}"
+			echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
 			read choice
 
 			case $choice in
@@ -453,7 +453,7 @@ xanmod_bbr3(){
 		echo "VPS是512M内存的,请提前添加1G虚拟内存,防止因内存不足失联!"
 		echo "------------------------------------------------"
 
-		echo -n -e "${cyan}确定继续吗?(Y/N)${white}"
+		echo -n -e "${yellow}确定继续吗?(Y/N)${white}"
 		read choice
 
 		case "$choice" in
@@ -542,7 +542,7 @@ reinstall_system(){
 		echo "0. 返回上一级菜单"
 		echo "-------------------------"
 
-		echo -n -e "${blue}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
 		read choice
 
 		case "$choice" in
@@ -651,7 +651,7 @@ server_script(){
 		echo "0. 返回菜单"
 		echo "-------------------------"
 
-		echo -n -e "${blue}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
 		read choice
 
 		case "$choice" in
@@ -801,7 +801,7 @@ linux_system_tools(){
 		echo "0. 返回主菜单"
 		echo "------------------------"
 
-		echo -n -e "${blue}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
 		read choice
 
 		case $choice in
@@ -825,7 +825,7 @@ linux_system_tools(){
 					echo "0. 返回上一级"
 					echo "------------------------"
 
-					echo -n -e "${blue}请输入选项并按回车键确认:${white}"
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
 					read choice
 
 					case "$choice" in
@@ -871,7 +871,7 @@ linux_system_tools(){
 					echo "1. 分配1024MB         2. 分配2048MB         3. 自定义大小         0. 退出"
 					echo "------------------------"
 					
-					echo -n -e "${blue}请输入选项并按回车键确认:${white}"
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
 					read choice
 
 					case "$choice" in
@@ -886,7 +886,7 @@ linux_system_tools(){
 							_green "已设置2G虚拟内存"
 							;;
 						3)
-							echo -n -e "${blue}请输入虚拟内存大小MB:${white}" new_swap
+							echo -n -e "${yellow}请输入虚拟内存大小MB:${white}" new_swap
 							read new_swap
 							if [[ "$new_swap" =~ ^[0-9]+$ ]] && [ "$new_swap" -gt 0 ]; then
 								add_swap $new_swap
@@ -946,7 +946,7 @@ linux_system_tools(){
 					echo "----------------------------"
 
 					# 提示用户输入选项
-					echo -n -e "${blue}请输入选项并按回车键确认:${white}"
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
 					read choice
 
 					case $choice in
@@ -1017,7 +1017,7 @@ honeok(){
 		_purple "0. 退出"
 		_purple "-------------------------"
 
-		echo -n -e "${blue}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
 		read choice
 
 		case "$choice" in
