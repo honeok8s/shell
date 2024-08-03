@@ -48,7 +48,7 @@ end_of(){
 # 检查用户是否为root
 need_root(){
 	clear
-	if [ "$EUID" -ne 0 ]; then
+	if [ "$(id -u)" -ne "0" ]; then
 		_red "该功能需要root用户才能运行"
 		end_of
 		# 回调主菜单
@@ -172,6 +172,58 @@ server_reboot(){
 			_yellow "已取消"
 			;;
 	esac
+}
+
+add_swap() {
+	# 获取当前系统中所有的swap分区
+	local swap_partitions=$(grep -E '^/dev/' /proc/swaps | awk '{print $1}')
+
+	# 遍历并删除所有的swap分区
+	for partition in $swap_partitions; do
+		swapoff "$partition"
+		wipefs -a "$partition"  # 清除文件系统标识符
+		mkswap -f "$partition"
+	done
+
+	# 确保/swapfile不再被使用
+	swapoff /swapfile
+
+	# 删除旧的/swapfile
+	rm -f /swapfile
+
+	# 创建新的swap文件
+	dd if=/dev/zero of=/swapfile bs=1M count=$new_swap status=progress
+	chmod 600 /swapfile
+	mkswap /swapfile
+	swapon /swapfile
+
+	# 更新fstab
+	if ! grep -q '/swapfile' /etc/fstab; then
+		echo "/swapfile swap swap defaults 0 0" >> /etc/fstab
+	fi
+
+	# 针对Alpine Linux的额外设置
+	if [ -f /etc/alpine-release ]; then
+		echo "nohup swapon /swapfile" > /etc/local.d/swap.start
+		chmod +x /etc/local.d/swap.start
+		rc-update add local
+	fi
+
+	_green "虚拟内存大小已调整为 ${new_swap}MB"
+}
+
+check_swap() {
+	# 获取当前总交换空间大小(以MB为单位)
+	local swap_total=$(free -m | awk 'NR==3{print $2}')
+
+	# 判断是否需要创建虚拟内存
+	if [ "$swap_total" -le 0 ]; then
+		# 系统没有交换空间,设置默认的1024MB交换空间
+		new_swap=1024
+		add_swap
+	else
+		_green "系统已经有交换空间,总大小为 ${swap_total}MB"
+	fi
 }
 
 # 查看系统信息
@@ -414,7 +466,7 @@ xanmod_bbr3(){
 					linux_system_tools
 				fi
 
-				#check_swap
+				check_swap
 				install wget gnupg
 
 				# wget -qO - https://dl.xanmod.org/archive.key | gpg --dearmor -o /usr/share/keyrings/xanmod-archive-keyring.gpg --yes
@@ -672,13 +724,13 @@ server_script(){
 			20)
 				clear
 				_yellow "yabs性能测试"
-				#check_swap
+				check_swap
 				curl -sL yabs.sh | bash -s -- -i -5
 				;;
 			21)
 				clear
 				_yellow "icu/gb5 CPU性能测试脚本"
-				#check_swap
+				check_swap
 				bash <(curl -sL bash.icu/gb5)
 				;;
 			30)
@@ -730,6 +782,7 @@ linux_system_tools(){
 		echo "------------------------"
 		echo "7. 优化DNS地址                         8. 一键重装系统"
 		echo "------------------------"
+		echo "12. 修改虚拟内存大小"
 		echo "15. 系统时区调整                       16. 设置XanMod BBR3"
 		echo "------------------------"
 		echo "0. 返回主菜单"
@@ -788,6 +841,49 @@ linux_system_tools(){
 				;;
 			8)
 				reinstall_system
+				;;
+			12)
+				need_root
+				_yellow "设置虚拟内存"
+				 while true; do
+					clear
+					swap_used=$(free -m | awk 'NR==3{print $3}')
+					swap_total=$(free -m | awk 'NR==3{print $2}')
+					swap_info=$(free -m | awk 'NR==3{used=$3; total=$2; if (total == 0) {percentage=0} else {percentage=used*100/total}; printf "%dMB/%dMB (%d%%)", used, total, percentage}')
+
+					_yellow "当前虚拟内存: ${swap_info}"
+					echo "------------------------"
+					echo "1. 分配1024MB         2. 分配2048MB         3. 自定义大小         0. 退出"
+					echo "------------------------"
+					
+					echo -n -e "${blue}请输入选项并按回车键确认:${white}"
+					read choice
+
+					case "$choice" in
+						1)
+							new_swap=1024
+							add_swap
+							_green "已设置1G虚拟内存"
+							;;
+						2)
+							new_swap=2048
+							add_swap
+							_green "已设置2G虚拟内存"
+							;;
+						3)
+							echo -n -e "${blue}请输入虚拟内存大小MB:${white}" new_swap
+							read new_swap	
+							add_swap
+							_green "已设置自定义虚拟内存为 ${new_swap}MB"
+							;;
+						0)
+							break
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac
+				done
 				;;
 			15)
 				need_root
