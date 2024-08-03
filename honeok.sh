@@ -77,6 +77,27 @@ set_timedate(){
 	fi
 }
 
+set_dns(){
+	# 检查机器是否有IPv6地址
+	ipv6_available=0
+	if [[ $(ip -6 addr | grep -c "inet6") -gt 0 ]]; then
+		ipv6_available=1
+	fi
+
+	echo "nameserver $dns1_ipv4" > /etc/resolv.conf
+	echo "nameserver $dns2_ipv4" >> /etc/resolv.conf
+
+	if [[ $ipv6_available -eq 1 ]]; then
+		echo "nameserver $dns1_ipv6" >> /etc/resolv.conf
+		echo "nameserver $dns2_ipv6" >> /etc/resolv.conf
+	fi
+
+	_green "DNS地址已更新"
+	echo "-------------------------"
+	cat /etc/resolv.conf
+	echo "-------------------------"
+}
+
 install_package(){
 	if [ $# -eq 0 ]; then
 		_red "未提供软件包参数"
@@ -706,18 +727,63 @@ linux_system_tools(){
 	while true; do
 		clear
 		_yellow "系统工具"
-		echo ""
 		echo "------------------------"
-		echo "8. 一键重装系统"
+		echo "7. 优化DNS地址                         8. 一键重装系统"
 		echo "------------------------"
 		echo "15. 系统时区调整                       16. 设置XanMod BBR3"
 		echo "------------------------"
 		echo "0. 返回主菜单"
 		echo "------------------------"
+
 		echo -n -e "${blue}请输入选项并按回车键确认:${white}"
 		read choice
 
 		case $choice in
+			7）
+				need_root
+				local choice
+				while true; do
+					clear
+					_yellow "优化DNS地址"
+					echo "------------------------"
+					_yellow "当前DNS地址"
+					cat /etc/resolv.conf
+					echo "------------------------"
+					echo ""
+					echo "1. 国外DNS优化: "
+					echo " v4: 1.1.1.1 8.8.8.8"
+					echo " v6: 2606:4700:4700::1111 2001:4860:4860::8888"
+					echo "2. 国内DNS优化: "
+					echo " v4: 223.5.5.5 183.60.83.19"
+					echo " v6: 2400:3200::1 2400:da00::6666"
+					echo "------------------------"
+					echo "0. 返回上一级"
+					echo "------------------------"
+
+					echo -n -e "${blue}请输入选项并按回车键确认:${white}"
+					read choice
+
+					case "$choice" in
+						1)
+							dns1_ipv4="1.1.1.1"
+							dns2_ipv4="8.8.8.8"
+							dns1_ipv6="2606:4700:4700::1111"
+							dns2_ipv6="2001:4860:4860::8888"
+							set_dns
+							;;
+						2)
+							dns1_ipv4="223.5.5.5"
+							dns2_ipv4="183.60.83.19"
+							dns1_ipv6="2400:3200::1"
+							dns2_ipv6="2400:da00::6666"
+							set_dns
+							;;
+						*)
+							break
+							;;
+					esac
+				done
+				;;
 			8)
 				reinstall_system
 				;;
