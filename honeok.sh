@@ -755,9 +755,10 @@ server_script(){
 		echo ""
 		echo "--------节点搭建---------"
 		echo "40. Fscarmen/sing-box"
-		echo "41. 233boy/sing-box"
-		echo "45. Vaxilu/x-ui"
-		echo "46. FranzKafkaYu/x-ui"
+		echo "44. 233boy/sing-box"
+		echo "48. Vaxilu/x-ui"
+		echo "52. FranzKafkaYu/x-ui"
+		echo "54. MHSanaei/3x-ui"
 		echo ""
 		echo "-------------------------"
 		echo "0. 返回菜单"
@@ -873,21 +874,25 @@ server_script(){
 				_yellow "Fscarmen/sing-box"
 				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/sing-box/main/sing-box.sh)
 				;;
-			41)
+			44)
 				clear
 				_yellow "233boy/sing-box"
 				bash <(wget -qO- -o- https://github.com/233boy/sing-box/raw/main/install.sh)
 				;;
-			45)
+			48)
 				clear
 				_yellow "Vaxilu/x-ui"
 				bash <(curl -Ls https://raw.githubusercontent.com/vaxilu/x-ui/master/install.sh)
 				;;
-			46)
+			52)
 				clear
 				_yellow "FranzKafkaYu/x-ui"
 				bash <(curl -Ls https://raw.githubusercontent.com/FranzKafkaYu/x-ui/master/install.sh)
 				;;
+			54)
+				clear
+				_yellow "MHSanaei/3x-ui"
+				bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh)
 			0)
 				break
 				;;
