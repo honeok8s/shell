@@ -609,29 +609,29 @@ server_script(){
 		echo "1. ChatGPT解锁状态检测"
 		echo "2. Region流媒体解锁测试"
 		echo "3. Yeahwu流媒体解锁检测"
-		_purple "4. xykt_IP质量体检脚本"
+		_purple "4. Xykt_IP质量体检脚本"
 		echo ""
 		echo "------网络线路测速-------"
-		echo "12. besttrace三网回程延迟路由测试"
-		echo "13. mtr_trace三网回程线路测试"
+		echo "12. Besttrace三网回程延迟路由测试"
+		echo "13. Mtr_trace三网回程线路测试"
 		echo "14. Superspeed三网测速"
-		echo "15. nxtrace快速回程测试脚本"
-		echo "16. nxtrace指定IP回程测试脚本"
-		echo "17. ludashi2020三网线路测试"
-		echo "18. i-abc多功能测速脚本"
+		echo "15. Nxtrace快速回程测试脚本"
+		echo "16. Nxtrace指定IP回程测试脚本"
+		echo "17. Ludashi2020三网线路测试"
+		echo "18. I-abc多功能测速脚本"
 		echo ""
 		echo "-------硬件性能测试------"
-		echo "20. yabs性能测试"
-		echo "21. icu/gb5 CPU性能测试脚本"
+		echo "20. Yabs性能测试"
+		echo "21. Icu/gb5 CPU性能测试脚本"
 		echo ""
 		echo "--------综合性测试-------"
-		echo "30. bench性能测试"
+		echo "30. Bench性能测试"
 		_purple "31. Spiritysdx融合怪测评"
 		echo ""
 		echo "--------节点搭建---------"
-		echo "40. fscarmen/sing-box"
+		echo "40. Fscarmen/sing-box"
 		echo "41. 233boy/sing-box"
-		echo "45. vaxilu/x-ui"
+		echo "45. Vaxilu/x-ui"
 		echo "46. FranzKafkaYu/x-ui"
 		echo ""
 		echo "-------------------------"
@@ -660,18 +660,18 @@ server_script(){
 				;;
 			4)
 				clear
-				_yellow "xykt_IP质量体检脚本"
+				_yellow "Xykt_IP质量体检脚本"
 				bash <(curl -Ls IP.Check.Place)
 				;;
 			12)
 				clear
-				_yellow "besttrace三网回程延迟路由测试"
+				_yellow "Besttrace三网回程延迟路由测试"
 				install wget
 				wget -qO- git.io/besttrace | bash
 				;;
 			13)
 				clear
-				_yellow "mtr_trace三网回程线路测试"
+				_yellow "Mtr_trace三网回程线路测试"
 				curl https://raw.githubusercontent.com/zhucaidan/mtr_trace/main/mtr_trace.sh | bash
 				;;
 			14)
@@ -681,13 +681,13 @@ server_script(){
 				;;
 			15)
 				clear
-				_yellow "nxtrace快速回程测试脚本"
+				_yellow "Nxtrace快速回程测试脚本"
 				curl nxtrace.org/nt |bash
 				nexttrace --fast-trace --tcp
 				;;
 			16)
 				clear
-				_yellow "nxtrace指定IP回程测试脚本"
+				_yellow "Nxtrace指定IP回程测试脚本"
 				echo "可参考的IP列表"
 				echo "-------------------------"
 				echo "北京电信: 219.141.136.12"
@@ -713,29 +713,29 @@ server_script(){
 				;;
 			17)
 				clear
-				_yellow "ludashi2020三网线路测试"
+				_yellow "Ludashi2020三网线路测试"
 				curl https://raw.githubusercontent.com/ludashi2020/backtrace/main/install.sh -sSf | sh
 				;;
 			18)
 				clear
-				_yellow "i-abc多功能测速脚本"
+				_yellow "I-abc多功能测速脚本"
 				bash <(curl -sL bash.icu/speedtest)
 				;;
 			20)
 				clear
-				_yellow "yabs性能测试"
+				_yellow "Yabs性能测试"
 				check_swap
 				curl -sL yabs.sh | bash -s -- -i -5
 				;;
 			21)
 				clear
-				_yellow "icu/gb5 CPU性能测试脚本"
+				_yellow "Icu/gb5 CPU性能测试脚本"
 				check_swap
 				bash <(curl -sL bash.icu/gb5)
 				;;
 			30)
 				clear
-				_yellow "bench性能测试"
+				_yellow "Bench性能测试"
 				curl -Lso- bench.sh | bash
 				;;
 			31)
@@ -745,7 +745,7 @@ server_script(){
 				;;
 			40)
 				clear
-				_yellow "fscarmen/sing-box"
+				_yellow "Fscarmen/sing-box"
 				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/sing-box/main/sing-box.sh)
 				;;
 			41)
@@ -755,7 +755,7 @@ server_script(){
 				;;
 			45)
 				clear
-				_yellow "vaxilu/x-ui"
+				_yellow "Vaxilu/x-ui"
 				bash <(curl -Ls https://raw.githubusercontent.com/vaxilu/x-ui/master/install.sh)
 				;;
 			46)
