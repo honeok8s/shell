@@ -915,7 +915,7 @@ honeok(){
 				linux_system_tools
 				;;
 			0)
-				_yellow "Bye!"
+				clear
 				exit 0
 				;;
 			*)
