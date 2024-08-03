@@ -223,6 +223,52 @@ set_dns(){
 	echo "-------------------------"
 }
 
+# 备份DNS配置文件
+bak_dns() {
+	# 定义源文件和备份文件的位置
+	local dns_config="/etc/resolv.conf"
+	local backupdns_config="/etc/resolv.conf.bak"
+
+	# 检查源文件是否存在
+	if [[ -f "$dns_config" ]]; then
+		# 备份文件
+		cp "$dns_config" "$backupdns_config"
+
+		# 检查备份是否成功
+		if [[ $? -ne 0 ]]; then
+			_red "备份DNS配置文件失败"
+		fi
+	else
+		_red "DNS配置文件不存在"
+	fi
+}
+
+# 回滚到备份的DNS配置文件
+rollbak_dns() {
+	# 定义源文件和备份文件的位置
+	local dns_config="/etc/resolv.conf"
+	local backupdns_config="/etc/resolv.conf.bak"
+	
+	# 查找备份文件
+	if [[ -f "$backupdns_config" ]]; then
+		# 恢复备份文件
+		cp "$backupdns_config" "$dns_config"
+		
+		if [[ $? -ne 0 ]]; then
+			_red "恢复DNS配置文件失败"
+		else
+			_green "恢复成功: 从 $backupdns_config 恢复"
+			# 删除备份文件
+			rm "$backupdns_config"
+			if [[ $? -ne 0 ]]; then
+				_red "删除备份文件失败"
+			fi
+		fi
+	else
+		_red "未找到DNS配置文件备份"
+	fi
+}
+
 server_reboot(){
 	local choice
 	echo -n -e "${yellow}现在重启服务器吗?(Y/N):${white}"
@@ -887,6 +933,7 @@ linux_system_tools(){
 					echo "2. 国内DNS优化: "
 					echo " v4: 223.5.5.5 183.60.83.19"
 					echo " v6: 2400:3200::1 2400:da00::6666"
+					echo "3. 恢复DNS原有配置"
 					echo "------------------------"
 					echo "0. 返回上一级"
 					echo "------------------------"
@@ -900,6 +947,7 @@ linux_system_tools(){
 							dns2_ipv4="8.8.8.8"
 							dns1_ipv6="2606:4700:4700::1111"
 							dns2_ipv6="2001:4860:4860::8888"
+							bak_dns
 							set_dns
 							;;
 						2)
@@ -907,7 +955,11 @@ linux_system_tools(){
 							dns2_ipv4="183.60.83.19"
 							dns1_ipv6="2400:3200::1"
 							dns2_ipv6="2400:da00::6666"
+							bak_dns
 							set_dns
+							;;
+						3)
+							rollbak_dns
 							;;
 						0)
 							break
