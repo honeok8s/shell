@@ -57,48 +57,6 @@ need_root(){
 	fi
 }
 
-# 查看当前服务器时区
-current_timezone(){
-	if grep -q 'Alpine' /etc/issue; then
-		date +"%Z %z"
-	else
-		timedatectl | grep "Time zone" | awk '{print $3}'
-	fi
-}
-
-# 设置时区
-set_timedate(){
-	local timezone="$1"
-	if grep -q 'Alpine' /etc/issue; then
-		install tzdata
-		cp /usr/share/zoneinfo/${timezone} /etc/localtime
-		hwclock --systohc
-	else
-		timedatectl set-timezone ${timezone}
-	fi
-}
-
-set_dns(){
-	# 检查机器是否有IPv6地址
-	ipv6_available=0
-	if [[ $(ip -6 addr | grep -c "inet6") -gt 0 ]]; then
-		ipv6_available=1
-	fi
-
-	echo "nameserver $dns1_ipv4" > /etc/resolv.conf
-	echo "nameserver $dns2_ipv4" >> /etc/resolv.conf
-
-	if [[ $ipv6_available -eq 1 ]]; then
-		echo "nameserver $dns1_ipv6" >> /etc/resolv.conf
-		echo "nameserver $dns2_ipv6" >> /etc/resolv.conf
-	fi
-
-	_green "DNS地址已更新"
-	echo "-------------------------"
-	cat /etc/resolv.conf
-	echo "-------------------------"
-}
-
 install(){
 	if [ $# -eq 0 ]; then
 		_red "未提供软件包参数"
@@ -221,6 +179,48 @@ net.ipv4.tcp_congestion_control=bbr
 EOF
 
 sysctl -p
+}
+
+# 查看当前服务器时区
+current_timezone(){
+	if grep -q 'Alpine' /etc/issue; then
+		date +"%Z %z"
+	else
+		timedatectl | grep "Time zone" | awk '{print $3}'
+	fi
+}
+
+# 设置时区
+set_timedate(){
+	local timezone="$1"
+	if grep -q 'Alpine' /etc/issue; then
+		install tzdata
+		cp /usr/share/zoneinfo/${timezone} /etc/localtime
+		hwclock --systohc
+	else
+		timedatectl set-timezone ${timezone}
+	fi
+}
+
+set_dns(){
+	# 检查机器是否有IPv6地址
+	ipv6_available=0
+	if [[ $(ip -6 addr | grep -c "inet6") -gt 0 ]]; then
+		ipv6_available=1
+	fi
+
+	echo "nameserver $dns1_ipv4" > /etc/resolv.conf
+	echo "nameserver $dns2_ipv4" >> /etc/resolv.conf
+
+	if [[ $ipv6_available -eq 1 ]]; then
+		echo "nameserver $dns1_ipv6" >> /etc/resolv.conf
+		echo "nameserver $dns2_ipv6" >> /etc/resolv.conf
+	fi
+
+	_green "DNS地址已更新"
+	echo "-------------------------"
+	cat /etc/resolv.conf
+	echo "-------------------------"
 }
 
 server_reboot(){
