@@ -139,8 +139,8 @@ sysctl -p
 
 server_reboot(){
 	local choice
-	echo -n "$(_blue '现在重启服务器吗?(Y/N): ')"
-	read -r choice
+	echo -n -e "${cyan}现在重启服务器吗?(Y/N):${white}"
+	read choice
 
 	case "$choice" in
 		[Yy])
@@ -314,8 +314,7 @@ xanmod_bbr3(){
 			echo ""
 			_yellow "内核管理"
 			echo "-------------------------"
-			echo "1. 更新BBRv3内核"
-			echo "2. 卸载BBRv3内核"
+			echo "1. 更新BBRv3内核              2. 卸载BBRv3内核"
 			echo "-------------------------"
 			echo "0. 返回上一级选单"
 			echo "-------------------------"
@@ -368,8 +367,8 @@ xanmod_bbr3(){
 		echo "VPS是512M内存的,请提前添加1G虚拟内存,防止因内存不足失联!"
 		echo "------------------------------------------------"
 
-		echo -n "$(_blue '确定继续吗?(Y/N)')"
-		read -r choice
+		echo -n -e "${cyan}确定继续吗?(Y/N)${white}"
+		read choice
 
 		case "$choice" in
 			[Yy])
@@ -448,15 +447,11 @@ reinstall_system(){
 		_yellow "请备份数据,将为你重装系统,预计花费15分钟"
 		_yellow "感谢MollyLau和bin456789以及科技lion的脚本支持!"
 		echo "-------------------------"
-		echo "1. Debian 12"
-		echo "2. Debian 11"
-		echo "3. Debian 10"
-		echo "4. Debian 9"
+		echo "1. Debian 12                  2. Debian 11"
+		echo "3. Debian 10                  4. Debian 9"
 		echo "-------------------------"
-		echo "11. Ubuntu 24.04"
-		echo "12. Ubuntu 22.04"
-		echo "13. Ubuntu 20.04"
-		echo "14. Ubuntu 18.04"
+		echo "11. Ubuntu 24.04              12. Ubuntu 22.04"
+		echo "13. Ubuntu 20.04              14. Ubuntu 18.04"
 		echo "-------------------------"
 		echo "0. 返回上一级菜单"
 		echo "-------------------------"
@@ -775,7 +770,7 @@ linux_system_tools(){
 					read choice
 
 					case $choice in
-						1) set_timedate Asia/Shanghai ;;
+						1)set_timedate Asia/Shanghai ;;
 						2) set_timedate Asia/Hong_Kong ;;
 						3) set_timedate Asia/Tokyo ;;
 						4) set_timedate Asia/Seoul ;;
