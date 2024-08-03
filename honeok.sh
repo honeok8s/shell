@@ -7,36 +7,21 @@ clear
 
 yellow='\033[1;33m'  # 提示信息
 red='\033[1;31m'     # 警告信息
-magenta='\033[1;35m' # 品红色
+magenta='\033[0;35m' # 品红色
 green='\033[1;32m'   # 成功信息
 blue='\033[1;34m'    # 一般信息
 cyan='\033[1;36m'    # 特殊信息
 purple='\033[1;35m'  # 紫色或粉色信息
 gray='\033[1;30m'    # 灰色信息
 white='\033[0m'      # 结束颜色设置
-orange='\033[1;33m'  # 橙色
-pink='\033[1;35m'    # 粉红色（比品红色更亮）
-lightblue='\033[1;36m' # 亮蓝色（更接近天蓝色）
-lightgreen='\033[1;92m' # 亮绿色
-lightgray='\033[1;37m'  # 亮灰色
-darkred='\033[1;31m'  # 暗红色
-darkblue='\033[1;34m' # 暗蓝色
-
-_orange() { echo -e "${orange}\033[1m$@\033[0m${white}"; }
-_pink() { echo -e "${pink}\033[1m$@\033[0m${white}"; }
-_lightblue() { echo -e "${lightblue}\033[1m$@\033[0m${white}"; }
-_lightgreen() { echo -e "${lightgreen}\033[1m$@\033[0m${white}"; }
-_lightgray() { echo -e "${lightgray}\033[1m$@\033[0m${white}"; }
-_darkred() { echo -e "${darkred}\033[1m$@\033[0m${white}"; }
-_darkblue() { echo -e "${darkblue}\033[1m$@\033[0m${white}"; }
-_yellow() { echo -e "${yellow}\033[1m$@\033[0m${white}"; }
-_red() { echo -e "${red}\033[1m$@\033[0m${white}"; }
-_magenta() { echo -e "${magenta}\033[1m$@\033[0m${white}"; }
-_green() { echo -e "${green}\033[1m$@\033[0m${white}"; }
-_blue() { echo -e "${blue}\033[1m$@\033[0m${white}"; }
-_cyan() { echo -e "${cyan}\033[1m$@\033[0m${white}"; }
-_purple() { echo -e "${purple}\033[1m$@\033[0m${white}"; }
-_gray() { echo -e "${gray}\033[1m$@\033[0m${white}"; }
+_yellow() { echo -e ${yellow}$@${white}; }
+_red() { echo -e ${red}$@${white}; }
+_magenta() { echo -e ${magenta}$@${white}; }
+_green() { echo -e ${green}$@${white}; }
+_blue() { echo -e ${blue}$@${white}; }
+_cyan() { echo -e ${cyan}$@${white}; }
+_purple() { echo -e ${purple}$@${white}; }
+_gray() { echo -e ${gray}$@${white}; }
 
 print_logo(){
 # https://www.lddgo.net/string/text-to-ascii-art
@@ -1019,9 +1004,9 @@ honeok(){
 		print_logo
 		_purple "-------------------------"
 		_yellow "做最能缝合的脚本!"
-		_orange "适配Ubuntu/Debian/CentOS/Alpine系统"
+		_gray "适配Ubuntu/Debian/CentOS/Alpine系统"
 		_blue "Author: honeok"
-		_yellow "Github: https://github.com/honeok8s/shell"
+		_cyan "Github: https://github.com/honeok8s/shell"
 		_green "当前时间: $(date +"%Y-%m-%d %H:%M:%S")"
 		_purple "-------------------------"
 		_purple "1. 系统信息查询"
