@@ -13,6 +13,7 @@ blue='\033[1;34m'    # 一般信息
 cyan='\033[1;36m'    # 特殊信息
 purple='\033[1;35m'  # 紫色或粉色信息
 gray='\033[1;30m'    # 灰色信息
+orange='\033[38;5;208m'  # 橘色
 white='\033[0m'      # 结束颜色设置
 _yellow() { echo -e ${yellow}$@${white}; }
 _red() { echo -e ${red}$@${white}; }
@@ -22,6 +23,7 @@ _blue() { echo -e ${blue}$@${white}; }
 _cyan() { echo -e ${cyan}$@${white}; }
 _purple() { echo -e ${purple}$@${white}; }
 _gray() { echo -e ${gray}$@${white}; }
+_orange() { echo -e ${orange}$@${white}; }
 
 print_logo(){
 # https://www.lddgo.net/string/text-to-ascii-art
@@ -1004,9 +1006,9 @@ honeok(){
 		print_logo
 		_purple "-------------------------"
 		_yellow "做最能缝合的脚本!"
-		_gray "适配Ubuntu/Debian/CentOS/Alpine系统"
-		_blue "Author: honeok"
-		_cyan "Github: https://github.com/honeok8s/shell"
+		_orange "适配Ubuntu/Debian/CentOS/Alpine系统"
+		_cyan "Author: honeok"
+		_gray "Github: https://github.com/honeok8s/shell"
 		_green "当前时间: $(date +"%Y-%m-%d %H:%M:%S")"
 		_purple "-------------------------"
 		_purple "1. 系统信息查询"
