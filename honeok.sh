@@ -69,7 +69,7 @@ current_timezone(){
 set_timedate(){
 	local timezone="$1"
 	if grep -q 'Alpine' /etc/issue; then
-		install_package tzdata
+		install tzdata
 		cp /usr/share/zoneinfo/${timezone} /etc/localtime
 		hwclock --systohc
 	else
@@ -98,7 +98,7 @@ set_dns(){
 	echo "-------------------------"
 }
 
-install_package(){
+install(){
 	if [ $# -eq 0 ]; then
 		_red "未提供软件包参数"
 		return 1
@@ -126,7 +126,7 @@ install_package(){
 	return 0
 }
 
-remove_package(){
+remove(){
 	if [ $# -eq 0 ]; then
 		_red "未提供软件包参数"
 		return 1
@@ -415,7 +415,7 @@ xanmod_bbr3(){
 				fi
 
 				#check_swap
-				install_package wget gnupg
+				install wget gnupg
 
 				# wget -qO - https://dl.xanmod.org/archive.key | gpg --dearmor -o /usr/share/keyrings/xanmod-archive-keyring.gpg --yes
 				wget -qO - https://raw.githubusercontent.com/honeok8s/conf/main/XanMod/archive.key | gpg --dearmor -o /usr/share/keyrings/xanmod-archive-keyring.gpg --yes
@@ -456,7 +456,7 @@ reinstall_system(){
 		_yellow "重装后初始用户名: \"root\"  初始密码: \"LeitboGi0ro\"  初始端口: \"22\""
 		_yellow "按任意键继续"
 		read -n 1 -s -r -p ""
-		install_package wget
+		install wget
 		mollyLau_reinstall_script
 	}
 
@@ -603,7 +603,7 @@ server_script(){
 			3)
 				clear
 				_yellow "Yeahwu流媒体解锁检测"
-				install_package wget
+				install wget
 				wget -qO- https://github.com/yeahwu/check/raw/main/check.sh | bash
 				;;
 			4)
@@ -614,7 +614,7 @@ server_script(){
 			12)
 				clear
 				_yellow "besttrace三网回程延迟路由测试"
-				install_package wget
+				install wget
 				wget -qO- git.io/besttrace | bash
 				;;
 			13)
@@ -880,6 +880,7 @@ honeok(){
 		print_logo
 		_purple "-------------------------"
 		_yellow "做最能缝合的脚本!"
+		_gray "适配Ubuntu/Debian/CentOS/Alpine系统"
 		_blue "Author: honeok"
 		_yellow "Github: https://github.com/honeok8s/shell"
 		_green "当前时间: $(date +"%Y-%m-%d %H:%M:%S")"
@@ -902,7 +903,7 @@ honeok(){
 			7)
 				clear
 				_yellow "warp管理"
-				install_package wget
+				install wget
 				wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh [option] [lisence/url/token]
 				;;
 			8)
