@@ -1,6 +1,5 @@
 #!/bin/bash
 # Author: honeok
-# Project: https://github.com/honeok8s
 # Blog: https://www.honeok.com
 
 set -o errexit
@@ -15,6 +14,21 @@ cyan='\033[1;36m'    # 特殊信息
 purple='\033[1;35m'  # 紫色或粉色信息
 gray='\033[1;30m'    # 灰色信息
 white='\033[0m'      # 结束颜色设置
+orange='\033[0;33m'   # 橙色
+pink='\033[1;35m'     # 粉红色（比品红色更亮）
+lightblue='\033[1;36m' # 亮蓝色（更接近天蓝色）
+lightgreen='\033[1;92m' # 亮绿色
+lightgray='\033[0;37m'  # 亮灰色
+darkred='\033[0;31m'  # 暗红色
+darkblue='\033[0;34m' # 暗蓝色
+
+_orange() { echo -e ${orange}$@${white}; }
+_pink() { echo -e ${pink}$@${white}; }
+_lightblue() { echo -e ${lightblue}$@${white}; }
+_lightgreen() { echo -e ${lightgreen}$@${white}; }
+_lightgray() { echo -e ${lightgray}$@${white}; }
+_darkred() { echo -e ${darkred}$@${white}; }
+_darkblue() { echo -e ${darkblue}$@${white}; }
 _yellow() { echo -e ${yellow}$@${white}; }
 _red() { echo -e ${red}$@${white}; }
 _magenta() { echo -e ${magenta}$@${white}; }
@@ -991,7 +1005,7 @@ honeok(){
 		print_logo
 		_purple "-------------------------"
 		_yellow "做最能缝合的脚本!"
-		_magenta "适配Ubuntu/Debian/CentOS/Alpine系统"
+		_pink "适配Ubuntu/Debian/CentOS/Alpine系统"
 		_blue "Author: honeok"
 		_yellow "Github: https://github.com/honeok8s/shell"
 		_green "当前时间: $(date +"%Y-%m-%d %H:%M:%S")"
