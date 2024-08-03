@@ -894,6 +894,7 @@ server_script(){
 				clear
 				_yellow "MHSanaei/3x-ui"
 				bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh)
+				;;
 			0)
 				break
 				;;
