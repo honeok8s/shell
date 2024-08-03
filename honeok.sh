@@ -833,8 +833,9 @@ server_script(){
 				echo "湖南移动: 39.134.254.6"
 				echo "-------------------------"
 
-				read -p "输入一个指定IP: " testip
-				curl nxtrace.org/nt |bash
+				echo -n -e "${yellow}输入一个指定IP:${white}"
+				read testip
+				curl nxtrace.org/nt | bash
 				nexttrace $testip
 				;;
 			17)
