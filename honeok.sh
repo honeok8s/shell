@@ -1110,6 +1110,9 @@ linux_system_tools(){
 			0)
 				honeok
 				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
 		esac
 		end_of
 	done
