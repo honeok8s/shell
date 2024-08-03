@@ -189,8 +189,11 @@ server_reboot(){
 }
 
 add_swap() {
+	local new_swap=$1
+
 	# 获取当前系统中所有的swap分区
-	local swap_partitions=$(grep -E '^/dev/' /proc/swaps | awk '{print $1}')
+	local swap_partitions
+	swap_partitions=$(grep -E '^/dev/' /proc/swaps | awk '{print $1}')
 
 	# 遍历并删除所有的swap分区
 	for partition in $swap_partitions; do
@@ -200,10 +203,12 @@ add_swap() {
 	done
 
 	# 确保/swapfile不再被使用
-	swapoff /swapfile
+	swapoff /swapfile 2>/dev/null
 
 	# 删除旧的/swapfile
-	rm -f /swapfile
+	if [ -f /swapfile ]; then
+		rm -f /swapfile
+	fi
 
 	# 创建新的swap文件
 	dd if=/dev/zero of=/swapfile bs=1M count=$new_swap status=progress
@@ -213,7 +218,7 @@ add_swap() {
 
 	# 更新fstab
 	if ! grep -q '/swapfile' /etc/fstab; then
-		echo "/swapfile swap swap defaults 0 0" >> /etc/fstab
+		echo "/swapfile swap swap defaults 0 0" | tee -a /etc/fstab
 	fi
 
 	# 针对Alpine Linux的额外设置
@@ -228,13 +233,22 @@ add_swap() {
 
 check_swap() {
 	# 获取当前总交换空间大小(以MB为单位)
-	local swap_total=$(free -m | awk 'NR==3{print $2}')
+	local swap_total
+	swap_total=$(free -m | awk 'NR==3{print $2}')
+
+	# 获取当前物理内存大小(以MB为单位)
+	local mem_total
+	mem_total=$(free -m | awk 'NR==2{print $2}')
 
 	# 判断是否需要创建虚拟内存
 	if [ "$swap_total" -le 0 ]; then
-		# 系统没有交换空间,设置默认的1024MB交换空间
-		new_swap=1024
-		add_swap
+		if [ "$mem_total" -le 900 ]; then
+			# 系统没有交换空间且物理内存小于等于900MB,设置默认的1024MB交换空间
+			local new_swap=1024
+			add_swap $new_swap
+		else
+			_green "物理内存大于900MB,不需要添加交换空间"
+		fi
 	else
 		_green "系统已经有交换空间,总大小为 ${swap_total}MB"
 	fi
@@ -863,9 +877,9 @@ linux_system_tools(){
 					clear
 
 					# 获取当前虚拟内存使用情况
-					local swap_used=$(free -m | awk 'NR==3{print $3}')
-					local swap_total=$(free -m | awk 'NR==3{print $2}')
-					local swap_info=$(free -m | awk 'NR==3{used=$3; total=$2; if (total == 0) {percentage=0} else {percentage=used*100/total}; printf "%dMB/%dMB (%d%%)", used, total, percentage}')
+					swap_used=$(free -m | awk 'NR==3{print $3}')
+					swap_total=$(free -m | awk 'NR==3{print $2}')
+					swap_info=$(free -m | awk 'NR==3{used=$3; total=$2; if (total == 0) {percentage=0} else {percentage=used*100/total}; printf "%dMB/%dMB (%d%%)", used, total, percentage}')
 
 					_yellow "当前虚拟内存: ${swap_info}"
 					echo "------------------------"
@@ -878,19 +892,19 @@ linux_system_tools(){
 					case "$choice" in
 						1)
 							new_swap=1024
-							add_swap
+							add_swap $new_swap
 							_green "已设置1G虚拟内存"
 							;;
 						2)
 							new_swap=2048
-							add_swap
+							add_swap $new_swap
 							_green "已设置2G虚拟内存"
 							;;
 						3)
 							echo -n -e "${blue}请输入虚拟内存大小MB:${white}" new_swap
 							read new_swap
 							if [[ "$new_swap" =~ ^[0-9]+$ ]] && [ "$new_swap" -gt 0 ]; then
-								add_swap
+								add_swap $new_swap
 								_green "已设置自定义虚拟内存为 ${new_swap}MB"
 							else
 								_red "无效输入,请输入正整数"
