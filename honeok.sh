@@ -739,7 +739,7 @@ linux_system_tools(){
 		read choice
 
 		case $choice in
-			7）
+			7)
 				need_root
 				while true; do
 					clear
