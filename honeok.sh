@@ -741,7 +741,6 @@ linux_system_tools(){
 		case $choice in
 			7）
 				need_root
-				local choice
 				while true; do
 					clear
 					_yellow "优化DNS地址"
@@ -778,8 +777,11 @@ linux_system_tools(){
 							dns2_ipv6="2400:da00::6666"
 							set_dns
 							;;
-						*)
+						0)
 							break
+							;;
+						*)
+							_red "无效选项,请重新输入"
 							;;
 					esac
 				done
