@@ -25,6 +25,8 @@ _purple() { echo -e ${purple}$@${white}; }
 _gray() { echo -e ${gray}$@${white}; }
 _orange() { echo -e ${orange}$@${white}; }
 
+honeok_v="v1.0.0"
+
 print_logo(){
 # https://www.lddgo.net/string/text-to-ascii-art
 echo -e "${cyan}
@@ -35,6 +37,7 @@ echo -e "${cyan}
 | | | | (_) | | | |  __| (_) |   < 
 |_| |_|\___/|_| |_|\___|\___/|_|\_\
 ${white}"
+										_yellow "${honeok_v}"
 }
 
 # 结尾任意键结束
