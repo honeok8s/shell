@@ -223,19 +223,19 @@ set_dns(){
 		{
 			echo "nameserver $ali_ipv4"
 			echo "nameserver $tencent_ipv4"
-			[ "$ipv6_addresses" -gt 0 ] && {
+			if [ "$ipv6_addresses" -gt 0 ]; then
 				echo "nameserver $ali_ipv6"
 				echo "nameserver $tencent_ipv6"
-			}
+			fi
 		} | tee /etc/resolv.conf > /dev/null
 	else
 		{
 			echo "nameserver $cloudflare_ipv4"
 			echo "nameserver $google_ipv4"
-			[ "$ipv6_addresses" -gt 0 ] && {
+			if [ "$ipv6_addresses" -gt 0 ]; then
 				echo "nameserver $cloudflare_ipv6"
 				echo "nameserver $google_ipv6"
-			}
+			fi
 		} | tee /etc/resolv.conf > /dev/null
 	fi
 
