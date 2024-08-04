@@ -226,7 +226,7 @@ set_dns(){
 				echo "nameserver $ali_ipv6"
 				echo "nameserver $tencent_ipv6"
 			fi
-		} | tee /etc/resolv.conf > /dev/null
+		} | tee /etc/resolv.conf
 	else
 		{
 			echo "nameserver $cloudflare_ipv4"
@@ -235,14 +235,13 @@ set_dns(){
 				echo "nameserver $cloudflare_ipv6"
 				echo "nameserver $google_ipv6"
 			fi
-		} | tee /etc/resolv.conf > /dev/null
+		} | tee /etc/resolv.conf
 	fi
 
 	_green "DNS地址已更新"
 	echo "-------------------------"
 	cat /etc/resolv.conf
 	echo "-------------------------"
-	end_of
 }
 
 # 备份DNS配置文件
