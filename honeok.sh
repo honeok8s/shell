@@ -41,7 +41,11 @@ print_logo(){
 | | | | (_) | | | |  __| (_) |   < 
 |_| |_|\___/|_| |_|\___|\___/|_|\_\\${white}"
 
-	echo -e "${cyan}${logo}                                         ${yellow}${honeok_v}"
+	echo -e "${cyan}${logo}"
+
+	local padding=$(printf '%*s' $((42 - ${#honeok_v})) '')
+
+	echo -e "${white}${padding}${yellow}${honeok_v}"
 }
 
 # 结尾任意键结束
