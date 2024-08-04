@@ -2074,7 +2074,7 @@ honeok(){
 				echo "敬请期待"
 				;;
 			4)
-				echo "敬请期待"
+				linux_tools
 				;;
 			5)
 				clear
