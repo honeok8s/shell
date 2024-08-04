@@ -693,29 +693,28 @@ node_create(){
 	while true; do
 		clear
 		echo "▶ 节点搭建脚本合集"
-		echo "------------------------------------"
+		echo "-------------------------------"
 		echo "Sing-box多合一/Argo-tunnel"
-		echo "------------------------------------"
+		echo "-------------------------------"
 		echo "1. Fscarmen Sing-box一键脚本"
 		echo "2. Fscarmen ArgoX一键脚本"
 		echo "5. 233boy Sing-box一键脚本"
 		echo "6. 梭哈一键Argo脚本"
 		echo "7. WL一键Argo哪吒脚本"
-		echo "------------------------------------"
+		echo "-------------------------------"
 		echo "单协议/XRAY面板及其他"
-		echo "------------------------------------"
+		echo "-------------------------------"
 		echo "22. Brutal-Reality一键脚本"
 		echo "23. Vaxilu X-UI面板一键脚本"
 		echo "24. FranzKafkaYu X-UI面板一键脚本"
-		echo "25. alireza0 多用户多协议 X-UI面板一键脚本"
-		echo "30. 新版X-UI面板一键脚本"
-		echo "31. 伊朗版3X-UI一键脚本"
-		echo "------------------------------------"
+		echo "25. alireza0 X-UI面板一键脚本"
+		echo "31. MHSanaei 3X-UI面板一键脚本"
+		echo "-------------------------------"
 		echo "35. OpenVPN一键安装脚本"
 		echo "36. 一键搭建TG代理"
-		echo "------------------------------------"
+		echo "-------------------------------"
 		echo "0. 返回主菜单"
-		echo "------------------------------------"
+		echo "-------------------------------"
 
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
 		read choice
@@ -759,8 +758,7 @@ node_create(){
 					_yellow "当前系统内核版本 $current_kernel_version,符合安装要求"
 					sleep 1
 					bash <(curl -fsSL https://github.com/vveg26/sing-box-reality-hysteria2/raw/main/tcp-brutal-reality.sh)
-					sleep
-					end_of
+					sleep 1
 				fi
 				;;
 			23)
@@ -774,10 +772,6 @@ node_create(){
 			25)
 				clear
 				bash <(curl -Ls https://raw.githubusercontent.com/alireza0/x-ui/master/install.sh)
-				;;
-			30)
-				clear
-				bash <(curl -Ls https://raw.githubusercontent.com/slobys/x-ui/main/install.sh)
 				;;
 			31)
 				clear
