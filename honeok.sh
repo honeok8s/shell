@@ -1392,8 +1392,9 @@ honeok(){
 	while true; do
 		clear
 		_yellow "脚本地址: https://github.com/honeok8s/shell"
+		_purple "-------------------------------------------------------------------"
 		print_logo
-		_purple "-------------------------"
+		_purple "-------------------------------------------------------------------"
 		_orange "适配Ubuntu/Debian/CentOS/Alpine系统"
 		_cyan "Author: honeok"
 		_green "当前时间: $(date +"%Y-%m-%d %H:%M:%S")"
