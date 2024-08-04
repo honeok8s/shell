@@ -707,7 +707,7 @@ node_create(){
 		echo "22. Brutal-Reality一键脚本"
 		echo "23. Vaxilu X-UI面板一键脚本"
 		echo "24. FranzKafkaYu X-UI面板一键脚本"
-		echo "25. alireza0 X-UI面板一键脚本"
+		echo "25. Alireza0 X-UI面板一键脚本"
 		echo "31. MHSanaei 3X-UI面板一键脚本"
 		echo "-------------------------------"
 		echo "35. OpenVPN一键安装脚本"
