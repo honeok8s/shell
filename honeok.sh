@@ -28,16 +28,22 @@ _orange() { echo -e ${orange}$@${white}; }
 honeok_v="v1.0.0"
 
 print_logo(){
-# https://www.lddgo.net/string/text-to-ascii-art
-echo -e "${cyan}
+	# https://www.lddgo.net/string/text-to-ascii-art
+	local cyan='\033[0;36m'
+	local white='\033[0;37m'
+	local yellow='\033[1;33m'
+
+	local logo="
  _                            _    
 | |                          | |   
 | |__   ___  _ __   ___  ___ | | __
 | '_ \ / _ \| '_ \ / _ \/ _ \| |/ /
 | | | | (_) | | | |  __| (_) |   < 
-|_| |_|\___/|_| |_|\___|\___/|_|\_\
-${white}"
-										_yellow "${honeok_v}"
+|_| |_|\___/|_| |_|\___|\___/|_|\_\\"
+
+	local padding=$(printf '%*s' $((47 - ${#honeok_v})) '')
+
+	echo -e "${cyan}${logo}${white}${padding}${yellow}${honeok_v}"
 }
 
 # 结尾任意键结束
