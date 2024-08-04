@@ -1339,7 +1339,7 @@ honeok(){
 	local choice
 	while true; do
 		clear
-		_gray "脚本地址: https://github.com/honeok8s/shell"
+		_yellow "脚本地址: https://github.com/honeok8s/shell"
 		print_logo
 		_purple "-------------------------"
 		_orange "适配Ubuntu/Debian/CentOS/Alpine系统"
