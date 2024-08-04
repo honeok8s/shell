@@ -698,24 +698,20 @@ node_create(){
 		echo "-------------------------"
 		echo "1. Fscarmen Sing-box一键脚本"
 		echo "2. Fscarmen ArgoX一键脚本"
-		echo "3. 老王Sing-box四合一"
-		echo "4. 勇哥Sing-box四合一"
 		echo "5. 233boy Sing-box一键脚本"
 		echo "6. 梭哈一键Argo脚本"
 		echo "7. WL一键Argo哪吒脚本"
 		echo "-------------------------"
 		echo "单协议/XRAY面板及其他"
 		echo "-------------------------"
-		echo "9. 老王Hysteria2一键脚本"
-		echo "10. 老王Juicity一键脚本"
-		echo "11. 老王Tuic-v5一键脚本"
-		echo "12. Brutal-Reality一键脚本"
-		echo "13. 新版X-UI面板一键脚本"
-		echo "14. 伊朗版3X-UI面板一键脚本"
-		echo "15. OpenVPN一键安装脚本"
-		echo "16. 一键搭建TG代理"
-		echo "17. 老王Reality一键脚本"
-		echo "18. Sing-box面板(Sui) ▶"
+		echo "22. Brutal-Reality一键脚本"
+		echo "23. Vaxilu X-UI面板一键脚本"
+		echo "24. FranzKafkaYu X-UI面板一键脚本"
+		echo "30. 新版X-UI面板一键脚本"
+		echo "31. 伊朗版3X-UI一键脚本"
+		echo "-------------------------"
+		echo "35. OpenVPN一键安装脚本"
+		echo "36. 一键搭建TG代理"
 		echo "-------------------------"
 		echo "0. 返回主菜单"
 		echo "-------------------------"
@@ -733,14 +729,6 @@ node_create(){
 				clear
 				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/argox/main/argox.sh)
 				;;
-			3)
-				clear
-				bash <(curl -Ls https://raw.githubusercontent.com/eooce/sing-box/main/sing-box.sh)
-				;;
-			4)
-				clear
-				bash <(curl -Ls https://gitlab.com/rwkgyg/sing-box-yg/raw/main/sb.sh)
-				;;
 			5)
 				clear
 				install wget
@@ -753,107 +741,8 @@ node_create(){
 			7)
 				clear
 				bash <(curl -sL https://raw.githubusercontent.com/dsadsadsss/vps-argo/main/install.sh)
-				;; 
-			9)
-				while true; do
-					clear
-					echo "-------------------------"
-					echo "1.安装Hysteria2"
-					echo "2.卸载Hysteria2"
-					echo "3.更换Hysteria2端口"
-					echo "-------------------------"
-					echo "0. 返回上一级菜单"
-					echo "-------------------------"
-					
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-					read choice
-					
-					case $choice in
-						1)
-							clear
-							echo -n -e "${yellow}请输入Hysteria2节点端口(nat小鸡请输入可用端口范围内的端口),回车跳过则使用随机端口:${white}"
-							read port
-							
-							[[ -z $port ]]
-							until [[ -z $(netstat -tuln | grep -w udp | awk '{print $4}' | sed 's/.*://g' | grep -w "$port") ]]; do
-								if [[ -n $(netstat -tuln | grep -w udp | awk '{print $4}' | sed 's/.*://g' | grep -w "$port") ]]; then
-									_red "${port}端口已经被其他程序占用,请更换端口重试"
-									echo -n -e "${yellow}设置Hysteria2端口[1-65535](回车将使用随机端口):${white}"
-									read port
-									[[ -z $HY2_PORT ]] && port=8880
-								fi
-							done
-							
-							if [ -f "/etc/alpine-release" ]; then
-								SERVER_PORT=$port bash -c "$(curl -L https://raw.githubusercontent.com/eooce/scripts/master/containers-shell/hy2.sh)"
-							else
-								HY2_PORT=$port bash -c "$(curl -L https://raw.githubusercontent.com/eooce/scripts/master/Hysteria2.sh)"
-							fi
-							sleep 1
-							end_of
-							;;
-						2)
-							if [ -f "/etc/alpine-release" ]; then
-								pkill -f '[w]eb'
-								pkill -f '[n]pm'
-								cd && rm -rf web npm server.crt server.key config.yaml
-							else
-								systemctl stop hysteria-server.service
-								rm /usr/local/bin/hysteria
-								rm /etc/systemd/system/hysteria-server.service
-								rm /etc/hysteria/config.yaml
-								systemctl daemon-reload
-								clear
-							fi
-							_green "Hysteria2已卸载"
-							end_of
-							;;
-						3)
-							clear
-							echo -n -e "${yellow}设置Hysteria2端口[1-65535](回车跳过将使用随机端口):${white}"
-							read new_port
-							
-							[[ -z $new_port ]] && new_port=$(shuf -i 2000-65000 -n 1)
-							until [[ -z $(netstat -tuln | grep -w udp | awk '{print $4}' | sed 's/.*://g' | grep -w "$new_port") ]]; do
-								if [[ -n $(netstat -tuln | grep -w udp | awk '{print $4}' | sed 's/.*://g' | grep -w "$new_port") ]]; then
-									_red "端口已经被其他程序占用,请更换端口重试"
-									echo -n -e "${yellow}设置Hysteria2端口[1-65535](回车跳过将使用随机端口):${white}"
-									read new_port
-									
-									[[ -z $new_port ]] && new_port=$(shuf -i 2000-65000 -n 1)
-								fi
-							done
-							if [ -f "/etc/alpine-release" ]; then
-								sed -i "s/^listen: :[0-9]*/listen: :$new_port/" /root/config.yaml
-								pkill -f '[w]eb'
-								nohup ./web server config.yaml >/dev/null 2>&1 &
-							else
-								clear
-								sed -i "s/^listen: :[0-9]*/listen: :$new_port/" /etc/hysteria/config.yaml
-								systemctl restart hysteria-server.service
-							fi
-							_green "Hysteria2端口已更换成$new_port,请手动更改客户端配置"
-							sleep 1
-							end_of
-							;;
-						0)
-							break
-							;;
-						*)
-							_red "无效选项,请重新输入"
-							;;
-					esac
-				done
 				;;
-			10)
-				clear
-				bash <(curl -Ls https://raw.githubusercontent.com/eooce/scripts/master/juicity.sh)
-				;;
-			11)
-				clear
-				bash -c "$(curl -L https://raw.githubusercontent.com/eooce/scripts/master/tuic.sh)"
-				;;
-			12)
+			22)
 				clear
 				_yellow "安装Tcp-Brutal-Reality需要内核高于5.8,不符合请手动升级5.8内核以上再安装"
 				
@@ -873,165 +762,32 @@ node_create(){
 					end_of
 				fi
 				;;
-			13)
+			23)
+				clear
+				bash <(curl -Ls https://raw.githubusercontent.com/vaxilu/x-ui/master/install.sh)
+				;;
+			24)
+				clear
+				bash <(curl -Ls https://raw.githubusercontent.com/FranzKafkaYu/x-ui/master/install.sh)
+				;;
+			30)
 				clear
 				bash <(curl -Ls https://raw.githubusercontent.com/slobys/x-ui/main/install.sh)
 				;;
-			14)
+			31)
 				clear
 				bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh)
 				;;
-			15)
+			35)
 				clear
 				install wget
 				wget https://git.io/vpn -O openvpn-install.sh && bash openvpn-install.sh
 				;;
-			16)
+			36)
 				clear
 				rm -rf /home/mtproxy && mkdir /home/mtproxy && cd /home/mtproxy
 				curl -fsSL -o mtproxy.sh https://github.com/ellermister/mtproxy/raw/master/mtproxy.sh && chmod +x mtproxy.sh && bash mtproxy.sh
 				sleep 1
-				;;
-			17)
-				while true; do
-					clear
-					echo "-------------------------"
-					echo "1.安装Reality"
-					echo "2.卸载Reality"
-					echo "3.更换Reality端口"
-					echo "-------------------------"
-					echo "0. 返回上一级菜单"
-					echo "-------------------------"
-
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-					read choice
-					
-					case $choice in
-						1)
-							clear
-							echo -n -e "${yellow}请输入reality节点端口(nat小鸡请输入可用端口范围内的端口),回车跳过则使用随机端口：${white}"
-							read port
-							[[ -z $port ]]
-							until [[ -z $(netstat -tuln | grep -w tcp | awk '{print $4}' | sed 's/.*://g' | grep -w "$port") ]]; do
-								if [[ -n $(netstat -tuln | grep -w tcp | awk '{print $4}' | sed 's/.*://g' | grep -w "$port") ]]; then
-									_red "端口已经被其他程序占用,请更换端口重试"
-									echo -n -e "${yellow}设置Reality端口[1-65535](回车跳过将使用随机端口):${white}"
-									read port
-									[[ -z $PORT ]] && port=$(shuf -i 2000-65000 -n 1)
-								fi
-							done
-							if [ -f "/etc/alpine-release" ]; then
-								PORT=$port bash -c "$(curl -L https://raw.githubusercontent.com/eooce/scripts/master/test.sh)"
-							else
-								PORT=$port bash -c "$(curl -L https://raw.githubusercontent.com/eooce/xray-reality/master/reality.sh)"
-							fi
-							sleep 1
-							end_of
-							;;
-						2)
-							if [ -f "/etc/alpine-release" ]; then
-								pkill -f '[w]eb'
-								pkill -f '[n]pm'
-								cd && rm -rf app
-								clear
-							else
-								sudo systemctl stop xray
-								sudo rm /usr/local/bin/xray
-								sudo rm /etc/systemd/system/xray.service
-								sudo rm /usr/local/etc/xray/config.json
-								sudo rm /usr/local/share/xray/geoip.dat
-								sudo rm /usr/local/share/xray/geosite.dat
-								sudo rm /etc/systemd/system/xray@.service
-								
-								sudo systemctl daemon-reload
-								
-								sudo rm -rf /var/log/xray /var/lib/xray
-								clear
-							fi
-							
-							_green "Reality已卸载"
-							end_of
-							;;
-						3)
-							clear
-							echo -n -e "${yellow}设置reality端口[1-65535]回车跳过则使用随机端口：${white}"
-							read new_port
-							[[ -z $new_port ]] && new_port=$(shuf -i 2000-65000 -n 1)
-							until [[ -z $(netstat -tuln | grep -w tcp | awk '{print $4}' | sed 's/.*://g' | grep -w "$port") ]]; do
-								if [[ -n $(netstat -tuln | grep -w tcp | awk '{print $4}' | sed 's/.*://g' | grep -w "$port") ]]; then
-									_red "端口已经被其他程序占用,请更换端口重试"
-									echo -n -e "${yellow}设置reality端口[1-65535]回车跳过则使用随机端口：${white}"
-									read new_port
-									[[ -z $new_port ]] && new_port=$(shuf -i 2000-65000 -n 1)
-								fi
-							done
-							
-							install jq
-							if [ -f "/etc/alpine-release" ]; then
-								jq --argjson new_port "$new_port" '.inbounds[0].port = $new_port' /root/app/config.json > tmp.json && mv tmp.json /root/app/config.json
-								pkill -f '[w]eb'
-								cd ~ && cd app
-								nohup ./web -c config.json >/dev/null 2>&1 &
-							else
-								clear
-								jq --argjson new_port "$new_port" '.inbounds[0].port = $new_port' /usr/local/etc/xray/config.json > tmp.json && mv tmp.json /usr/local/etc/xray/config.json
-								systemctl restart xray.service
-							fi
-							
-							_green "Reality端口已更换成$new_port,请手动更改客户端配置!"
-							sleep 1
-							end_of
-							;;
-						0)
-							break
-							;;
-						*)
-							_red "无效选项,请重新输入"
-							;;
-					esac
-				done
-				;;
-			18)
-				while true; do
-					clear
-					echo "▶ Sui面板"
-					echo "-------------------------"
-					echo "1.安装sui面板"
-					echo "2.卸载sui面板"
-					echo "-------------------------"
-					echo "0. 返回上一级菜单"
-					echo "-------------------------"
-					
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-					read choice
-					
-					case $choice in
-						1)
-							bash <(curl -Ls https://raw.githubusercontent.com/Misaka-blog/s-ui/master/install.sh)
-							sleep 2
-							end_of
-							;;
-						2)
-							systemctl disable sing-box --now
-							systemctl disable s-ui --now
-							
-							rm -f /etc/systemd/system/s-ui.service
-							rm -f /etc/systemd/system/sing-box.service
-							systemctl daemon-reload
-							
-							rm -fr /usr/local/s-ui
-							
-							_green "Sui面板已卸载"
-							end_of
-							;;
-						0)
-							break
-							;;
-						*)
-							_red "无效选项,请重新输入"
-							;;
-					esac
-				done
 				;;
 			0)
 				honeok # 返回主菜单
