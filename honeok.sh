@@ -28,7 +28,6 @@ _orange() { echo -e ${orange}$@${white}; }
 honeok_v="v1.0.0"
 
 print_logo(){
-	# https://github.com/honeok8s/shell
 	local cyan='\033[0;36m'
 	local white='\033[0;37m'
 	local yellow='\033[1;33m'
@@ -39,14 +38,11 @@ print_logo(){
 | |__   ___  _ __   ___  ___ | | __
 | '_ \ / _ \| '_ \ / _ \/ _ \| |/ /
 | | | | (_) | | | |  __| (_) |   < 
-|_| |_|\___/|_| |_|\___|\___/|_|\_\\${white}"
+|_| |_|\___/|_| |_|\___|\___/|_|\_\\"
 
-
-	echo -e "${cyan}${logo}"
-
-	local padding=$(printf '%*s' $((40 - ${#honeok_v})) '')
-
-	echo -e "${white}${padding}${yellow}${honeok_v}"
+	echo -e "${cyan}${logo}${white}"
+	local padding=$(printf '%*s' $((43 - ${#honeok_v})) '')
+	echo -e "${padding}${yellow}${honeok_v}${white}"
 }
 
 # 结尾任意键结束
