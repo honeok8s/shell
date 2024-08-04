@@ -1233,7 +1233,11 @@ reinstall_system(){
 		_yellow "按任意键继续"
 		read -n 1 -s -r -p ""
 		install curl
-		curl -O https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh
+		if [ $(curl -s ipinfo.io/country) != "CN" ];then
+			curl -O https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh
+		else
+			curl -O https://jihulab.com/bin456789/reinstall/-/raw/main/reinstall.sh
+		fi
 	}
 
 
@@ -1243,7 +1247,11 @@ reinstall_system(){
 		_yellow "按任意键继续"
 		read -n 1 -s -r -p ""
 		install curl
-		curl -O https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh
+		if [ $(curl -s ipinfo.io/country) != "CN" ];then
+			curl -O https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh
+		else
+			curl -O https://jihulab.com/bin456789/reinstall/-/raw/main/reinstall.sh
+		fi
 	}
 
 	# 重装系统
