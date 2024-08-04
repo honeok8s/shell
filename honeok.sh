@@ -1487,7 +1487,6 @@ honeok(){
 				echo "敬请期待"
 				;;
 			00)
-				clear
 				_green "当前已是最新版本"
 				sleep 1
 				honeok
