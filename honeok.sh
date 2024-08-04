@@ -278,7 +278,6 @@ rollbak_dns() {
 		if [[ $? -ne 0 ]]; then
 			_red "恢复DNS配置文件失败"
 		else
-			_green "恢复成功: 从 $backupdns_config 恢复"
 			# 删除备份文件
 			rm "$backupdns_config"
 			if [[ $? -ne 0 ]]; then
