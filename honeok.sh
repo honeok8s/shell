@@ -260,11 +260,6 @@ set_dns(){
 			fi
 		} | tee /etc/resolv.conf > /dev/null
 	fi
-
-	_green "DNS地址已更新"
-	echo "-------------------------"
-	cat /etc/resolv.conf
-	echo "-------------------------"
 }
 
 # 备份DNS配置文件
@@ -310,11 +305,6 @@ rollbak_dns() {
 	else
 		_red "未找到DNS配置文件备份"
 	fi
-	
-	_green "DNS地址已回滚默认配置"
-	echo "-------------------------"
-	cat /etc/resolv.conf
-	echo "-------------------------"
 }
 
 server_reboot(){
@@ -438,6 +428,217 @@ check_swap() {
 	else
 		_green "系统已经有交换空间,总大小为 ${swap_total}MB"
 	fi
+}
+
+linux_tools() {
+	while true; do
+		clear
+		echo "▶ 常用工具"
+		echo "-------------------------"
+		echo "1. curl 下载工具                      2. wget下载工具"
+		echo "3. sudo 超级管理权限工具              4. socat 通信连接工具"
+		echo "5. htop 系统监控工具                  6. iftop 网络流量监控工具"
+		echo "7. unzip ZIP压缩解压工具              8. tar GZ压缩解压工具"
+		echo "9. tmux 多路后台运行工具              10. ffmpeg 视频编码直播推流工具"
+		echo "-------------------------"
+		echo "11. btop 现代化监控工具               12. ranger 文件管理工具"
+		echo "13. Gdu 磁盘占用查看工具              14. fzf 全局搜索工具"
+		echo "15. Vim文本编辑器                     16. nano文本编辑器"
+		echo "-------------------------"
+		echo "21. 黑客帝国屏保                      22. 跑火车屏保"
+		echo "26. 俄罗斯方块小游戏                  27. 贪吃蛇小游戏"
+		echo "28. 太空入侵者小游戏"
+		echo "-------------------------"
+		echo "31. 全部安装                          32. 全部安装(不含屏保和游戏)"
+		echo "33. 全部卸载"
+		echo "-------------------------"
+		echo "41. 安装指定工具                      42. 卸载指定工具"
+		echo "-------------------------"
+		echo "0. 返回主菜单"
+		echo "-------------------------"
+		
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read choice
+
+		case $choice in
+			1)
+				clear
+				install curl
+				clear
+				_yellow "工具已安装,使用方法如下:"
+				curl --help
+				;;
+			2)
+				clear
+				install wget
+				clear
+				_yellow "工具已安装,使用方法如下:"
+				wget --help
+				;;
+			3)
+				clear
+				install sudo
+				clear
+				_yellow "工具已安装,使用方法如下:"
+				sudo --help
+				;;
+			4)
+				clear
+				install socat
+				clear
+				_yellow "工具已安装,使用方法如下："
+				socat -h
+				;;
+			5)
+				clear
+				install htop
+				clear
+				htop
+				;;
+			6)
+				clear
+				install iftop
+				clear
+				iftop
+				;;
+			7)
+				clear
+				install unzip
+				clear
+				_yellow "工具已安装,使用方法如下："
+				unzip
+				;;
+			8)
+				clear
+				install tar
+				clear
+				_yellow "工具已安装,使用方法如下："
+				tar --help
+				;;
+			9)
+				clear
+				install tmux
+				clear
+				_yellow "工具已安装,使用方法如下："
+				tmux --help
+				;;
+			10)
+				clear
+				install ffmpeg
+				clear
+				_yellow "工具已安装,使用方法如下："
+				ffmpeg --help
+				send_stats "安装ffmpeg"
+				;;
+			11)
+				clear
+				install btop
+				clear
+				btop
+				;;
+			12)
+				clear
+				install ranger
+				cd /
+				clear
+				ranger
+				cd ~
+				;;
+			13)
+				clear
+				install gdu
+				cd /
+				clear
+				gdu
+				cd ~
+				;;
+			14)
+				clear
+				install fzf
+				cd /
+				clear
+				fzf
+				cd ~
+				;;
+			15)
+				clear
+				install vim
+				cd /
+				clear
+				vim -h
+				cd ~
+				;;
+			16)
+				clear
+				install nano
+				cd /
+				clear
+				nano -h
+				cd ~
+				;;
+			21)
+				clear
+				install cmatrix
+				clear
+				cmatrix
+				;;
+			22)
+				clear
+				install sl
+				clear
+				sl
+				;;
+			26)
+				clear
+				install bastet
+				clear
+				bastet
+				;;
+			27)
+				clear
+				install nsnake
+				clear
+				nsnake
+				;;
+			28)
+				clear
+				install ninvaders
+				clear
+				ninvaders
+				;;
+			31)
+				clear
+				install curl wget sudo socat htop iftop unzip tar tmux ffmpeg btop ranger gdu fzf cmatrix sl bastet nsnake ninvaders vim nano
+				;;
+			32)
+				clear
+				install curl wget sudo socat htop iftop unzip tar tmux ffmpeg btop ranger gdu fzf vim nano
+				;;
+			33)
+				clear
+				remove htop iftop unzip tmux ffmpeg btop ranger gdu fzf cmatrix sl bastet nsnake ninvaders vim nano
+				;;
+			41)
+				clear
+				echo -n -e "${yellow}请输入安装的工具名(wget curl sudo htop):${white}"
+				read installname
+				install $installname
+				;;
+			42)
+				clear
+				echo -n -e "${yellow}请输入卸载的工具名(htop ufw tmux cmatrix):${white}"
+				read removename
+				remove $removename
+				;;
+			0)
+				honeok
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+		end_of
+	done
 }
 
 node_create(){
