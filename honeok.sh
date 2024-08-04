@@ -1397,25 +1397,25 @@ honeok(){
 	while true; do
 		clear
 		_yellow "脚本地址: https://github.com/honeok8s/shell"
-		_purple "-------------------------------------------------------------------"
+		_purple "-------------------------------------------------------------"
 		print_logo
-		_purple "-------------------------------------------------------------------"
+		_purple "-------------------------------------------------------------"
 		_orange "适配Ubuntu/Debian/CentOS/Alpine系统"
 		_cyan "Author: honeok"
-		_green "当前时间: $(date +"%Y-%m-%d %H:%M:%S")"
-		_purple "-------------------------------------------------------------------"
+		_green "服务器当前时间: $(date +"%Y-%m-%d %H:%M:%S")"
+		_purple "-------------------------------------------------------------"
 		echo -e "${purple} 1. 本机信息                       2. 系统更新 ${white}"
 		echo -e "${purple} 3. 系统清理                       4. 常用工具 ${white}"
 		echo -e "${purple} 5. BBR管理                        6. Docker管理 ${white}"
 		echo -e "${purple} 7. WARP管理                       8. LDNMP建站 ${white}"
-		_purple "-------------------------------------------------------------------"
+		_purple "-------------------------------------------------------------"
 		echo -e "${purple} 9. 面板工具                       10. 系统工具${white}"
 		echo -e "${purple} 11. 我的工作区                    12. VPS测试脚本合集 ${white}"
 		echo -e "${purple} 13. 节点搭建脚本合集              14. 甲骨文云合集 ${white}"
 		echo -e "${purple} 15. 常用环境管理${white}"
-		_purple "-------------------------------------------------------------------"
-		echo -e "${purple} 100.脚本更新                      0. 退出 ${white}"
-		_purple "-------------------------------------------------------------------"
+		_purple "-------------------------------------------------------------"
+		echo -e "${purple} 00.脚本更新                      0. 退出 ${white}"
+		_purple "-------------------------------------------------------------"
 
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
 		read choice
@@ -1429,6 +1429,14 @@ honeok(){
 				clear
 				update_system
 				;;
+			3)
+				clear
+				echo "敬请期待"
+				;;
+			4)
+				clear
+				echo "敬请期待"
+				;;
 			5)
 				clear
 				install wget
@@ -1437,14 +1445,30 @@ honeok(){
 				end_of
 				honeok
 				;;
+			6)
+				clear
+				echo "敬请期待"
+				;;
 			7)
 				clear
 				install wget
 				wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh [option] [lisence/url/token]
 				;;
+			8)
+				clear
+				echo "敬请期待"
+				;;
+			9)
+				clear
+				echo "敬请期待"
+				;;
 			10)
 				clear
 				linux_system_tools
+				;;
+			11)
+				clear
+				echo "敬请期待"
 				;;
 			12)
 				clear
@@ -1453,6 +1477,20 @@ honeok(){
 			13)
 				clear
 				node_create
+				;;
+			14)
+				clear
+				echo "敬请期待"
+				;;
+			15)
+				clear
+				echo "敬请期待"
+				;;
+			00)
+				clear
+				_green "当前已是最新版本"
+				sleep 1
+				honeok
 				;;
 			0)
 				clear
