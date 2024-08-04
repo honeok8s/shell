@@ -285,6 +285,39 @@ server_reboot(){
 	esac
 }
 
+update_system(){
+	wait_for_lock(){
+		while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+			_yellow "等待dpkg锁释放"
+			sleep 1
+		done
+	}
+
+	# 修复dpkg中断问题
+	fix_dpkg(){
+		DEBIAN_FRONTEND=noninteractive dpkg --configure -a
+	}
+
+	_yellow "系统正在更新"
+	if command -v dnf &>/dev/null; then
+		dnf -y update
+	elif command -v yum &>/dev/null; then
+		yum -y update
+	elif command -v apt &>/dev/null; then
+		wait_for_lock
+		fix_dpkg
+		DEBIAN_FRONTEND=noninteractive apt update -y
+		DEBIAN_FRONTEND=noninteractive apt full-upgrade -y
+	elif command -v apk &>/dev/null; then
+		apk update && apk upgrade
+	else
+		_red "未知的包管理器!"
+		return 1
+	fi
+
+	return 0
+}
+
 add_swap() {
 	local new_swap=$1
 
@@ -462,7 +495,6 @@ system_info(){
 	local current_time=$(date +"%Y-%m-%d %H:%M:%S")
 	local uptime_str=$(cat /proc/uptime | awk -F. '{run_days=int($1 / 86400);run_hours=int(($1 % 86400) / 3600);run_minutes=int(($1 % 3600) / 60); if (run_days > 0) printf("%d天 ", run_days); if (run_hours > 0) printf("%d时 ", run_hours); printf("%d分\n", run_minutes)}')
 
-	clear
 	echo ""
 	_yellow "系统信息查询"
 	echo "-------------------------"
@@ -623,18 +655,41 @@ xanmod_bbr3(){
 		esac
 	fi
 }
-
+		
 reinstall_system(){
-	mollyLau_reinstall_script(){
-		wget --no-check-certificate -qO InstallNET.sh 'https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh' && chmod a+x InstallNET.sh
-	}
-
-	dd_system_mollyLau(){
-		_yellow "重装后初始用户名: \"root\"  初始密码: \"LeitboGi0ro\"  初始端口: \"22\""
+	dd_linux_mollyLau(){
+		_yellow "重装后初始用户名: \"root\"  默认密码: \"LeitboGi0ro\"  默认ssh端口: \"22\""
+		_yellow "详细参数参考Github项目地址：https://github.com/leitbogioro/Tools"
 		_yellow "按任意键继续"
 		read -n 1 -s -r -p ""
 		install wget
-		mollyLau_reinstall_script
+		wget --no-check-certificate -qO InstallNET.sh 'https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh' && chmod a+x InstallNET.sh
+	}
+
+	dd_windows_mollyLau() {
+		_yellow "Windows默认用户名：\"Administrator\" 默认密码：\"Teddysun.com\" 默认远程连接端口: \"3389\""
+		_yellow "详细参数参考Github项目地址：https://github.com/leitbogioro/Tools"
+		_yellow "按任意键继续"
+		read -n 1 -s -r -p ""
+		install wget
+		wget --no-check-certificate -qO InstallNET.sh 'https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh' && chmod a+x InstallNET.sh
+	}
+
+	dd_linux_bin456789() {
+		_yellow "重装后初始用户名: \"root\"  默认密码: \"123@@@\"  默认ssh端口: \"22\""
+		_yellow "按任意键继续"
+		read -n 1 -s -r -p ""
+		install curl
+		curl -O https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh
+	}
+
+
+	dd_windows_bin456789() {
+		_yellow "Windows默认用户名：\"Administrator\" 默认密码：\"123@@@\" 默认远程连接端口: \"3389\""
+		_yellow "按任意键继续"
+		read -n 1 -s -r -p ""
+		install curl
+		curl -O https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh
 	}
 
 	# 重装系统
@@ -643,13 +698,24 @@ reinstall_system(){
 		need_root
 		clear
 		_yellow "请备份数据,将为你重装系统,预计花费15分钟"
-		_yellow "感谢MollyLau和bin456789以及科技lion的脚本支持!"
 		echo "-------------------------"
 		echo "1. Debian 12                  2. Debian 11"
 		echo "3. Debian 10                  4. Debian 9"
 		echo "-------------------------"
 		echo "11. Ubuntu 24.04              12. Ubuntu 22.04"
 		echo "13. Ubuntu 20.04              14. Ubuntu 18.04"
+		echo "-------------------------"
+		echo "21. Rocky Linux 9             22. Rocky Linux 8"
+		echo "23. Alma Linux 9              24. Alma Linux 8"
+		echo "25. oracle Linux 9            26. oracle Linux 8"
+		echo "27. Fedora Linux 40           28. Fedora Linux 39"
+		echo "29. CentOS 7"
+		echo "-------------------------"
+		echo "31. Alpine Linux              32. Arch Linux"
+		echo "-------------------------"
+		echo "41. Windows 11                42. Windows 10"
+		echo "44. Windows Server 2022"
+		echo "45. Windows Server 2019       46. Windows Server 2016"
 		echo "-------------------------"
 		echo "0. 返回上一级菜单"
 		echo "-------------------------"
@@ -659,58 +725,193 @@ reinstall_system(){
 
 		case "$choice" in
 			1)
-				_yellow "重装 Debian 12"
-				dd_system_mollyLau
+				_yellow "开始为你安装Debian 12"
+				dd_linux_mollyLau
 				bash InstallNET.sh -debian 12
 				reboot
 				exit 0
 				;;
 			2) 
-				_yellow "重装 Debian 11"
-				dd_system_mollyLau
+				_yellow "开始为你安装Debian 11"
+				dd_linux_mollyLau
 				bash InstallNET.sh -debian 11
 				reboot
 				exit 0
 				;;
 			3) 
-				_yellow "重装 Debian 10"
-				dd_system_mollyLau
+				_yellow "开始为你安装Debian 10"
+				dd_linux_mollyLau
 				bash InstallNET.sh -debian 10
 				reboot
 				exit 0
 				;;
 			4)
-				_yellow "重装 Debian 9"
-				dd_system_mollyLau
+				_yellow "开始为你安装Debian 9"
+				dd_linux_mollyLau
 				bash InstallNET.sh -debian 9
 				reboot
 				exit 0
 				;;
 			11)
-				_yellow "重装 Ubuntu 24.04"
-				dd_system_mollyLau
+				_yellow "开始为你安装Ubuntu 24.04"
+				dd_linux_mollyLau
 				bash InstallNET.sh -ubuntu 24.04
 				reboot
 				exit 0
 				;;
 			12)
-				_yellow "重装 Ubuntu 22.04"
-				dd_system_mollyLau
+				_yellow "开始为你安装Ubuntu 22.04"
+				dd_linux_mollyLau
 				bash InstallNET.sh -ubuntu 22.04
 				reboot
 				exit 0
 				;;
 			13)
-				_yellow "重装 Ubuntu 20.04"
-				dd_system_mollyLau
+				_yellow "开始为你安装Ubuntu 20.04"
+				dd_linux_mollyLau
 				bash InstallNET.sh -ubuntu 20.04
 				reboot
 				exit 0
 				;;
 			14)
-				_yellow "重装 Ubuntu 18.04"
-				dd_system_mollyLau
+				_yellow "开始为你安装Ubuntu 18.04"
+				dd_linux_mollyLau
 				bash InstallNET.sh -ubuntu 18.04
+				reboot
+				exit 0
+				;;
+			21)
+				_yellow "开始为你安装Rockylinux9"
+				dd_linux_bin456789
+				bash reinstall.sh rocky
+				reboot
+				exit 0
+                ;;
+			22)
+				_yellow "开始为你安装Rockylinux8"
+				dd_linux_bin456789
+				bash reinstall.sh rocky 8
+				reboot
+				exit 0
+				;;
+			23)
+				_yellow "开始为你安装Alma9"
+				dd_linux_bin456789
+				bash reinstall.sh alma
+				reboot
+				exit 0
+				;;
+			24)
+				_yellow "开始为你安装Alma8"
+				dd_linux_bin456789
+				bash reinstall.sh alma 8
+				reboot
+				exit 0
+				;;
+			25)
+				_yellow "开始为你安装Oracle9"
+				dd_linux_bin456789
+				bash reinstall.sh oracle
+				reboot
+				exit 0
+				;;
+			26)
+				_yellow "开始为你安装Oracle8"
+				dd_linux_bin456789
+				bash reinstall.sh oracle 8
+				reboot
+				exit 0
+				;;
+			27)
+				_yellow "开始为你安装Fedora40"
+				dd_linux_bin456789
+				bash reinstall.sh fedora
+				reboot
+				exit 0
+				;;
+			28)
+				_yellow "开始为你安装Fedora39"
+				dd_linux_bin456789
+				bash reinstall.sh fedora 39
+				reboot
+				exit 0
+				;;
+			29)
+				_yellow "开始为你安装Centos 7"
+				dd_linux_mollyLau
+				bash InstallNET.sh -centos 7
+				reboot
+				exit 0
+				;;
+			31)
+				_yellow "开始为你安装Alpine"
+				dd_linux_mollyLau
+				bash InstallNET.sh -alpine
+				reboot
+				exit 0
+				;;
+			32)
+				_yellow "开始为你安装Arch"
+				dd_linux_bin456789
+				bash reinstall.sh arch
+				reboot
+				exit 0
+				;;
+			33)
+				_yellow "开始为你安装Kali"
+				dd_linux_bin456789
+				bash reinstall.sh kali
+				reboot
+				exit 0
+				;;
+			34)
+				_yellow "开始为你安装Openeuler"
+				dd_linux_bin456789
+				bash reinstall.sh openeuler
+				reboot
+				exit 0
+				;;
+			35)
+				_yellow "开始为你安装Opensuse"
+				dd_linux_bin456789
+				bash reinstall.sh opensuse
+				reboot
+				exit 0
+				;;
+			41)
+				_yellow "开始为你安装Windows11"
+				dd_windows_mollyLau
+				bash InstallNET.sh -windows 11 -lang "cn"
+				reboot
+				exit 0
+				;;
+			42)
+				_yellow "开始为你安装Windows10"
+				dd_windows_mollyLau
+				bash InstallNET.sh -windows 10 -lang "cn"
+				reboot
+				exit 0
+				;;
+			44)
+				_yellow "开始为你安装Windows server 22"
+				dd_windows_bin456789
+				URL="https://massgrave.dev/windows_server_links"
+				iso_link=$(wget -q -O - "$URL" | grep -oP '(?<=href=")[^"]*cn[^"]*windows_server[^"]*2022[^"]*x64[^"]*\.iso')
+				bash reinstall.sh windows --iso="$iso_link" --image-name='Windows Server 2022 SERVERDATACENTER'
+				reboot
+				exit 0
+				;;
+			45)
+				_yellow "开始为你安装Windows server 19"
+				dd_windows_mollyLau
+				bash InstallNET.sh -windows 2019 -lang "cn"
+				reboot
+				exit 0
+				;;
+			46)
+				_yellow "开始为你安装Windows server 16"
+				dd_xitong_2
+				bash InstallNET.sh -windows 2016 -lang "cn"
 				reboot
 				exit 0
 				;;
@@ -719,6 +920,7 @@ reinstall_system(){
 				;;
 			*)
 				_red "无效选项,请重新输入"
+				break
 				;;
 		esac
 	done
@@ -1129,18 +1331,17 @@ honeok(){
 	local choice
 	while true; do
 		clear
+		_gray "脚本地址: https://github.com/honeok8s/shell"
 		print_logo
 		_purple "-------------------------"
-		_yellow "做最能缝合的脚本!"
 		_orange "适配Ubuntu/Debian/CentOS/Alpine系统"
 		_cyan "Author: honeok"
-		_gray "Github: https://github.com/honeok8s/shell"
 		_green "当前时间: $(date +"%Y-%m-%d %H:%M:%S")"
 		_purple "-------------------------"
-		_purple "1. 系统信息查询"
-		_purple "7. WARP管理"
-		_purple "8. VPS脚本合集"
-		_purple "13. 系统工具"
+		echo -e "${purple} 1. 系统信息查询                   2. 系统更新 ${white}"
+		echo -e "${purple} 5. BBR管理 ${white}"
+		echo -e "${purple} 7. WARP管理                       8. VPS脚本合集 ${white}"
+		echo -e "${purple} 13. 系统工具 ${white}"
 		_purple "-------------------------"
 		_purple "0. 退出"
 		_purple "-------------------------"
@@ -1150,18 +1351,32 @@ honeok(){
 
 		case "$choice" in
 			1)
+				clear
 				system_info
+				;;
+			2)
+				clear
+				update_system
+				;;
+			5)
+				clear
+				install wget
+				wget --no-check-certificate -O tcpx.sh https://raw.githubusercontent.com/ylx2016/Linux-NetSpeed/master/tcpx.sh && chmod +x tcpx.sh && ./tcpx.sh
+				rm tcpx.sh
+				end_of
+				honeok
 				;;
 			7)
 				clear
-				_yellow "warp管理"
 				install wget
 				wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh [option] [lisence/url/token]
 				;;
 			8)
+				clear
 				server_script
 				;;
 			13)
+				clear
 				linux_system_tools
 				;;
 			0)
