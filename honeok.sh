@@ -792,6 +792,144 @@ node_create(){
 	done
 }
 
+oracle_script() {
+	while true; do
+		clear
+		echo "▶ 甲骨文云脚本合集"
+		echo "-------------------------"
+		echo "1. 安装闲置机器活跃脚本"
+		echo "2. 卸载闲置机器活跃脚本"
+		echo "-------------------------"
+		echo "3. DD重装系统脚本"
+		echo "4. R探长开机脚本"
+		echo "-------------------------"
+		echo "5. 开启ROOT密码登录模式"
+		echo "-------------------------"
+		echo "0. 返回主菜单"
+		echo "------------------------"
+
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read choice
+
+		case $choice in
+			1)
+				clear
+				_yellow "活跃脚本: CPU占用10-20% 内存占用20%"
+				echo -n -e "${yellow}确定安装吗?(Y/N):${white}"
+				read ins
+				
+				case "$ins" in
+					[Yy])
+						#install_docker
+						# 设置默认值
+						DEFAULT_CPU_CORE=1
+						DEFAULT_CPU_UTIL="10-20"
+						DEFAULT_MEM_UTIL=20
+						DEFAULT_SPEEDTEST_INTERVAL=120
+
+						# 提示用户输入CPU核心数和占用百分比,如果回车则使用默认值
+						echo -n -e "${yellow}请输入CPU核心数[默认:$DEFAULT_CPU_CORE]:${white}"
+						read cpu_core
+						cpu_core=${cpu_core:-$DEFAULT_CPU_CORE}
+
+						echo -n -e "${yellow}请输入CPU占用百分比范围(例如10-20)[默认:$DEFAULT_CPU_UTIL]:${white}"
+						read cpu_util
+						cpu_util=${cpu_util:-$DEFAULT_CPU_UTIL}
+
+						echo -n -e "${yellow}请输入内存占用百分比[默认:$DEFAULT_MEM_UTIL]:${white}"
+						read mem_util
+						mem_util=${mem_util:-$DEFAULT_MEM_UTIL}
+
+						echo -n -e "${yellow}请输入Speedtest间隔时间(秒)[默认:$DEFAULT_SPEEDTEST_INTERVAL]:${white}"
+						read speedtest_interval
+						speedtest_interval=${speedtest_interval:-$DEFAULT_SPEEDTEST_INTERVAL}
+
+						# 运行Docker容器
+						docker run -itd --name=lookbusy --restart=always \
+							-e TZ=Asia/Shanghai \
+							-e CPU_UTIL="$cpu_util" \
+							-e CPU_CORE="$cpu_core" \
+							-e MEM_UTIL="$mem_util" \
+							-e SPEEDTEST_INTERVAL="$speedtest_interval" \
+							fogforest/lookbusy
+						;;
+					[Nn])
+						echo ""
+						;;
+					*)
+						_red "无效选项,请输入Y或N"
+						;;
+				esac
+				;;
+			2)
+				clear
+				docker rm -f lookbusy
+				docker rmi fogforest/lookbusy
+				_green "成功卸载甲骨文活跃脚本"
+				;;
+			3)
+				clear
+				_yellow "重装系统"
+				echo "-------------------------"
+				_yellow "注意:重装有风险失联,不放心者慎用,重装预计花费15分钟,请提前备份数据"
+				
+				echo -n -e "${yellow}确定继续吗?(Y/N):${white}"
+				read choice
+
+				case "$choice" in
+					[Yy])
+						while true; do
+							echo -n -e "${yellow}请选择要重装的系统:  1. Debian12 | 2. Ubuntu20.04${white}"
+							read sys_choice
+
+							case "$sys_choice" in
+								1)
+									xitong="-d 12"
+									break  # 结束循环
+									;;
+								2)
+									xitong="-u 20.04"
+									break  # 结束循环
+									;;
+								*)
+									_red "无效选项,请重新输入"
+									;;
+							esac
+						done
+
+						echo -n -e "${yellow}请输入你重装后的密码:${white}"
+						read vpspasswd
+				
+						install wget
+						bash <(wget --no-check-certificate -qO- 'https://raw.githubusercontent.com/MoeClub/Note/master/InstallNET.sh') $xitong -v 64 -p $vpspasswd -port 22
+						;;
+					[Nn])
+						_yellow "已取消"
+						;;
+					*)
+						_red "无效选项,请输入Y或N"
+						;;
+				esac
+				;;
+			4)
+				clear
+				_yellow "该功能处于开发阶段,敬请期待!"
+				;;
+			5)
+				clear
+				add_sshpasswd
+				;;
+			0)
+				honeok
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+		end_of
+    done
+}
+
 # 查看系统信息
 system_info(){
 	local hostname=$(hostnamectl | sed -n 's/^[[:space:]]*Static hostname:[[:space:]]*\(.*\)$/\1/p')
@@ -1748,7 +1886,6 @@ honeok(){
 				honeok
 				;;
 			6)
-				clear
 				echo "敬请期待"
 				;;
 			7)
@@ -1757,11 +1894,9 @@ honeok(){
 				wget -N https://gitlab.com/fscarmen/warp/-/raw/main/menu.sh && bash menu.sh [option] [lisence/url/token]
 				;;
 			8)
-				clear
 				echo "敬请期待"
 				;;
 			9)
-				clear
 				echo "敬请期待"
 				;;
 			10)
@@ -1769,7 +1904,6 @@ honeok(){
 				linux_system_tools
 				;;
 			11)
-				clear
 				echo "敬请期待"
 				;;
 			12)
@@ -1782,7 +1916,7 @@ honeok(){
 				;;
 			14)
 				clear
-				echo "敬请期待"
+				oracle_script
 				;;
 			15)
 				clear
