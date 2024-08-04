@@ -28,10 +28,11 @@ _orange() { echo -e ${orange}$@${white}; }
 honeok_v="v1.0.0"
 
 print_logo(){
-	local cyan='\033[0;36m'
-	local white='\033[0;37m'
-	local yellow='\033[1;33m'
-	
+	local cyan=$(tput setaf 6)
+	local reset=$(tput sgr0)
+	local yellow=$(tput setaf 3)
+	local bold=$(tput bold)
+
 	local logo="
  _                            _    
 | |                          | |   
@@ -40,11 +41,23 @@ print_logo(){
 | | | | (_) | | | |  __| (_) |   < 
 |_| |_|\___/|_| |_|\___|\___/|_|\_\\"
 
-	echo -e "${cyan}${logo}${white}"
+	# 打印logo
+	echo -e "${cyan}${logo}${reset}"
 
-	local padding=$(printf '%*s' $((43 - ${#honeok_v})) '')
+	echo ""
 
-	echo -e "${padding}${yellow}${honeok_v}${white}"
+	# 计算文本的长度
+	local text="Tools: ${honeok_v}"
+	local text_length=${#text}
+
+	# 打印标志宽度,帮助确认宽度
+	local logo_width=$(echo -e "$logo" | awk '{print length($0)}' | sort -nu | tail -n 1)
+
+	# 计算填充的空格数
+	local padding=$(printf '%*s' $((logo_width - text_length)) '')
+
+	# 打印对齐的文本
+	echo -e "${padding}${yellow}${bold}${text}${reset}"
 }
 
 # 结尾任意键结束
