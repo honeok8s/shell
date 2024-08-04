@@ -203,18 +203,40 @@ set_timedate(){
 }
 
 set_dns(){
-	# 检查机器是否有IPv6地址
-	ipv6_available=0
-	if [[ $(ip -6 addr | grep -c "inet6") -gt 0 ]]; then
-		ipv6_available=1
-	fi
+	local cloudflare_ipv4="1.1.1.1"
+	local google_ipv4="8.8.8.8"
+	local cloudflare_ipv6="2606:4700:4700::1111"
+	local google_ipv6="2001:4860:4860::8888"
 
-	echo "nameserver $dns1_ipv4" > /etc/resolv.conf
-	echo "nameserver $dns2_ipv4" >> /etc/resolv.conf
+	local ali_ipv4="223.5.5.5"
+	local tencent_ipv4="183.60.83.19"
+	local ali_ipv6="2400:3200::1"
+	local tencent_ipv6="2400:da00::6666"
 
-	if [[ $ipv6_available -eq 1 ]]; then
-		echo "nameserver $dns1_ipv6" >> /etc/resolv.conf
-		echo "nameserver $dns2_ipv6" >> /etc/resolv.conf
+	local country
+	local ipv6_addresses
+
+	country=$(curl -s ipinfo.io/country)
+	ipv6_addresses=$(ip -6 addr | grep -c "inet6")
+
+	if [ "$country" = "CN" ]; then
+		{
+			echo "nameserver $ali_ipv4"
+			echo "nameserver $tencent_ipv4"
+			[ "$ipv6_addresses" -gt 0 ] && {
+				echo "nameserver $ali_ipv6"
+				echo "nameserver $tencent_ipv6"
+			}
+		} | tee /etc/resolv.conf
+	else
+		{
+			echo "nameserver $cloudflare_ipv4"
+			echo "nameserver $google_ipv4"
+			[ "$ipv6_addresses" -gt 0 ] && {
+				echo "nameserver $cloudflare_ipv6"
+				echo "nameserver $google_ipv6"
+			}
+		} | tee /etc/resolv.conf
 	fi
 
 	_green "DNS地址已更新"
@@ -1144,13 +1166,14 @@ linux_system_tools(){
 					cat /etc/resolv.conf
 					echo "------------------------"
 					echo ""
-					echo "1. 国外DNS优化: "
-					echo " v4: 1.1.1.1 8.8.8.8"
-					echo " v6: 2606:4700:4700::1111 2001:4860:4860::8888"
-					echo "2. 国内DNS优化: "
-					echo " v4: 223.5.5.5 183.60.83.19"
-					echo " v6: 2400:3200::1 2400:da00::6666"
-					echo "3. 恢复DNS原有配置"
+					echo "国外DNS优化: "
+					echo "v4: 1.1.1.1 8.8.8.8"
+					echo "v6: 2606:4700:4700::1111 2001:4860:4860::8888"
+					echo "国内DNS优化: "
+					echo "v4: 223.5.5.5 183.60.83.19"
+					echo "v6: 2400:3200::1 2400:da00::6666"
+					echo "1. 设置DNS优化"
+					echo "2. 恢复DNS原有配置"
 					echo "------------------------"
 					echo "0. 返回上一级"
 					echo "------------------------"
@@ -1160,22 +1183,10 @@ linux_system_tools(){
 
 					case "$choice" in
 						1)
-							dns1_ipv4="1.1.1.1"
-							dns2_ipv4="8.8.8.8"
-							dns1_ipv6="2606:4700:4700::1111"
-							dns2_ipv6="2001:4860:4860::8888"
 							bak_dns
 							set_dns
 							;;
 						2)
-							dns1_ipv4="223.5.5.5"
-							dns2_ipv4="183.60.83.19"
-							dns1_ipv6="2400:3200::1"
-							dns2_ipv6="2400:da00::6666"
-							bak_dns
-							set_dns
-							;;
-						3)
 							rollbak_dns
 							;;
 						0)
