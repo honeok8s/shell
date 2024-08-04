@@ -1870,11 +1870,9 @@ honeok(){
 				update_system
 				;;
 			3)
-				clear
 				echo "敬请期待"
 				;;
 			4)
-				clear
 				echo "敬请期待"
 				;;
 			5)
@@ -1900,14 +1898,12 @@ honeok(){
 				echo "敬请期待"
 				;;
 			10)
-				clear
 				linux_system_tools
 				;;
 			11)
 				echo "敬请期待"
 				;;
 			12)
-				clear
 				server_test_script
 				;;
 			13)
@@ -1919,7 +1915,6 @@ honeok(){
 				oracle_script
 				;;
 			15)
-				clear
 				echo "敬请期待"
 				;;
 			00)
