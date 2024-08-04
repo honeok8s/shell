@@ -418,6 +418,11 @@ check_swap() {
 }
 
 node_create(){
+	if [ $(curl -s ipinfo.io/country) == "CN" ];then
+		_red "请遵守你当地的法律法规"
+		break # 返回主菜单
+	fi
+
 	local choice
 	while true; do
 		clear
