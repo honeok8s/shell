@@ -694,7 +694,8 @@ linux_tools() {
 node_create(){
 	if [ $(curl -s ipinfo.io/country) == "CN" ];then
 		_red "请遵守你当地的法律法规"
-		break # 返回主菜单
+		sleep
+		honeok # 返回主菜单
 	fi
 
 	local choice
