@@ -242,6 +242,7 @@ set_dns(){
 	echo "-------------------------"
 	cat /etc/resolv.conf
 	echo "-------------------------"
+	end_of
 }
 
 # 备份DNS配置文件
