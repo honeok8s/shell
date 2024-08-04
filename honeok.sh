@@ -462,9 +462,9 @@ node_create(){
 		echo "---------------------------------------------------------"
 		echo "9. 老王Hysteria2一键脚本      10. 老王Juicity一键脚本  "
 		echo "11. 老王Tuic-v5一键脚本       12. Brutal-Reality一键脚本 "
-		echo "13.新版X-UI面板一键脚本       14.伊朗版3X-UI面板一键脚本"
-		echo "15.OpenVPN一键安装脚本        16.一键搭建TG代理"
-		echo "17. 老王Reality一键脚本       18.sing-box面板(sui) ▶"
+		echo "13. 新版X-UI面板一键脚本      14. 伊朗版3X-UI面板一键脚本"
+		echo "15. OpenVPN一键安装脚本       16. 一键搭建TG代理"
+		echo "17. 老王Reality一键脚本       18. Sing-box面板(Sui) ▶"
 		echo "---------------------------------------------------------"
 		echo "0. 返回主菜单"
 		echo "---------------------------------------------------------" 
@@ -602,6 +602,185 @@ node_create(){
 				clear
 				bash -c "$(curl -L https://raw.githubusercontent.com/eooce/scripts/master/tuic.sh)"
 				;;
+			12)
+				clear
+				_yellow "安装Tcp-Brutal-Reality需要内核高于5.8,不符合请手动升级5.8内核以上再安装"
+				
+				current_kernel_version=$(uname -r | cut -d'-' -f1 | awk -F'.' '{print $1 * 100 + $2}')
+				target_kernel_version=508
+				
+				# 比较内核版本
+				if [ "$current_kernel_version" -lt "$target_kernel_version" ]; then
+					_red "当前系统内核版本小于 $target_kernel_version,请手动升级内核后重试,正在退出"
+					sleep 2
+					honeok
+				else
+					_yellow "当前系统内核版本 $current_kernel_version,符合安装要求"
+					sleep 1
+					bash <(curl -fsSL https://github.com/vveg26/sing-box-reality-hysteria2/raw/main/tcp-brutal-reality.sh)
+					sleep
+					end_of
+				fi
+				;;
+			13)
+				clear
+				bash <(curl -Ls https://raw.githubusercontent.com/slobys/x-ui/main/install.sh)
+				;;
+			14)
+				clear
+				bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh)
+				;;
+			15)
+				clear
+				install wget
+				wget https://git.io/vpn -O openvpn-install.sh && bash openvpn-install.sh
+				;;
+			16)
+				clear
+				rm -rf /home/mtproxy && mkdir /home/mtproxy && cd /home/mtproxy
+				curl -fsSL -o mtproxy.sh https://github.com/ellermister/mtproxy/raw/master/mtproxy.sh && chmod +x mtproxy.sh && bash mtproxy.sh
+				sleep 1
+				;;
+			17)
+				while true; do
+					clear
+					echo "-------------------------"
+					echo "1.安装Reality"
+					echo "2.卸载Reality"
+					echo "3.更换Reality端口"
+					echo "-------------------------"
+					echo "0. 返回上一级菜单"
+					echo "-------------------------"
+
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					read choice
+					
+					case $choice in
+						1)
+							clear
+							echo -n -e "${yellow}请输入reality节点端口(nat小鸡请输入可用端口范围内的端口),回车跳过则使用随机端口：${white}"
+							read port
+							[[ -z $port ]]
+							until [[ -z $(netstat -tuln | grep -w tcp | awk '{print $4}' | sed 's/.*://g' | grep -w "$port") ]]; do
+								if [[ -n $(netstat -tuln | grep -w tcp | awk '{print $4}' | sed 's/.*://g' | grep -w "$port") ]]; then
+									_red "端口已经被其他程序占用,请更换端口重试"
+									echo -n -e "${yellow}设置Reality端口[1-65535](回车跳过将使用随机端口):${white}"
+									read port
+									[[ -z $PORT ]] && port=$(shuf -i 2000-65000 -n 1)
+								fi
+							done
+							if [ -f "/etc/alpine-release" ]; then
+								PORT=$port bash -c "$(curl -L https://raw.githubusercontent.com/eooce/scripts/master/test.sh)"
+							else
+								PORT=$port bash -c "$(curl -L https://raw.githubusercontent.com/eooce/xray-reality/master/reality.sh)"
+							fi
+							sleep 1
+							end_of
+							;;
+						2)
+							if [ -f "/etc/alpine-release" ]; then
+								pkill -f '[w]eb'
+								pkill -f '[n]pm'
+								cd && rm -rf app
+								clear
+							else
+								sudo systemctl stop xray
+								sudo rm /usr/local/bin/xray
+								sudo rm /etc/systemd/system/xray.service
+								sudo rm /usr/local/etc/xray/config.json
+								sudo rm /usr/local/share/xray/geoip.dat
+								sudo rm /usr/local/share/xray/geosite.dat
+								sudo rm /etc/systemd/system/xray@.service
+								
+								sudo systemctl daemon-reload
+								
+								sudo rm -rf /var/log/xray /var/lib/xray
+								clear
+							fi
+							
+							_green "Reality已卸载"
+							end_of
+							;;
+						3)
+							clear
+							echo -n -e "${yellow}设置reality端口[1-65535]回车跳过则使用随机端口：${white}"
+							read new_port
+							[[ -z $new_port ]] && new_port=$(shuf -i 2000-65000 -n 1)
+							until [[ -z $(netstat -tuln | grep -w tcp | awk '{print $4}' | sed 's/.*://g' | grep -w "$port") ]]; do
+								if [[ -n $(netstat -tuln | grep -w tcp | awk '{print $4}' | sed 's/.*://g' | grep -w "$port") ]]; then
+									_red "端口已经被其他程序占用,请更换端口重试"
+									echo -n -e "${yellow}设置reality端口[1-65535]回车跳过则使用随机端口：${white}"
+									read new_port
+									[[ -z $new_port ]] && new_port=$(shuf -i 2000-65000 -n 1)
+								fi
+							done
+							
+							install jq
+							if [ -f "/etc/alpine-release" ]; then
+								jq --argjson new_port "$new_port" '.inbounds[0].port = $new_port' /root/app/config.json > tmp.json && mv tmp.json /root/app/config.json
+								pkill -f '[w]eb'
+								cd ~ && cd app
+								nohup ./web -c config.json >/dev/null 2>&1 &
+							else
+								clear
+								jq --argjson new_port "$new_port" '.inbounds[0].port = $new_port' /usr/local/etc/xray/config.json > tmp.json && mv tmp.json /usr/local/etc/xray/config.json
+								systemctl restart xray.service
+							fi
+							
+							_green "Reality端口已更换成$new_port,请手动更改客户端配置!"
+							sleep 1
+							end_of
+							;;
+						0)
+							break
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac
+				done
+				;;
+			18)
+				while true; do
+					clear
+					echo "▶ Sui面板"
+					echo "-------------------------"
+					echo "1.安装sui面板"
+					echo "2.卸载sui面板"
+					echo "-------------------------"
+					echo "0. 返回上一级菜单"
+					echo "-------------------------"
+					
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					read choice
+					
+					case $choice in
+						1)
+							bash <(curl -Ls https://raw.githubusercontent.com/Misaka-blog/s-ui/master/install.sh)
+							sleep 2
+							end_of
+							;;
+						2)
+							systemctl disable sing-box --now
+							systemctl disable s-ui --now
+							
+							rm -f /etc/systemd/system/s-ui.service
+							rm -f /etc/systemd/system/sing-box.service
+							systemctl daemon-reload
+							
+							rm -fr /usr/local/s-ui
+							
+							_green "Sui面板已卸载"
+							end_of
+							;;
+						0)
+							break
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac
+				done
 			0)
 				honeok # 返回主菜单
 				;;
