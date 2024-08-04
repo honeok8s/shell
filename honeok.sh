@@ -41,7 +41,6 @@ print_logo(){
 |_| |_|\___/|_| |_|\___|\___/|_|\_\\"
 
 	echo -e "${cyan}${logo}${reset}"
-
 	echo ""
 	local text="Tools: ${honeok_v}"
 	local text_length=${#text}
