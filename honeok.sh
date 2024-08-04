@@ -287,9 +287,17 @@ server_reboot(){
 
 update_system(){
 	wait_for_lock(){
+		local timeout=300  # 设置超时时间为300秒(5分钟)
+		local waited=0
+
 		while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
 			_yellow "等待dpkg锁释放"
 			sleep 1
+			waited=$((waited + 1))
+			if [ $waited -ge $timeout ]; then
+				_red "等待dpkg锁超时"
+				break # 等待dpkg锁超时后退出循环
+			fi
 		done
 	}
 
