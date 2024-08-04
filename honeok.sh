@@ -226,12 +226,9 @@ set_dns(){
 	local ali_ipv6="2400:3200::1"
 	local tencent_ipv6="2400:da00::6666"
 
-	local country
 	local ipv6_addresses
 
-	country=$(curl -s ipinfo.io/country)
-
-	if [ "$country" = "CN" ]; then
+	if [ $(curl -s ipinfo.io/country) = "CN" ];then
 		{
 			echo "nameserver $ali_ipv4"
 			echo "nameserver $tencent_ipv4"
@@ -436,7 +433,7 @@ linux_bbr() {
 			_yellow "当前TCP阻塞算法:$congestion_algorithm $queue_algorithm"
 
 			echo ""
-			echo "BBR管理"
+			_yellow "BBR管理"
 			echo "-------------------------"
 			echo "1. 开启BBRv3              2. 关闭BBRv3（会重启）"
 			echo "-------------------------"
@@ -473,7 +470,7 @@ linux_bbr() {
 linux_tools() {
 	while true; do
 		clear
-		echo "▶ 常用工具"
+		_yellow "▶ 常用工具"
 		echo "-------------------------"
 		echo "1. curl 下载工具                      2. wget下载工具"
 		echo "3. sudo 超级管理权限工具              4. socat 通信连接工具"
@@ -682,7 +679,7 @@ linux_tools() {
 }
 
 node_create(){
-	if [ $(curl -s ipinfo.io/country) == "CN" ];then
+	if [ $(curl -s ipinfo.io/country) = "CN" ];then
 		clear
 		_red "请遵守你当地的法律法规"
 		sleep 1
@@ -692,7 +689,7 @@ node_create(){
 	local choice
 	while true; do
 		clear
-		echo "▶ 节点搭建脚本合集"
+		_yellow "▶ 节点搭建脚本合集"
 		echo "-------------------------------"
 		echo "Sing-box多合一/Argo-tunnel"
 		echo "-------------------------------"
@@ -801,7 +798,7 @@ node_create(){
 oracle_script() {
 	while true; do
 		clear
-		echo "▶ 甲骨文云脚本合集"
+		_yellow "▶ 甲骨文云脚本合集"
 		echo "-------------------------"
 		echo "1. 安装闲置机器活跃脚本"
 		echo "2. 卸载闲置机器活跃脚本"
