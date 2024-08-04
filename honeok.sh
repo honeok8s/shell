@@ -288,6 +288,11 @@ rollbak_dns() {
 	else
 		_red "未找到DNS配置文件备份"
 	fi
+	
+	_green "DNS地址已回滚默认配置"
+	echo "-------------------------"
+	cat /etc/resolv.conf
+	echo "-------------------------"
 }
 
 server_reboot(){
