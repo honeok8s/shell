@@ -693,28 +693,29 @@ node_create(){
 	while true; do
 		clear
 		echo "▶ 节点搭建脚本合集"
-		echo "-------------------------"
+		echo "------------------------------------"
 		echo "Sing-box多合一/Argo-tunnel"
-		echo "-------------------------"
+		echo "------------------------------------"
 		echo "1. Fscarmen Sing-box一键脚本"
 		echo "2. Fscarmen ArgoX一键脚本"
 		echo "5. 233boy Sing-box一键脚本"
 		echo "6. 梭哈一键Argo脚本"
 		echo "7. WL一键Argo哪吒脚本"
-		echo "-------------------------"
+		echo "------------------------------------"
 		echo "单协议/XRAY面板及其他"
-		echo "-------------------------"
+		echo "------------------------------------"
 		echo "22. Brutal-Reality一键脚本"
 		echo "23. Vaxilu X-UI面板一键脚本"
 		echo "24. FranzKafkaYu X-UI面板一键脚本"
+		echo "25. alireza0 多用户多协议 X-UI面板一键脚本"
 		echo "30. 新版X-UI面板一键脚本"
 		echo "31. 伊朗版3X-UI一键脚本"
-		echo "-------------------------"
+		echo "------------------------------------"
 		echo "35. OpenVPN一键安装脚本"
 		echo "36. 一键搭建TG代理"
-		echo "-------------------------"
+		echo "------------------------------------"
 		echo "0. 返回主菜单"
-		echo "-------------------------"
+		echo "------------------------------------"
 
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
 		read choice
@@ -769,6 +770,10 @@ node_create(){
 			24)
 				clear
 				bash <(curl -Ls https://raw.githubusercontent.com/FranzKafkaYu/x-ui/master/install.sh)
+				;;
+			25)
+				clear
+				bash <(curl -Ls https://raw.githubusercontent.com/alireza0/x-ui/master/install.sh)
 				;;
 			30)
 				clear
