@@ -1229,6 +1229,7 @@ reinstall_system(){
 
 	dd_linux_bin456789() {
 		_yellow "重装后初始用户名: \"root\"  默认密码: \"123@@@\"  默认ssh端口: \"22\""
+		_yellow "详细参数参考Github项目地址：https://github.com/bin456789/reinstall"
 		_yellow "按任意键继续"
 		read -n 1 -s -r -p ""
 		install curl
@@ -1238,6 +1239,7 @@ reinstall_system(){
 
 	dd_windows_bin456789() {
 		_yellow "Windows默认用户名：\"Administrator\" 默认密码：\"123@@@\" 默认远程连接端口: \"3389\""
+		_yellow "详细参数参考Github项目地址：https://github.com/bin456789/reinstall"
 		_yellow "按任意键继续"
 		read -n 1 -s -r -p ""
 		install curl
@@ -1249,7 +1251,8 @@ reinstall_system(){
 	while true; do
 		need_root
 		clear
-		_yellow "请备份数据,将为你重装系统,预计花费15分钟"
+		_yellow "重装有风险失联,不放心者慎用,重装预计花费15分钟,请提前备份数据"
+		_yellow "感谢MollyLau和bin456789的脚本支持!"
 		echo "-------------------------"
 		echo "1. Debian 12                  2. Debian 11"
 		echo "3. Debian 10                  4. Debian 9"
@@ -1462,7 +1465,7 @@ reinstall_system(){
 				;;
 			46)
 				_yellow "开始为你安装Windows server 16"
-				dd_xitong_2
+				dd_windows_mollyLau
 				bash InstallNET.sh -windows 2016 -lang "cn"
 				reboot
 				exit 0
