@@ -32,7 +32,6 @@ print_logo(){
 	local reset=$(tput sgr0)
 	local yellow=$(tput setaf 3)
 	local bold=$(tput bold)
-
 	local logo="
  _                            _    
 | |                          | |   
@@ -41,22 +40,14 @@ print_logo(){
 | | | | (_) | | | |  __| (_) |   < 
 |_| |_|\___/|_| |_|\___|\___/|_|\_\\"
 
-	# 打印logo
 	echo -e "${cyan}${logo}${reset}"
 
 	echo ""
-
-	# 计算文本的长度
 	local text="Tools: ${honeok_v}"
 	local text_length=${#text}
-
-	# 打印标志宽度,帮助确认宽度
 	local logo_width=$(echo -e "$logo" | awk '{print length($0)}' | sort -nu | tail -n 1)
-
-	# 计算填充的空格数
 	local padding=$(printf '%*s' $((logo_width - text_length)) '')
 
-	# 打印对齐的文本
 	echo -e "${padding}${yellow}${bold}${text}${reset}"
 }
 
