@@ -223,7 +223,7 @@ set_dns(){
 		{
 			echo "nameserver $ali_ipv4"
 			echo "nameserver $tencent_ipv4"
-			if [ "$ipv6_addresses" -gt 0 ]; then
+			if [ "$ipv6_addresses" -ne 0 ]; then
 				echo "nameserver $ali_ipv6"
 				echo "nameserver $tencent_ipv6"
 			fi
@@ -232,7 +232,7 @@ set_dns(){
 		{
 			echo "nameserver $cloudflare_ipv4"
 			echo "nameserver $google_ipv4"
-			if [ "$ipv6_addresses" -gt 0 ]; then
+			if [ "$ipv6_addresses" -ne 0 ]; then
 				echo "nameserver $cloudflare_ipv6"
 				echo "nameserver $google_ipv6"
 			fi
