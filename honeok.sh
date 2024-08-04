@@ -781,6 +781,7 @@ node_create(){
 							;;
 					esac
 				done
+				;;
 			0)
 				honeok # 返回主菜单
 				;;
