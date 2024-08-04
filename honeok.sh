@@ -2108,11 +2108,9 @@ honeok(){
 				server_test_script
 				;;
 			13)
-				clear
 				node_create
 				;;
 			14)
-				clear
 				oracle_script
 				;;
 			15)
