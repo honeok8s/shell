@@ -94,11 +94,11 @@ all_start(){
 	sleep 5
 
 	cd /data/tool/ || { _red "无法进入目录 /data/tool/"; exit 1; }
-	if ! pgrep -f 'processcontrol-allserver' > /dev/null; then
-		sh processcontrol-allserver.sh > /dev/null 2>&1 &
-		_green "processcontrol-allserver 启动成功"
+	if ! pgrep -f 'processcontrol' > /dev/null; then
+		sh processcontrol.sh > /dev/null 2>&1 &
+		_green "processcontrol 启动成功"
 	else
-		_yellow "processcontrol-allserver 正在运行"
+		_yellow "processcontrol 正在运行"
 	fi 
 
 	_green "所有服务器启动成功"
@@ -109,13 +109,13 @@ all_start(){
 all_stop() {
 	# 检查并停止守护进程
 	cd /data/tool/
-	if pgrep -f 'processcontrol-allserver' > /dev/null; then
-		kill -9 $(pgrep -f 'processcontrol-allserver' | head -n 1)
+	if pgrep -f 'processcontrol' > /dev/null; then
+		kill -9 $(pgrep -f 'processcontrol' | head -n 1)
 		> control.txt
 		> dump.txt
-		_green "processcontrol-allserver 守护进程停止成功!"
+		_green "processcontrol 守护进程停止成功!"
 	else
-		_yellow "processcontrol-allserver 守护进程不存在无需停止"
+		_yellow "processcontrol 守护进程不存在无需停止"
 	fi
 
 	# 停止服务器
@@ -248,11 +248,11 @@ update_start(){
 	done
 
 	cd /data/tool/ || { _red "无法进入目录 /data/tool/"; exit 1; }
-	if ! pgrep -f 'processcontrol-allserver' > /dev/null; then
-		sh processcontrol-allserver.sh > /dev/null 2>&1 &
-		_green "processcontrol-allserver 启动成功"
+	if ! pgrep -f 'processcontrol' > /dev/null; then
+		sh processcontrol.sh > /dev/null 2>&1 &
+		_green "processcontrol 启动成功"
 	else
-		_yellow "processcontrol-allserver 正在运行"
+		_yellow "processcontrol 正在运行"
 	fi 
 
 	_green "所有服务器启动成功"
@@ -263,13 +263,13 @@ update_start(){
 down_update_start(){
 	# 检查并停止守护进程
 	cd /data/tool/
-	if pgrep -f 'processcontrol-allserver' > /dev/null; then
-		kill -9 $(pgrep -f 'processcontrol-allserver' | head -n 1)
+	if pgrep -f 'processcontrol' > /dev/null; then
+		kill -9 $(pgrep -f 'processcontrol' | head -n 1)
 		> control.txt
 		> dump.txt
-		_green "processcontrol-allserver 守护进程停止成功!"
+		_green "processcontrol 守护进程停止成功!"
 	else
-		_yellow "processcontrol-allserver 守护进程不存在无需停止"
+		_yellow "processcontrol 守护进程不存在无需停止"
 	fi
 
 	# 停止服务器
@@ -362,11 +362,11 @@ down_update_start(){
 
 	# 检查并启动守护进程
 	cd /data/tool/ || { _red "无法进入目录 /data/tool/"; exit 1; }
-	if ! pgrep -f 'processcontrol-allserver' > /dev/null; then
-		sh processcontrol-allserver.sh > /dev/null 2>&1 &
-		_green "processcontrol-allserver 启动成功"
+	if ! pgrep -f 'processcontrol' > /dev/null; then
+		sh processcontrol.sh > /dev/null 2>&1 &
+		_green "processcontrol 启动成功"
 	else
-		_yellow "processcontrol-allserver 正在运行"
+		_yellow "processcontrol 正在运行"
 	fi 
 
 	_green "所有服务器启动成功"
