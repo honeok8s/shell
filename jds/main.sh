@@ -41,7 +41,7 @@ print_logo(){
   \____/ \__,_|___/  \_____|\\__,_|_| |_| |_|\___|${white}"
 }
 
-install_package(){
+install(){
 	if [ $# -eq 0 ]; then
 		_red "未提供软件包参数"
 		return 1
@@ -55,19 +55,15 @@ install_package(){
 			elif command -v yum &>/dev/null; then
 				yum -y install "$package"
 			elif command -v apt &>/dev/null; then
-				apt install -y "$package"
+				apt update && apt install -y "$package"
 			elif command -v apk &>/dev/null; then
 				apk add "$package"
-			elif command -v pacman &>/dev/null; then
-				pacman -S --noconfirm "$package"
-			elif command -v zypper &>/dev/null; then
-				zypper install -y "$package"
 			else
 				_red "未知的包管理器"
 				return 1
 			fi
 		else
-			_green "$package已经安装"
+			_green "$package 已经安装"
 		fi
 	done
 	return 0
