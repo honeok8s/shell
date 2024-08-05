@@ -733,10 +733,12 @@ node_create(){
 
 			1)
 				clear
+				install wget
 				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/sing-box/main/sing-box.sh)
 				;;
 			2)
 				clear
+				install wget
 				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/argox/main/argox.sh)
 				;;
 			5)
