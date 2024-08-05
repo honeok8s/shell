@@ -1471,9 +1471,9 @@ cron_manager(){
 telegram_bot(){
 	need_root
 
-	local choice TG_check_notify TG-SSH-check-notify
+	local choice TG_check_notify TG_SSH_check_notify
 	local TG_check_notify_hash="1a5694045098d5ceed3ab6d9b2827dea9677a0a6aa9cade357dec4a2bc514444"
-	local TG-SSH-check-notify_hash="61813dc31c2a3d335924a5d24bf212350848dc748c4811e362c06a9b313167c1"
+	local TG_SSH_check_notify_hash="61813dc31c2a3d335924a5d24bf212350848dc748c4811e362c06a9b313167c1"
 
 	echo "TG-bot监控预警功能"
 	echo "----------------------------"
@@ -1516,16 +1516,16 @@ telegram_bot(){
 
 			curl -fsSL -o ~/TG-SSH-check-notify.sh https://raw.githubusercontent.com/honeok8s/shell/main/callscript/TG-SSH-check-notify.sh
 			# 计算文件哈希
-			TG-SSH-check-notify=$(sha256sum ~/TG-SSH-check-notify.sh | awk '{ print $1 }')
+			TG_SSH_check_notify=$(sha256sum ~/TG-SSH-check-notify.sh | awk '{ print $1 }')
 
 			# 校验哈希值
-			if [ "$TG-SSH-check-notify" != "$TG-SSH-check-notify_hash" ]; then
+			if [ "$TG_SSH_check_notify" != "$TG_SSH_check_notify_hash" ]; then
 				_red "文件哈希校验失败,脚本可能被篡改"
 				sleep 1
 				rm ~/TG-SSH-check-notify.sh
 				linux_system_tools # 返回系统工具菜单
 			else
-				sed -i "3i$(grep '^TELEGRAM_BOT_TOKEN=' ~/TG-check-notify.sh)" TG-SSH-check-notify.sh > /dev/null 2>&1
+				sed -i "3i$(grep '^TELEGRAM_BOT_TOKEN=' ~/TG-check-notify.sh)" TG-SSH-check-notify.sh
 				sed -i "4i$(grep '^CHAT_ID=' ~/TG-check-notify.sh)" TG-SSH-check-notify.sh
 				chmod +x ~/TG-SSH-check-notify.sh
 			fi
