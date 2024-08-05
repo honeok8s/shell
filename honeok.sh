@@ -1121,7 +1121,6 @@ cloudflare_ddns() {
 		echo "-------------------------"
 		if [ -f /usr/local/bin/cf-ddns.sh ];then
 			_yellow "Cloudflare ddns: " _green "已安装"
-			#echo -e "${yellow}Cloudflare ddns: ${white}${green}已安装${white}"
 			crontab -l | grep "/usr/local/bin/cf-ddns.sh"
 		else
 			_yellow "Cloudflare ddns: 未安装"
@@ -2048,7 +2047,6 @@ linux_system_tools(){
 					echo "当前DNS地址"
 					cat /etc/resolv.conf
 					echo "------------------------"
-					echo ""
 					echo "国外DNS优化: "
 					echo "v4: 1.1.1.1 8.8.8.8"
 					echo "v6: 2606:4700:4700::1111 2001:4860:4860::8888"
