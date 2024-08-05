@@ -1122,7 +1122,7 @@ cloudflare_ddns() {
 		echo "Cloudflare ddns解析"
 		echo "-------------------------"
 		if [ -f /usr/local/bin/cf-ddns.sh ];then
-			_yellow "Cloudflare ddns: " _green "已安装"
+			echo -e "${yellow}Cloudflare ddns: ${white}${green}已安装${white}"
 			crontab -l | grep "/usr/local/bin/cf-ddns.sh"
 		else
 			_yellow "Cloudflare ddns: 未安装"
