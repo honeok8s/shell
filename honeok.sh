@@ -1094,6 +1094,209 @@ system_info(){
 	echo
 }
 
+linux_mirror(){
+	local choice
+	need_root
+
+	while true; do
+		clear
+		echo "选择更新源区域"
+		echo "接入LinuxMirrors切换系统更新源"
+		echo "-------------------------"
+		echo "1. 中国大陆[默认]          2. 中国大陆[教育网]          3. 海外地区"
+		echo "-------------------------"
+		echo "0. 返回上一级"
+		echo "-------------------------"
+	
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read choice
+	
+		case $choice in
+			1)
+				bash <(curl -sSL https://linuxmirrors.cn/main.sh)
+				;;
+			2)
+				bash <(curl -sSL https://linuxmirrors.cn/main.sh) --edu
+				;;
+			3)
+				bash <(curl -sSL https://linuxmirrors.cn/main.sh) --abroad
+				;;
+			0)
+				break
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+	done
+}
+
+check_crontab_installed() {
+	if command -v crontab >/dev/null 2>&1; then
+		_yellow "Crontab已经安装"
+		return 1
+	else
+		install_crontab
+		return 0
+	fi
+}
+
+install_crontab() {
+	if [ -f /etc/os-release ]; then
+		. /etc/os-release
+			case "$ID" in
+				ubuntu|debian|kali)
+					apt update
+					apt install -y cron
+					systemctl enable cron
+					systemctl start cron
+					;;
+				centos|rhel|almalinux|rocky|fedora)
+					yum install -y cronie
+					systemctl enable crond
+					systemctl start crond
+					;;
+				alpine)
+					apk add --no-cache cronie
+					rc-update add crond
+					rc-service crond start
+					;;
+				arch|manjaro)
+					pacman -S --noconfirm cronie
+					systemctl enable cronie
+					systemctl start cronie
+					;;
+				opensuse|suse|opensuse-tumbleweed)
+					zypper install -y cron
+					systemctl enable cron
+					systemctl start cron
+					;;
+				*)
+					_red "不支持的发行版:$ID"
+					exit 1
+					;;
+			esac
+	else
+		_red "无法确定操作系统。"
+		exit 1
+	fi
+
+	_yellow "Crontab已安装且Cron服务正在运行"
+}
+
+cron_manager(){
+	local choice newquest dingshi day weekday hour minute kquest
+
+	while true; do
+		clear
+		check_crontab_installed
+		clear
+		echo "定时任务列表"
+		echo "-------------------------"
+		crontab -l
+		echo "-------------------------"
+		echo "操作"
+		echo "-------------------------"
+		echo "1. 添加定时任务              2. 删除定时任务"
+		echo "3. 编辑定时任务              4. 删除所有定时任务"
+		echo "-------------------------"
+		echo "0. 返回上一级选单"
+		echo "-------------------------"
+
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read choice
+
+		case $choice in
+			1)
+				echo -n -e "${yellow}请输入新任务的执行命令:${white}"
+				read newquest
+				echo "-------------------------"
+				echo "1. 每月任务                 2. 每周任务"
+				echo "3. 每天任务                 4. 每小时任务"
+				echo "-------------------------"
+				
+				echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+				read dingshi
+
+				case $dingshi in
+					1)
+						echo -n -e "${yellow}选择每月的几号执行任务?(1-30):${white}"
+						read day
+						if [[ ! $day =~ ^[1-9]$|^[12][0-9]$|^30$ ]]; then
+							_red "无效的日期输入"
+							continue
+						fi
+						if ! (crontab -l ; echo "0 0 $day * * $newquest") | crontab - > /dev/null 2>&1; then
+							_red "添加定时任务失败"
+						fi
+						;;
+					2)
+						echo -n -e "${yellow}选择周几执行任务?(0-6，0代表星期日):${white}"
+						read weekday
+						if [[ ! $weekday =~ ^[0-6]$ ]]; then
+							_red "无效的星期输入"
+							continue
+						fi
+						if ! (crontab -l ; echo "0 0 * * $weekday $newquest") | crontab - > /dev/null 2>&1; then
+							_red "添加定时任务失败"
+						fi
+						;;
+					3)
+						echo -n -e "${yellow}选择每天几点执行任务?(小时,0-23):${white}"
+						read hour
+						if [[ ! $hour =~ ^[0-9]$|^[1][0-9]$|^[2][0-3]$ ]]; then
+							_red "无效的小时输入"
+							continue
+						fi
+						if ! (crontab -l ; echo "0 $hour * * * $newquest") | crontab - > /dev/null 2>&1; then
+							_red "添加定时任务失败"
+						fi
+						;;
+					4)
+						echo -n -e "${yellow}输入每小时的第几分钟执行任务?(分钟,0-60):${white}"
+						read minute
+						if [[ ! $minute =~ ^[0-5][0-9]$ ]]; then
+							_red "无效的分钟输入"
+							continue
+						fi
+						if ! (crontab -l ; echo "$minute * * * * $newquest") | crontab - > /dev/null 2>&1; then
+							_red "添加定时任务失败"
+						fi
+						;;
+					*)
+						break  # 跳出
+						;;
+				esac
+				;;
+			2)
+				echo -n -e "${yellow}请输入需要删除任务的关键字:${white}"
+				read kquest
+				if crontab -l | grep -v "$kquest" | crontab -; then
+					_green "$kquest 定时任务已删除"
+				else
+					_red "删除定时任务失败"
+				fi
+				;;
+			3)
+				crontab -e
+				;;
+			4)
+				if crontab -r; then
+					_green "所有定时任务已删除"
+				else
+					_red "删除所有定时任务失败"
+				fi
+				;;
+			0)
+				break  # 跳出循环,退出菜单
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+	done
+}
+
 xanmod_bbr3(){
 	local choice
 	need_root
@@ -1655,12 +1858,16 @@ linux_system_tools(){
 	local choice
 	while true; do
 		clear
-		echo "系统工具"
+		echo "▶ 系统工具"
 		echo "------------------------"
+		echo "3. ROOT密码登录模式"
 		echo "7. 优化DNS地址                         8. 一键重装系统"
 		echo "------------------------"
 		echo "12. 修改虚拟内存大小"
 		echo "15. 系统时区调整                       16. 设置XanMod BBR3"
+		echo "19. 切换系统更新源                     20. 定时任务管理"
+		echo "------------------------"
+		echo "99. 重启服务器"
 		echo "------------------------"
 		echo "0. 返回主菜单"
 		echo "------------------------"
@@ -1669,6 +1876,10 @@ linux_system_tools(){
 		read choice
 
 		case $choice in
+			3)
+				need_root
+				add_sshpasswd
+				;;
 			7)
 				need_root
 				while true; do
@@ -1846,6 +2057,16 @@ linux_system_tools(){
 				;;
 			16)
 				xanmod_bbr3
+				;;
+			19)
+				linux_mirror
+				;;
+			20)
+				cron_manager
+				;;
+			99)
+				clear
+				server_reboot
 				;;
 			0)
 				honeok
