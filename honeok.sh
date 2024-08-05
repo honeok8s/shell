@@ -187,11 +187,24 @@ enable() {
 }
 
 bbr_on(){
-cat > /etc/sysctl.conf << EOF
-net.ipv4.tcp_congestion_control=bbr
-EOF
+	local congestion_control="net.ipv4.tcp_congestion_control"
+	local congestion_value="bbr"
+	local config_file="/etc/sysctl.conf"
 
-sysctl -p
+	# 使用grep查找现有配置
+	if grep -q "^\s*${congestion_control}\s*=\s*" "${config_file}"; then
+		# 存在该设置项,检查其值
+		current_value=$(grep "^\s*${congestion_control}\s*=\s*" "${config_file}" | sed -E "s/^\s*${congestion_control}\s*=\s*(.*)/\1/")
+		if [ "$current_value" != "$congestion_value" ]; then
+			# 如果当前值不是bbr,则替换为bbr
+			sed -i -E "s|^\s*${congestion_control}\s*=\s*.*|${congestion_control}=${congestion_value}|" "${config_file}"
+			sysctl -p
+		fi
+	else
+		# 如果没有找到该设置项,则新增
+		echo "${congestion_control}=${congestion_value}" >> "${config_file}"
+		sysctl -p
+	fi
 }
 
 # 查看当前服务器时区
