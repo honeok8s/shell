@@ -2006,7 +2006,7 @@ linux_system_tools(){
 		echo "15. 系统时区调整                       16. 设置XanMod BBR3"
 		echo "19. 切换系统更新源                     20. 定时任务管理"
 		echo "------------------------"
-		echo "50. cloudflare ddns解析"
+		echo "50. Cloudflare ddns解析"
 		echo "------------------------"
 		echo "99. 重启服务器"
 		echo "------------------------"
