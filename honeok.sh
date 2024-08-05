@@ -1104,6 +1104,7 @@ cloudflare_ddns() {
 
 	while true; do
 		clear
+		echo "Cloudflare ddns解析"
 		echo "项目地址: https://github.com/yulewang/cloudflare-api-v4-ddns"
 		echo "-------------------------"
 		if [ -f /usr/local/bin/cf-ddns.sh ];then
