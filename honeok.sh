@@ -1112,9 +1112,9 @@ cloudflare_ddns() {
 		else
 			_yellow "当前未安装Cloudflare ddns"
 		fi
-
-		_yellow "当前公网IPV4地址: ${ipv4_address}"
-		_yellow "当前公网IPV6地址: ${ipv6_address}"
+		echo "-------------------------"
+		echo "当前公网IPV4地址: ${ipv4_address}"
+		echo "当前公网IPV6地址: ${ipv6_address}"
 		_yellow "使用动态解析之前请解析一个域名,如 ddns.honeok.com 到 192.168.100.100(你的当前公网IP)"
 		echo "-------------------------"
 		echo "1. 设置DDNS动态域名解析    2. 删除DDNS动态域名解析"
