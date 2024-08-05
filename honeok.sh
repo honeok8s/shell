@@ -1145,7 +1145,7 @@ cloudflare_ddns() {
 				while true; do
 					echo "cloudflare后台右上角我的个人资料,选择左侧API令牌,获取Global API Key"
 					echo "https://dash.cloudflare.com/login"
-					echo "请输入你的Global API Key:"
+					echo -n "请输入你的Global API Key:"
 					read CFKEY
 					if [[ -n "$CFKEY" ]]; then
 						break
@@ -1156,7 +1156,7 @@ cloudflare_ddns() {
 
 				# 获取CFUSER
 				while true; do
-					echo "请输入你的Cloudflare管理员邮箱:"
+					echo -n "请输入你的Cloudflare管理员邮箱:"
 					read CFUSER
 					if [[ "$CFUSER" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
 						break
@@ -1167,7 +1167,7 @@ cloudflare_ddns() {
 				
 				# 获取CFZONE_NAME
 				while true; do
-					echo "请输入你的顶级域名(如honeok.com):"
+					echo -n "请输入你的顶级域名(如honeok.com):"
 					read CFZONE_NAME
 					if [[ "$CFZONE_NAME" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
 						break
@@ -1178,7 +1178,7 @@ cloudflare_ddns() {
 				
 				# 获取CFRECORD_NAME
 				while true; do
-					echo "请输入你的主机名(如ddns.honeok.com):"
+					echo -n "请输入你的主机名(如ddns.honeok.com):"
 					read CFRECORD_NAME
 					if [[ -n "$CFRECORD_NAME" ]]; then
 						break
@@ -1188,12 +1188,12 @@ cloudflare_ddns() {
 				done
 
 				# 获取CFRECORD_TYPE
-				echo "请输入记录类型(A记录或AAAA记录,默认IPV4 A记录,回车使用默认值):"
+				echo -n "请输入记录类型(A记录或AAAA记录,默认IPV4 A记录,回车使用默认值):"
 				read CFRECORD_TYPE
 				CFRECORD_TYPE=${CFRECORD_TYPE:-A}
 
 				# 获取CFTTL
-				echo "请输入TTL时间(120~86400秒,默认60秒,回车使用默认值):"
+				echo -n "请输入TTL时间(120~86400秒,默认60秒,回车使用默认值):"
 				read CFTTL
 				CFTTL=${CFTTL:-60}
 
