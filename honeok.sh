@@ -1110,7 +1110,7 @@ cloudflare_ddns() {
 			_green "检测到当前已经安装了Cloudflare ddns"
 			crontab -l | grep "/usr/local/bin/cf-ddns.sh"
 		else
-			_yellow "当前未安装Cloudflare ddns,将执行安装程序"
+			_yellow "当前未安装Cloudflare ddns"
 		fi
 
 		_yellow "当前公网IPV4地址: ${ipv4_address}"
