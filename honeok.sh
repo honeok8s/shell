@@ -1453,7 +1453,7 @@ cron_manager(){
 				crontab -e
 				;;
 			4)
-				if crontab -r; then
+				if crontab -r >/dev/null; then
 					_green "所有定时任务已删除"
 				else
 					_red "删除所有定时任务失败"
