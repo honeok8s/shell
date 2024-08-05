@@ -1184,6 +1184,117 @@ install_crontab() {
 	_yellow "Crontab已安装且Cron服务正在运行"
 }
 
+cron_manager(){
+	while true; do
+		clear
+		check_crontab_installed
+		clear
+		echo "定时任务列表"
+		echo "-------------------------"
+		crontab -l
+		echo "-------------------------"
+		echo "操作"
+		echo "-------------------------"
+		echo "1. 添加定时任务              2. 删除定时任务"
+		echo "3. 编辑定时任务              4. 删除所有定时任务"
+		echo "-------------------------"
+		echo "0. 返回上一级选单"
+		echo "-------------------------"
+
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read choice
+
+		case $choice in
+			1)
+				echo -n -e "${yellow}请输入新任务的执行命令:${white}"
+				read newquest
+				echo "-------------------------"
+				echo "1. 每月任务                 2. 每周任务"
+				echo "3. 每天任务                 4. 每小时任务"
+				echo "-------------------------"
+
+				echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+				read dingshi
+
+				case $dingshi in
+					1)
+						echo -n -e "${yellow}选择每月的几号执行任务?(1-30):${white}"
+						read day
+						if [[ ! $day =~ ^[1-9]$|^[12][0-9]$|^30$ ]]; then
+							_red "无效的日期输入"
+							continue
+						fi
+						if ! (crontab -l ; echo "0 0 $day * * $newquest") | crontab - > /dev/null 2>&1; then
+							_red "添加定时任务失败"
+						fi
+						;;
+					2)
+						echo -n -e "${yellow}选择周几执行任务?(0-6，0代表星期日):${white}"
+						read weekday
+						if [[ ! $weekday =~ ^[0-6]$ ]]; then
+							_red "无效的星期输入"
+							continue
+						fi
+						if ! (crontab -l ; echo "0 0 * * $weekday $newquest") | crontab - > /dev/null 2>&1; then
+							_red "添加定时任务失败"
+						fi
+						;;
+					3)
+						echo -n -e "${yellow}选择每天几点执行任务?(小时,0-23):${white}"
+						read hour
+						if [[ ! $hour =~ ^[0-9]$|^[1][0-9]$|^[2][0-3]$ ]]; then
+							_red "无效的小时输入"
+							continue
+						fi
+						if ! (crontab -l ; echo "0 $hour * * * $newquest") | crontab - > /dev/null 2>&1; then
+							_red "添加定时任务失败"
+						fi
+						;;
+					4)
+						echo -n -e "${yellow}输入每小时的第几分钟执行任务?(分钟,0-60):${white}"
+						read minute
+						if [[ ! $minute =~ ^[0-5][0-9]$ ]]; then
+							_red "无效的分钟输入"
+							continue
+						fi
+						if ! (crontab -l ; echo "$minute * * * * $newquest") | crontab - > /dev/null 2>&1; then
+							_red "添加定时任务失败"
+						fi
+						;;
+					*)
+						break  # 跳出
+						;;
+				esac
+				;;
+			2)
+				echo -n -e "${yellow}请输入需要删除任务的关键字:${white}"
+				read kquest
+				if crontab -l | grep -v "$kquest" | crontab -; then
+					_green "$kquest 定时任务已删除"
+				else
+					_red "删除定时任务失败"
+				fi
+				;;
+			3)
+				crontab -e
+				;;
+			4)
+				if crontab -r; then
+					_green "所有定时任务已删除"
+				else
+					_red "删除所有定时任务失败"
+				fi
+				;;
+			0)
+				break  # 跳出循环,退出菜单
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+	done
+}
+
 xanmod_bbr3(){
 	local choice
 	need_root
@@ -1949,114 +2060,7 @@ linux_system_tools(){
 				linux_mirror
 				;;
 			20)
-				while true; do
-					clear
-					check_crontab_installed
-					clear
-					echo "定时任务列表"
-					echo "-------------------------"
-					crontab -l
-					echo "-------------------------"
-					echo "操作"
-					echo "-------------------------"
-					echo "1. 添加定时任务              2. 删除定时任务"
-					echo "3. 编辑定时任务              4. 删除所有定时任务"
-					echo "-------------------------"
-					echo "0. 返回上一级选单"
-					echo "-------------------------"
-
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-					read choice
-
-					case $choice in
-						1)
-							echo -n -e "${yellow}请输入新任务的执行命令:${white}"
-							read newquest
-							echo "-------------------------"
-							echo "1. 每月任务                 2. 每周任务"
-							echo "3. 每天任务                 4. 每小时任务"
-							echo "-------------------------"
-							
-							echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-							read dingshi
-
-							case $dingshi in
-								1)
-									echo -n -e "${yellow}选择每月的几号执行任务?(1-30):${white}"
-									read day
-									if [[ ! $day =~ ^[1-9]$|^[12][0-9]$|^30$ ]]; then
-										_red "无效的日期输入"
-										continue
-									fi
-									if ! (crontab -l ; echo "0 0 $day * * $newquest") | crontab - > /dev/null 2>&1; then
-										_red "添加定时任务失败"
-									fi
-									;;
-								2)
-									echo -n -e "${yellow}选择周几执行任务?(0-6，0代表星期日):${white}"
-									read weekday
-									if [[ ! $weekday =~ ^[0-6]$ ]]; then
-										_red "无效的星期输入"
-										continue
-									fi
-									if ! (crontab -l ; echo "0 0 * * $weekday $newquest") | crontab - > /dev/null 2>&1; then
-										_red "添加定时任务失败"
-									fi
-									;;
-								3)
-									echo -n -e "${yellow}选择每天几点执行任务?(小时,0-23):${white}"
-									read hour
-									if [[ ! $hour =~ ^[0-9]$|^[1][0-9]$|^[2][0-3]$ ]]; then
-										_red "无效的小时输入"
-										continue
-									fi
-									if ! (crontab -l ; echo "0 $hour * * * $newquest") | crontab - > /dev/null 2>&1; then
-										_red "添加定时任务失败"
-									fi
-									;;
-								4)
-									echo -n -e "${yellow}输入每小时的第几分钟执行任务?(分钟,0-60):${white}"
-									read minute
-									if [[ ! $minute =~ ^[0-5][0-9]$ ]]; then
-										_red "无效的分钟输入"
-										continue
-									fi
-									if ! (crontab -l ; echo "$minute * * * * $newquest") | crontab - > /dev/null 2>&1; then
-										_red "添加定时任务失败"
-									fi
-									;;
-								*)
-									break  # 跳出
-									;;
-							esac
-							;;
-						2)
-							echo -n -e "${yellow}请输入需要删除任务的关键字:${white}"
-							read kquest
-							if crontab -l | grep -v "$kquest" | crontab -; then
-								_green "$kquest 定时任务已删除"
-							else
-								_red "删除定时任务失败"
-							fi
-							;;
-						3)
-							crontab -e
-							;;
-						4)
-							if crontab -r; then
-								_green "所有定时任务已删除"
-							else
-								_red "删除所有定时任务失败"
-							fi
-							;;
-						0)
-							break  # 跳出循环,退出菜单
-							;;
-						*)
-							_red "无效选项,请重新输入"
-							;;
-					esac
-				done
+				cron_manager
 				;;
 			99)
 				clear
