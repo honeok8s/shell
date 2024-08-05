@@ -2025,6 +2025,8 @@ linux_system_tools(){
 		echo "15. 系统时区调整                       16. 设置XanMod BBR3"
 		echo "19. 切换系统更新源                     20. 定时任务管理"
 		echo "------------------------"
+		echo "25. TG-bot系统监控预警"
+		echo "------------------------"
 		echo "50. Cloudflare ddns解析"
 		echo "------------------------"
 		echo "99. 重启服务器"
@@ -2222,6 +2224,63 @@ linux_system_tools(){
 				;;
 			20)
 				cron_manager
+				;;
+			25)
+				need_root
+				echo "TG-bot监控预警功能"
+				echo "----------------------------"
+				echo "您需要配置TG机器人API和接收预警的用户ID,即可实现本机CPU/内存/硬盘/流量/SSH登录的实时监控预警"
+				echo "到达阈值后会向用户发预警消息,流量重启服务器将重新计算"
+				echo "----------------------------"
+				
+				echo -n -e "${yellow}确定继续吗?(y/n):${white}"
+				read choice
+
+				case "$choice" in
+					[Yy])
+						cd ~
+						install tmux bc jq
+						check_crontab_installed
+
+						if [ -f ~/TG-check-notify.sh ]; then
+							chmod +x ~/TG-check-notify.sh
+							vim ~/TG-check-notify.sh
+						else
+							curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/TG-check-notify.sh
+							chmod +x ~/TG-check-notify.sh
+							vim ~/TG-check-notify.sh
+						fi
+						tmux kill-session -t TG-check-notify > /dev/null 2>&1
+						tmux new -d -s TG-check-notify "~/TG-check-notify.sh"
+						crontab -l | grep -v '~/TG-check-notify.sh' | crontab - > /dev/null 2>&1
+						(crontab -l ; echo "@reboot tmux new -d -s TG-check-notify '~/TG-check-notify.sh'") | crontab - > /dev/null 2>&1
+
+						curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/TG-SSH-check-notify.sh > /dev/null 2>&1
+						sed -i "3i$(grep '^TELEGRAM_BOT_TOKEN=' ~/TG-check-notify.sh)" TG-SSH-check-notify.sh > /dev/null 2>&1
+						sed -i "4i$(grep '^CHAT_ID=' ~/TG-check-notify.sh)" TG-SSH-check-notify.sh
+						chmod +x ~/TG-SSH-check-notify.sh
+
+						# 添加到~/.profile文件中
+						if ! grep -q 'bash ~/TG-SSH-check-notify.sh' ~/.profile > /dev/null 2>&1; then
+							echo 'bash ~/TG-SSH-check-notify.sh' >> ~/.profile
+								if command -v dnf &>/dev/null || command -v yum &>/dev/null; then
+									echo 'source ~/.profile' >> ~/.bashrc
+								fi
+						fi
+
+						source ~/.profile
+
+						clear
+						_green "TG-bot预警系统已启动"
+						_yellow "你还可以将root目录中的TG-check-notify.sh预警文件放到其他机器上直接使用!"
+						;;
+					[Nn])
+						_yellow "已取消"
+						;;
+					*)
+						_red "无效选项,请重新输入"
+						;;
+				esac
 				;;
 			50)
 				cloudflare_ddns
