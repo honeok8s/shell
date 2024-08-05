@@ -1120,14 +1120,14 @@ cloudflare_ddns() {
 		echo "Cloudflare ddns解析"
 		echo "-------------------------"
 		if [ -f /usr/local/bin/cf-ddns.sh ];then
-			_green "已安装Cloudflare ddns"
+			_yellow "Cloudflare ddns: " _green "已安装"
 			crontab -l | grep "/usr/local/bin/cf-ddns.sh"
 		else
-			_yellow "未安装Cloudflare ddns"
+			_yellow "Cloudflare ddns: 未安装"
 		fi
 		echo "当前公网IPV4地址: ${ipv4_address}"
 		echo "当前公网IPV6地址: ${ipv6_address}"
-		_yellow "使用动态解析之前请解析一个域名,如 ddns.honeok.com 到 192.168.100.100(你的当前公网IP)"
+		_yellow "使用动态解析之前请解析一个域名,如ddns.honeok.com到你的当前公网IP"
 		echo "-------------------------"
 		echo "1. 设置DDNS动态域名解析    2. 删除DDNS动态域名解析"
 		echo "-------------------------"
@@ -1232,7 +1232,7 @@ cloudflare_ddns() {
 				if [ -f /usr/local/bin/cf-ddns.sh ]; then
 					sudo rm /usr/local/bin/cf-ddns.sh
 				else
-					_red "/usr/local/bin/cf-ddns.sh 文件不存在"
+					_red "/usr/local/bin/cf-ddns.sh文件不存在"
 				fi
 
 				if crontab -l 2>/dev/null | grep -q '/usr/local/bin/cf-ddns.sh'; then
