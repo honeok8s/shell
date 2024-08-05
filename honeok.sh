@@ -2353,6 +2353,8 @@ honeok(){
 		echo "16. 节点搭建脚本合集 ▶            17. 甲骨文云脚本合集 ▶"
 		echo "18. 常用环境管理 ▶"
 		echo "-------------------------------------------------------"
+		echo "99. 幻兽帕鲁开服脚本 ▶"
+		echo "-------------------------------------------------------"
 		echo "00.脚本更新                       0. 退出"
 		echo "-------------------------------------------------------"
 		echo ""
@@ -2409,6 +2411,10 @@ honeok(){
 				;;
 			18)
 				echo "敬请期待"
+				;;
+			99)
+				curl -fsSL -o ~/palworld.sh https://raw.githubusercontent.com/kejilion/sh/main/palworld.sh && chmod a+x ~/palworld.sh && ./palworld.sh
+				exit 0
 				;;
 			00)
 				_green "当前已是最新版本"
