@@ -1094,6 +1094,152 @@ system_info(){
 	echo
 }
 
+cloudflare_ddns() {
+	need_root
+
+	local choice CFKEY CFUSER CFZONE_NAME CFRECORD_NAME CFRECORD_TYPE CFTTL
+	local EXPECTED_HASH="81d3d4528a99069c81f1150bb9fa798684b27f5a0248cd4c227200055ecfa8a9"
+
+	while true; do
+		clear
+		echo "项目地址: https://github.com/yulewang/cloudflare-api-v4-ddns/tree/master"
+		_yellow "使用动态解析之前请解析一个域名,如 ddns.honeok.com 到 192.168.100.100(你的当前公网IP)"
+		echo "-------------------------"
+		echo "1. 设置DDNS动态域名解析    2. 删除DDNS动态域名解析"
+		echo "-------------------------"
+		echo "0. 返回上一级"
+		echo "-------------------------"
+
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read choice
+
+		case $choice in
+			1)
+				# 获取CFKEY
+				while true; do
+					echo -n -e "${yellow}请输入你的全局CFKEY:${white}"
+					read CFKEY
+					if [[ -n "$CFKEY" ]]; then
+						break
+					else
+						_red "CFKEY不能为空,请重新输入"
+					fi
+				done
+
+				# 获取CFUSER
+				while true; do
+					echo -n -e "${yellow}请输入你的cloudflare管理员邮箱:${white}"
+					read CFUSER
+					if [[ "$CFUSER" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+						break
+					else
+						_red "无效的邮箱格式,请重新输入"
+					fi
+				done
+				
+				# 获取CFZONE_NAME
+				while true; do
+					echo -n -e "${yellow}请输入你的顶级域名(如honeok.com):${white}"
+					read CFZONE_NAME
+					if [[ "$CFZONE_NAME" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+						break
+					else
+						_red "无效的域名格式,请重新输入"
+					fi
+				done
+				
+				# 获取CFRECORD_NAME
+				while true; do
+					echo -n -e "${yellow}请输入你的主机名(如ddns.honeok.com):${white}"
+					read CFRECORD_NAME
+					if [[ -n "$CFRECORD_NAME" ]]; then
+						break
+					else
+						_red "主机名不能为空,请重新输入"
+					fi
+				done
+
+				# 获取CFRECORD_TYPE
+				echo -n -e "${yellow}请输入记录类型(默认IPV4,回车跳过):${white}"
+				read CFRECORD_TYPE
+				CFRECORD_TYPE=${CFRECORD_TYPE:-A}
+
+				# 获取CFTTL
+				echo -n -e "${yellow}请输入TTL时间(120~86400秒,配置文件默认60秒,回车跳过):${white}"
+				read CFTTL
+				CFTTL=${CFTTL:-60}
+
+				curl -fsSL -o ~/cf-v4-ddns.sh https://raw.githubusercontent.com/honeok8s/shell/main/callscript/cf-v4-ddns.sh
+				# 计算文件哈希
+				FILE_HASH=$(sha256sum ~/cf-v4-ddns.sh | awk '{ print $1 }')
+				
+				# 校验哈希值
+				if [ "$FILE_HASH" != "$EXPECTED_HASH" ]; then
+					_red "文件哈希校验失败,脚本可能被篡改"
+					sleep 1
+					rm ~/cf-v4-ddns.sh
+					linux_system_tools # 返回系统工具菜单
+				fi
+
+				sed -i "s/^CFKEY=honeok$/CFKEY=$CFKEY/" ~/cf-v4-ddns.sh
+				sed -i "s/^CFUSER=honeok@gmail.com$/CFUSER=$CFUSER/" ~/cf-v4-ddns.sh
+				sed -i "s/^CFZONE_NAME=honeok.com$/CFZONE_NAME=$CFZONE_NAME/" ~/cf-v4-ddns.sh
+				sed -i "s/^CFRECORD_NAME=honeok$/CFRECORD_NAME=$CFRECORD_NAME/" ~/cf-v4-ddns.sh
+				sed -i "s/^CFRECORD_TYPE=A$/CFRECORD_TYPE=$CFRECORD_TYPE/" ~/cf-v4-ddns.sh
+				sed -i "s/^CFTTL=60$/CFTTL=$CFTTL/" ~/cf-v4-ddns.sh
+
+				# 复制脚本并设置权限
+				cp ~/cf-v4-ddns.sh /usr/local/bin/cf-ddns.sh && chmod a+x /usr/local/bin/cf-ddns.sh
+
+				check_crontab_installed
+
+				if ! (crontab -l 2>/dev/null; echo "*/1 * * * * /usr/local/bin/cf-ddns.sh >/dev/null 2>&1") | crontab -;then
+					_red "无法自动添加cron任务,请手动添加以下行到crontab:"
+					_yellow "*/1 * * * * /usr/local/bin/cf-ddns.sh >/dev/null 2>&1"
+					_yellow "按任意键继续"
+					read -n 1 -s -r -p ""
+				fi
+
+				_green "cloudflare ddns安装完成"
+				;;
+			2)
+				if [ -f /usr/local/bin/cf-ddns.sh ]; then
+					sudo rm /usr/local/bin/cf-ddns.sh
+				else
+					_red "/usr/local/bin/cf-ddns.sh 文件不存在"
+				fi
+
+				if crontab -l 2>/dev/null | grep -q '/usr/local/bin/cf-ddns.sh'; then
+					if (crontab -l 2>/dev/null | grep -v '/usr/local/bin/cf-ddns.sh') | crontab -; then
+						_green "定时任务已成功移除"
+					else
+						_red "无法移除定时任务,请手动移除"
+						_yellow "您可以手动删除定时任务中包含 '/usr/local/bin/cf-ddns.sh' 的那一行"
+						_yellow "按任意键继续"
+						read -n 1 -s -r -p ""
+					fi
+				else
+					_red "定时任务中未找到与 '/usr/local/bin/cf-ddns.sh' 相关的任务"
+				fi
+
+				if [ -f ~/cf-v4-ddns.sh ]; then
+					rm ~/cf-v4-ddns.sh
+				else
+					_red "~/cf-v4-ddns.sh文件不存在"
+				fi
+
+				_green "cloudflare ddns卸载完成"
+				;;
+			0)
+				break
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+	done
+}
+
 linux_mirror(){
 	local choice
 	need_root
@@ -1853,6 +1999,8 @@ linux_system_tools(){
 		echo "15. 系统时区调整                       16. 设置XanMod BBR3"
 		echo "19. 切换系统更新源                     20. 定时任务管理"
 		echo "------------------------"
+		echo "50. cloudflare ddns解析"
+		echo "------------------------"
 		echo "99. 重启服务器"
 		echo "------------------------"
 		echo "0. 返回主菜单"
@@ -2049,6 +2197,9 @@ linux_system_tools(){
 				;;
 			20)
 				cron_manager
+				;;
+			50)
+				cloudflare_ddns
 				;;
 			99)
 				clear
