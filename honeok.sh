@@ -198,7 +198,7 @@ bbr_on(){
 		if [ "$current_value" != "$congestion_bbr" ]; then
 			# 如果当前值不是bbr,则替换为bbr
 			sed -i -E "s|^\s*${congestion_control}\s*=\s*.*|${congestion_control}=${congestion_bbr}|" "${config_file}"
-			sysctl -p >/dev/null 2>&1
+			sysctl -p
 		fi
 	else
 		# 如果没有找到该设置项,则新增
