@@ -2246,7 +2246,7 @@ linux_system_tools(){
 							chmod +x ~/TG-check-notify.sh
 							vim ~/TG-check-notify.sh
 						else
-							curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/TG-check-notify.sh
+							curl -sS -O https://raw.githubusercontent.com/honeok8s/shell/main/callscript/TG-check-notify.sh
 							chmod +x ~/TG-check-notify.sh
 							vim ~/TG-check-notify.sh
 						fi
@@ -2255,7 +2255,7 @@ linux_system_tools(){
 						crontab -l | grep -v '~/TG-check-notify.sh' | crontab - > /dev/null 2>&1
 						(crontab -l ; echo "@reboot tmux new -d -s TG-check-notify '~/TG-check-notify.sh'") | crontab - > /dev/null 2>&1
 
-						curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/TG-SSH-check-notify.sh > /dev/null 2>&1
+						curl -sS -O https://raw.githubusercontent.com/honeok8s/shell/main/callscript/TG-SSH-check-notify.sh > /dev/null 2>&1
 						sed -i "3i$(grep '^TELEGRAM_BOT_TOKEN=' ~/TG-check-notify.sh)" TG-SSH-check-notify.sh > /dev/null 2>&1
 						sed -i "4i$(grep '^CHAT_ID=' ~/TG-check-notify.sh)" TG-SSH-check-notify.sh
 						chmod +x ~/TG-SSH-check-notify.sh
