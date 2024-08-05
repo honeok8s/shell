@@ -1104,13 +1104,12 @@ cloudflare_ddns() {
 
 	while true; do
 		clear
-		echo "项目地址: https://github.com/yulewang/cloudflare-api-v4-ddns/tree/master"
-
+		echo "项目地址: https://github.com/yulewang/cloudflare-api-v4-ddns"
 		if [ -f /usr/local/bin/cf-ddns.sh ];then
-			_green "检测到当前已经安装了Cloudflare ddns"
+			_green "已安装Cloudflare ddns"
 			crontab -l | grep "/usr/local/bin/cf-ddns.sh"
 		else
-			_yellow "当前未安装Cloudflare ddns"
+			_yellow "未安装Cloudflare ddns"
 		fi
 		echo "-------------------------"
 		echo "当前公网IPV4地址: ${ipv4_address}"
