@@ -1099,10 +1099,14 @@ cloudflare_ddns() {
 
 	local choice CFKEY CFUSER CFZONE_NAME CFRECORD_NAME CFRECORD_TYPE CFTTL
 	local EXPECTED_HASH="81d3d4528a99069c81f1150bb9fa798684b27f5a0248cd4c227200055ecfa8a9"
+	local ipv4_address=$(curl -s ipv4.ip.sb)
+	local ipv6_address=$(curl -s --max-time 1 ipv6.ip.sb)
 
 	while true; do
 		clear
 		echo "项目地址: https://github.com/yulewang/cloudflare-api-v4-ddns/tree/master"
+		_yellow "当前公网IPV4地址: ${ipv4_address}"
+		_yellow "当前公网IPV6地址: ${ipv6_address}"
 		_yellow "使用动态解析之前请解析一个域名,如 ddns.honeok.com 到 192.168.100.100(你的当前公网IP)"
 		echo "-------------------------"
 		echo "1. 设置DDNS动态域名解析    2. 删除DDNS动态域名解析"
@@ -1160,12 +1164,12 @@ cloudflare_ddns() {
 				done
 
 				# 获取CFRECORD_TYPE
-				echo -n -e "${yellow}请输入记录类型(默认IPV4,回车跳过):${white}"
+				echo -n -e "${yellow}请输入记录类型(A记录或AAAA记录 默认IPV4 A记录,回车使用默认值):${white}"
 				read CFRECORD_TYPE
 				CFRECORD_TYPE=${CFRECORD_TYPE:-A}
 
 				# 获取CFTTL
-				echo -n -e "${yellow}请输入TTL时间(120~86400秒,配置文件默认60秒,回车跳过):${white}"
+				echo -n -e "${yellow}请输入TTL时间(120~86400秒,配置文件默认60秒,回车使用默认值):${white}"
 				read CFTTL
 				CFTTL=${CFTTL:-60}
 
