@@ -1108,7 +1108,7 @@ cloudflare_ddns() {
 
 		if [ -f /usr/local/bin/cf-ddns.sh ];then
 			_green "检测到当前已经安装了Cloudflare ddns"
-			crontab -l | grep "/usr/local/bin/cf-ddns.sh" | _yellow
+			crontab -l | grep "/usr/local/bin/cf-ddns.sh"
 		else
 			_yellow "当前未安装Cloudflare ddns,将执行安装程序"
 		fi
@@ -1142,7 +1142,7 @@ cloudflare_ddns() {
 
 				# 获取CFUSER
 				while true; do
-					echo -n -e "${yellow}请输入你的cloudflare管理员邮箱:${white}"
+					echo -n -e "${yellow}请输入你的Cloudflare管理员邮箱:${white}"
 					read CFUSER
 					if [[ "$CFUSER" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
 						break
