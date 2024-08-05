@@ -1185,6 +1185,8 @@ install_crontab() {
 }
 
 cron_manager(){
+	local choice newquest dingshi day weekday hour minute kquest
+
 	while true; do
 		clear
 		check_crontab_installed
