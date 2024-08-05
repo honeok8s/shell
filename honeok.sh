@@ -1468,6 +1468,90 @@ cron_manager(){
 		esac
 	done
 }
+telegram_bot(){
+	need_root
+
+	local choice TG_check_notify TG-SSH-check-notify
+	local TG_check_notify_hash="1a5694045098d5ceed3ab6d9b2827dea9677a0a6aa9cade357dec4a2bc514444"
+	local TG-SSH-check-notify_hash="61813dc31c2a3d335924a5d24bf212350848dc748c4811e362c06a9b313167c1"
+
+	echo "TG-bot监控预警功能"
+	echo "----------------------------"
+	echo "您需要配置TG机器人API和接收预警的用户ID,即可实现本机CPU/内存/硬盘/流量/SSH登录的实时监控预警"
+	echo "到达阈值后会向用户发预警消息,流量重启服务器将重新计算"
+	echo "----------------------------"
+				
+	echo -n -e "${yellow}确定继续吗?(y/n):${white}"
+	read choice
+
+	case "$choice" in
+		[Yy])
+			cd ~
+			install tmux bc jq
+			check_crontab_installed
+
+			if [ -f ~/TG-check-notify.sh ]; then
+				chmod +x ~/TG-check-notify.sh
+				vim ~/TG-check-notify.sh
+			else
+				curl -fsSL -o ~/TG-check-notify.sh https://raw.githubusercontent.com/honeok8s/shell/main/callscript/TG-check-notify.sh
+				# 计算文件哈希
+				TG_check_notify=$(sha256sum ~/TG-check-notify.sh | awk '{ print $1 }')
+
+				# 校验哈希值
+				if [ "$TG_check_notify" != "$TG_check_notify_hash" ]; then
+					_red "文件哈希校验失败,脚本可能被篡改"
+					sleep 1
+					rm ~/TG-check-notify.sh
+					linux_system_tools # 返回系统工具菜单
+				else
+					chmod +x ~/TG-check-notify.sh
+					vim ~/TG-check-notify.sh
+				fi
+			fi
+			tmux kill-session -t TG-check-notify > /dev/null 2>&1
+			tmux new -d -s TG-check-notify "~/TG-check-notify.sh"
+			crontab -l | grep -v '~/TG-check-notify.sh' | crontab - > /dev/null 2>&1
+			(crontab -l ; echo "@reboot tmux new -d -s TG-check-notify '~/TG-check-notify.sh'") | crontab - > /dev/null 2>&1
+
+			curl -fsSL -o ~/TG-SSH-check-notify.sh https://raw.githubusercontent.com/honeok8s/shell/main/callscript/TG-SSH-check-notify.sh
+			# 计算文件哈希
+			TG-SSH-check-notify=$(sha256sum ~/TG-SSH-check-notify.sh | awk '{ print $1 }')
+
+			# 校验哈希值
+			if [ "$TG-SSH-check-notify" != "$TG-SSH-check-notify_hash" ]; then
+				_red "文件哈希校验失败,脚本可能被篡改"
+				sleep 1
+				rm ~/TG-SSH-check-notify.sh
+				linux_system_tools # 返回系统工具菜单
+			else
+				sed -i "3i$(grep '^TELEGRAM_BOT_TOKEN=' ~/TG-check-notify.sh)" TG-SSH-check-notify.sh > /dev/null 2>&1
+				sed -i "4i$(grep '^CHAT_ID=' ~/TG-check-notify.sh)" TG-SSH-check-notify.sh
+				chmod +x ~/TG-SSH-check-notify.sh
+			fi
+
+			# 添加到~/.profile文件中
+			if ! grep -q 'bash ~/TG-SSH-check-notify.sh' ~/.profile > /dev/null 2>&1; then
+				echo 'bash ~/TG-SSH-check-notify.sh' >> ~/.profile
+					if command -v dnf &>/dev/null || command -v yum &>/dev/null; then
+						echo 'source ~/.profile' >> ~/.bashrc
+					fi
+			fi
+
+			source ~/.profile
+
+			clear
+			_green "TG-bot预警系统已启动"
+			_yellow "你还可以将root目录中的TG-check-notify.sh预警文件放到其他机器上直接使用!"
+			;;
+		[Nn])
+			_yellow "已取消"
+			;;
+		*)
+			_red "无效选项,请重新输入"
+			;;
+	esac
+}
 
 xanmod_bbr3(){
 	local choice
@@ -2227,61 +2311,7 @@ linux_system_tools(){
 				cron_manager
 				;;
 			25)
-				need_root
-				echo "TG-bot监控预警功能"
-				echo "----------------------------"
-				echo "您需要配置TG机器人API和接收预警的用户ID,即可实现本机CPU/内存/硬盘/流量/SSH登录的实时监控预警"
-				echo "到达阈值后会向用户发预警消息,流量重启服务器将重新计算"
-				echo "----------------------------"
-				
-				echo -n -e "${yellow}确定继续吗?(y/n):${white}"
-				read choice
-
-				case "$choice" in
-					[Yy])
-						cd ~
-						install tmux bc jq
-						check_crontab_installed
-
-						if [ -f ~/TG-check-notify.sh ]; then
-							chmod +x ~/TG-check-notify.sh
-							vim ~/TG-check-notify.sh
-						else
-							curl -sS -O https://raw.githubusercontent.com/honeok8s/shell/main/callscript/TG-check-notify.sh
-							chmod +x ~/TG-check-notify.sh
-							vim ~/TG-check-notify.sh
-						fi
-						tmux kill-session -t TG-check-notify > /dev/null 2>&1
-						tmux new -d -s TG-check-notify "~/TG-check-notify.sh"
-						crontab -l | grep -v '~/TG-check-notify.sh' | crontab - > /dev/null 2>&1
-						(crontab -l ; echo "@reboot tmux new -d -s TG-check-notify '~/TG-check-notify.sh'") | crontab - > /dev/null 2>&1
-
-						curl -sS -O https://raw.githubusercontent.com/honeok8s/shell/main/callscript/TG-SSH-check-notify.sh > /dev/null 2>&1
-						sed -i "3i$(grep '^TELEGRAM_BOT_TOKEN=' ~/TG-check-notify.sh)" TG-SSH-check-notify.sh > /dev/null 2>&1
-						sed -i "4i$(grep '^CHAT_ID=' ~/TG-check-notify.sh)" TG-SSH-check-notify.sh
-						chmod +x ~/TG-SSH-check-notify.sh
-
-						# 添加到~/.profile文件中
-						if ! grep -q 'bash ~/TG-SSH-check-notify.sh' ~/.profile > /dev/null 2>&1; then
-							echo 'bash ~/TG-SSH-check-notify.sh' >> ~/.profile
-								if command -v dnf &>/dev/null || command -v yum &>/dev/null; then
-									echo 'source ~/.profile' >> ~/.bashrc
-								fi
-						fi
-
-						source ~/.profile
-
-						clear
-						_green "TG-bot预警系统已启动"
-						_yellow "你还可以将root目录中的TG-check-notify.sh预警文件放到其他机器上直接使用!"
-						;;
-					[Nn])
-						_yellow "已取消"
-						;;
-					*)
-						_red "无效选项,请重新输入"
-						;;
-				esac
+				telegram_bot
 				;;
 			50)
 				cloudflare_ddns
