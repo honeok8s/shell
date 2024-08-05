@@ -1121,8 +1121,8 @@ cloudflare_ddns() {
 			1)
 				# 获取CFKEY
 				while true; do
-					_yellow "cloudflare后台右上角我的个人资料,选择左侧API令牌,获取Global API Key"
-					_yellow "https://dash.cloudflare.com/login"
+					echo "cloudflare后台右上角我的个人资料,选择左侧API令牌,获取Global API Key"
+					echo "https://dash.cloudflare.com/login"
 					echo -n -e "${yellow}请输入你的Global API Key:${white}"
 					read CFKEY
 					if [[ -n "$CFKEY" ]]; then
