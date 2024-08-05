@@ -122,7 +122,7 @@ remove(){
 	return 0
 }
 
-# 通用 systemctl 函数, 适用于各种发行版
+# 通用systemctl函数, 适用于各种发行版
 systemctl() {
 	local COMMAND="$1"
 	local SERVICE_NAME="$2"
@@ -296,7 +296,7 @@ rollbak_dns() {
 
 server_reboot(){
 	local choice
-	echo -n -e "${yellow}现在重启服务器吗?(Y/N):${white}"
+	echo -n -e "${yellow}现在重启服务器吗?(y/n):${white}"
 	read choice
 
 	case "$choice" in
@@ -833,7 +833,7 @@ oracle_script() {
 			1)
 				clear
 				_yellow "活跃脚本: CPU占用10-20% 内存占用20%"
-				echo -n -e "${yellow}确定安装吗?(Y/N):${white}"
+				echo -n -e "${yellow}确定安装吗?(y/n/):${white}"
 				read ins
 				
 				case "$ins" in
@@ -891,7 +891,7 @@ oracle_script() {
 				echo "-------------------------"
 				_yellow "注意:重装有风险失联,不放心者慎用,重装预计花费15分钟,请提前备份数据"
 				
-				echo -n -e "${yellow}确定继续吗?(Y/N):${white}"
+				echo -n -e "${yellow}确定继续吗?(y/n):${white}"
 				read choice
 
 				case "$choice" in
@@ -1300,13 +1300,13 @@ cron_manager(){
 xanmod_bbr3(){
 	local choice
 	need_root
-	_yellow "XanMod BBR3管理"
+	echo "XanMod BBR3管理"
 	if dpkg -l | grep -q 'linux-xanmod'; then
 		while true; do
 			clear
 			local kernel_version=$(uname -r)
-			_yellow "您已安装XanMod的BBRv3内核"
-			_yellow "当前内核版本: $kernel_version"
+			echo "您已安装XanMod的BBRv3内核"
+			echo "当前内核版本: $kernel_version"
 
 			echo ""
 			echo "内核管理"
@@ -1358,7 +1358,7 @@ xanmod_bbr3(){
 	else
 		# 未安装则安装
 		clear
-		_yellow "请备份数据,将为你升级Linux内核开启XanMod BBR3"
+		echo "请备份数据,将为你升级Linux内核开启XanMod BBR3"
 		echo "------------------------------------------------"
 		echo "仅支持Debian/Ubuntu 仅支持x86_64架构"
 		echo "VPS是512M内存的,请提前添加1G虚拟内存,防止因内存不足失联!"
@@ -1743,50 +1743,42 @@ server_test_script(){
 		case "$choice" in
 			1)
 				clear
-				_yellow "ChatGPT解锁状态检测"
 				bash <(curl -Ls https://cdn.jsdelivr.net/gh/missuo/OpenAI-Checker/openai.sh)
 				;;
 			2)
 				clear
-				_yellow "Region流媒体解锁测试"
 				bash <(curl -L -s check.unlock.media)
 				;;
 			3)
 				clear
-				_yellow "Yeahwu流媒体解锁检测"
 				install wget
 				wget -qO- https://github.com/yeahwu/check/raw/main/check.sh | bash
 				;;
 			4)
 				clear
-				_yellow "Xykt_IP质量体检脚本"
 				bash <(curl -Ls IP.Check.Place)
 				;;
 			12)
 				clear
-				_yellow "Besttrace三网回程延迟路由测试"
 				install wget
 				wget -qO- git.io/besttrace | bash
 				;;
 			13)
 				clear
-				_yellow "Mtr_trace三网回程线路测试"
 				curl https://raw.githubusercontent.com/zhucaidan/mtr_trace/main/mtr_trace.sh | bash
 				;;
 			14)
 				clear
-				_yellow "Superspeed三网测速"
 				bash <(curl -Lso- https://git.io/superspeed_uxh)
 				;;
 			15)
 				clear
-				_yellow "Nxtrace快速回程测试脚本"
-				curl nxtrace.org/nt |bash
+				curl nxtrace.org/nt | bash
 				nexttrace --fast-trace --tcp
 				;;
 			16)
 				clear
-				_yellow "Nxtrace指定IP回程测试脚本"
+				echo "Nxtrace指定IP回程测试脚本"
 				echo "可参考的IP列表"
 				echo "-------------------------"
 				echo "北京电信: 219.141.136.12"
@@ -1813,34 +1805,28 @@ server_test_script(){
 				;;
 			17)
 				clear
-				_yellow "Ludashi2020三网线路测试"
 				curl https://raw.githubusercontent.com/ludashi2020/backtrace/main/install.sh -sSf | sh
 				;;
 			18)
 				clear
-				_yellow "I-abc多功能测速脚本"
 				bash <(curl -sL bash.icu/speedtest)
 				;;
 			20)
 				clear
-				_yellow "Yabs性能测试"
 				check_swap
 				curl -sL yabs.sh | bash -s -- -i -5
 				;;
 			21)
 				clear
-				_yellow "Icu/gb5 CPU性能测试脚本"
 				check_swap
 				bash <(curl -sL bash.icu/gb5)
 				;;
 			30)
 				clear
-				_yellow "Bench性能测试"
 				curl -Lso- bench.sh | bash
 				;;
 			31)
 				clear
-				_yellow "Spiritysdx融合怪测评"
 				curl -L https://gitlab.com/spiritysdx/za/-/raw/main/ecs.sh -o ecs.sh && chmod +x ecs.sh && bash ecs.sh
 				;;
 			0)
