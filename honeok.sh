@@ -433,7 +433,7 @@ linux_bbr() {
 			_yellow "当前TCP阻塞算法:$congestion_algorithm $queue_algorithm"
 
 			echo ""
-			_yellow "BBR管理"
+			echo "BBR管理"
 			echo "-------------------------"
 			echo "1. 开启BBRv3              2. 关闭BBRv3（会重启）"
 			echo "-------------------------"
@@ -470,7 +470,7 @@ linux_bbr() {
 linux_tools() {
 	while true; do
 		clear
-		_yellow "▶ 常用工具"
+		echo "▶ 常用工具"
 		echo "-------------------------"
 		echo "1. curl 下载工具                      2. wget下载工具"
 		echo "3. sudo 超级管理权限工具              4. socat 通信连接工具"
@@ -689,7 +689,7 @@ node_create(){
 	local choice
 	while true; do
 		clear
-		_yellow "▶ 节点搭建脚本合集"
+		echo "▶ 节点搭建脚本合集"
 		echo "-------------------------------"
 		echo "  Sing-box多合一/Argo-tunnel"
 		echo "-------------------------------"
@@ -795,10 +795,25 @@ node_create(){
 	done
 }
 
+add_sshpasswd() {
+	_yellow "设置你的ROOT密码"
+	passwd
+	sed -i 's/^\s*#\?\s*PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config;
+	sed -i 's/^\s*#\?\s*PasswordAuthentication.*/PasswordAuthentication yes/g' /etc/ssh/sshd_config;
+	rm -rf /etc/ssh/sshd_config.d/* /etc/ssh/ssh_config.d/*
+	restart_ssh
+
+	_green "ROOT登录设置完毕"
+}
+
+restart_ssh() {
+	restart sshd ssh > /dev/null 2>&1
+}
+
 oracle_script() {
 	while true; do
 		clear
-		_yellow "▶ 甲骨文云脚本合集"
+		echo "▶ 甲骨文云脚本合集"
 		echo "-------------------------"
 		echo "1. 安装闲置机器活跃脚本"
 		echo "2. 卸载闲置机器活跃脚本"
@@ -1045,7 +1060,7 @@ system_info(){
 	local uptime_str=$(cat /proc/uptime | awk -F. '{run_days=int($1 / 86400);run_hours=int(($1 % 86400) / 3600);run_minutes=int(($1 % 3600) / 60); if (run_days > 0) printf("%d天 ", run_days); if (run_hours > 0) printf("%d时 ", run_hours); printf("%d分\n", run_minutes)}')
 
 	echo ""
-	_yellow "系统信息查询"
+	echo "系统信息查询"
 	echo "-------------------------"
 	echo "主机名: ${hostname}"
 	echo "运营商: ${isp_info}"
@@ -1091,7 +1106,7 @@ xanmod_bbr3(){
 			_yellow "当前内核版本: $kernel_version"
 
 			echo ""
-			_yellow "内核管理"
+			echo "内核管理"
 			echo "-------------------------"
 			echo "1. 更新BBRv3内核              2. 卸载BBRv3内核"
 			echo "-------------------------"
@@ -1490,7 +1505,7 @@ server_test_script(){
 	local choice
 	while true; do
 		clear
-		_yellow "VPS脚本合集"
+		echo "VPS脚本合集"
 		echo ""
 		echo "-----IP及解锁状态检测----"
 		echo "1. ChatGPT解锁状态检测"
@@ -1640,7 +1655,7 @@ linux_system_tools(){
 	local choice
 	while true; do
 		clear
-		_yellow "系统工具"
+		echo "系统工具"
 		echo "------------------------"
 		echo "7. 优化DNS地址                         8. 一键重装系统"
 		echo "------------------------"
@@ -1658,9 +1673,9 @@ linux_system_tools(){
 				need_root
 				while true; do
 					clear
-					_yellow "优化DNS地址"
+					echo "优化DNS地址"
 					echo "------------------------"
-					_yellow "当前DNS地址"
+					echo "当前DNS地址"
 					cat /etc/resolv.conf
 					echo "------------------------"
 					echo ""
@@ -1702,7 +1717,7 @@ linux_system_tools(){
 				;;
 			12)
 				need_root
-				_yellow "设置虚拟内存"
+				echo "设置虚拟内存"
 				 while true; do
 					clear
 
@@ -1753,8 +1768,6 @@ linux_system_tools(){
 				need_root
 				while true; do
 					clear
-					_yellow "系统时间信息"
-
 					# 获取当前系统时区
 					local timezone=$(current_timezone)
 
@@ -1766,7 +1779,7 @@ linux_system_tools(){
 					_yellow "当前系统时间：$current_time"
 
 					echo ""
-					_yellow "时区切换"
+					echo "时区切换"
 					echo "------------亚洲------------"
 					echo "1. 中国上海时间              2. 中国香港时间"
 					echo "3. 日本东京时间              4. 韩国首尔时间"
