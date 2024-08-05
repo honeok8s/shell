@@ -1126,10 +1126,10 @@ cloudflare_ddns() {
 			crontab -l | grep "/usr/local/bin/cf-ddns.sh"
 		else
 			_yellow "Cloudflare ddns: 未安装"
+			_yellow "使用动态解析之前请解析一个域名,如ddns.honeok.com到你的当前公网IP"
 		fi
 		echo "当前公网IPV4地址: ${ipv4_address}"
 		echo "当前公网IPV6地址: ${ipv6_address}"
-		_yellow "使用动态解析之前请解析一个域名,如ddns.honeok.com到你的当前公网IP"
 		echo "-------------------------"
 		echo "1. 设置DDNS动态域名解析    2. 删除DDNS动态域名解析"
 		echo "-------------------------"
