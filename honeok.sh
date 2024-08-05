@@ -1472,6 +1472,7 @@ cron_manager(){
 xanmod_bbr3(){
 	local choice
 	need_root
+
 	echo "XanMod BBR3管理"
 	if dpkg -l | grep -q 'linux-xanmod'; then
 		while true; do
@@ -1566,13 +1567,13 @@ xanmod_bbr3(){
 				install wget gnupg
 
 				# wget -qO - https://dl.xanmod.org/archive.key | gpg --dearmor -o /usr/share/keyrings/xanmod-archive-keyring.gpg --yes
-				wget -qO - https://raw.githubusercontent.com/honeok8s/conf/main/XanMod/archive.key | gpg --dearmor -o /usr/share/keyrings/xanmod-archive-keyring.gpg --yes
+				wget -qO - https://raw.githubusercontent.com/honeok8s/shell/main/callscript/archive.key | gpg --dearmor -o /usr/share/keyrings/xanmod-archive-keyring.gpg --yes
 
 				# 添加存储库
 				echo 'deb [signed-by=/usr/share/keyrings/xanmod-archive-keyring.gpg] http://deb.xanmod.org releases main' | tee /etc/apt/sources.list.d/xanmod-release.list
 
 				# kernel_version=$(wget -q https://dl.xanmod.org/check_x86-64_psabi.sh && chmod +x check_x86-64_psabi.sh && ./check_x86-64_psabi.sh | grep -oP 'x86-64-v\K\d+|x86-64-v\d+')
-				local kernel_version=$(wget -q https://raw.githubusercontent.com/honeok8s/conf/main/XanMod/check_x86-64_psabi.sh && chmod +x check_x86-64_psabi.sh && ./check_x86-64_psabi.sh | grep -oP 'x86-64-v\K\d+|x86-64-v\d+')
+				local kernel_version=$(wget -q https://raw.githubusercontent.com/honeok8s/shell/main/callscript/check_x86-64_psabi.sh && chmod +x check_x86-64_psabi.sh && ./check_x86-64_psabi.sh | grep -oP 'x86-64-v\K\d+|x86-64-v\d+')
 
 				apt update -y
 				apt install -y linux-xanmod-x64v$kernel_version
