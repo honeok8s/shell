@@ -1105,6 +1105,14 @@ cloudflare_ddns() {
 	while true; do
 		clear
 		echo "项目地址: https://github.com/yulewang/cloudflare-api-v4-ddns/tree/master"
+
+		if [ -f /usr/local/bin/cf-ddns.sh ];then
+			_green "检测到当前已经安装了Cloudflare ddns"
+			crontab -l | grep "/usr/local/bin/cf-ddns.sh" | _yellow
+		else
+			_yellow "当前未安装Cloudflare ddns,将执行安装程序"
+		fi
+
 		_yellow "当前公网IPV4地址: ${ipv4_address}"
 		_yellow "当前公网IPV6地址: ${ipv6_address}"
 		_yellow "使用动态解析之前请解析一个域名,如 ddns.honeok.com 到 192.168.100.100(你的当前公网IP)"
