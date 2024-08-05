@@ -2413,7 +2413,7 @@ honeok(){
 				echo "敬请期待"
 				;;
 			99)
-				curl -fsSL -o ~/palworld.sh https://raw.githubusercontent.com/kejilion/sh/main/palworld.sh && chmod a+x ~/palworld.sh && ./palworld.sh
+				curl -fsSL -o ~/palworld.sh https://raw.githubusercontent.com/honeok8s/shell/main/callscript/palworld.sh && chmod a+x ~/palworld.sh && ./palworld.sh
 				exit 0
 				;;
 			00)
