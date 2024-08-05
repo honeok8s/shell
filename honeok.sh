@@ -1206,7 +1206,7 @@ cloudflare_ddns() {
 					read -n 1 -s -r -p ""
 				fi
 
-				_green "cloudflare ddns安装完成"
+				_green "Cloudflare ddns安装完成"
 				;;
 			2)
 				if [ -f /usr/local/bin/cf-ddns.sh ]; then
@@ -1234,7 +1234,7 @@ cloudflare_ddns() {
 					_red "~/cf-v4-ddns.sh文件不存在"
 				fi
 
-				_green "cloudflare ddns卸载完成"
+				_green "Cloudflare ddns卸载完成"
 				;;
 			0)
 				break
@@ -1243,6 +1243,7 @@ cloudflare_ddns() {
 				_red "无效选项,请重新输入"
 				;;
 		esac
+		end_of
 	done
 }
 
