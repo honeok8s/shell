@@ -1293,10 +1293,7 @@ linux_mirror(){
 }
 
 check_crontab_installed() {
-	if command -v crontab >/dev/null 2>&1; then
-		_yellow "Crontab已经安装"
-		return 0
-	else
+	if ! command -v crontab >/dev/null 2>&1; then
 		install_crontab
 		return $?
 	fi
