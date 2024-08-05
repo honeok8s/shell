@@ -1535,7 +1535,7 @@ xanmod_bbr3(){
 		echo "VPS是512M内存的,请提前添加1G虚拟内存,防止因内存不足失联!"
 		echo "------------------------------------------------"
 
-		echo -n -e "${yellow}确定继续吗?(Y/N)${white}"
+		echo -n -e "${yellow}确定继续吗?(y/n)${white}"
 		read choice
 
 		case "$choice" in
