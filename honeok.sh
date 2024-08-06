@@ -680,7 +680,7 @@ docker_ipv6_on() {
 	# 检查配置文件是否存在,如果不存在则创建文件并写入默认设置
 	if [ ! -f "$CONFIG_FILE" ]; then
 		echo "$REQUIRED_IPV6_CONFIG" > "$CONFIG_FILE"
-		reload docker
+		restart docker
 	else
 		# Python代码用于处理配置文件的更新
 		local PYTHON_CODE=$(cat <<EOF
@@ -716,8 +716,6 @@ EOF
 		)
 		# 执行Python脚本并获取结果
 		local RESULT=$(python3 -c "$PYTHON_CODE" "$CONFIG_FILE")
-
-		#echo "Python脚本结果: $RESULT"
 
 		# 根据Python脚本的输出结果进行相应操作
 		if [[ "$RESULT" == *"RELOAD"* ]]; then
@@ -770,8 +768,6 @@ EOF
 	)
 
 	local RESULT=$(python3 -c "$PYTHON_CODE" "$CONFIG_FILE")
-
-	#echo "Python脚本结果: $RESULT"
 
 	if [[ "$RESULT" == *"RELOAD"* ]]; then
 		restart docker
@@ -2219,7 +2215,7 @@ xanmod_bbr3(){
 
 				bbr_on
 
-				_green "XanMod内核安装并BBR3启用成功,重启后生效"
+				_green "XanMod内核安装并启用BBR3成功,重启后生效!"
 				rm -f /etc/apt/sources.list.d/xanmod-release.list
 				rm -f check_x86-64_psabi.sh*
 				
@@ -2294,7 +2290,7 @@ reinstall_system(){
 		fi
 
 		_red "未检测到支持的虚拟化环境(LXC或OpenVZ)"
-		sleep 1
+		end_of
 		reinstall_system # 返回重装系统菜单
 	}
 
@@ -2334,209 +2330,181 @@ reinstall_system(){
 
 		case "$choice" in
 			1)
-				_yellow "开始为你安装Debian 12"
 				dd_linux_mollyLau
 				bash InstallNET.sh -debian 12
 				reboot
-				exit 0
+				exit
 				;;
 			2) 
-				_yellow "开始为你安装Debian 11"
 				dd_linux_mollyLau
 				bash InstallNET.sh -debian 11
 				reboot
-				exit 0
+				exit
 				;;
 			3) 
-				_yellow "开始为你安装Debian 10"
 				dd_linux_mollyLau
 				bash InstallNET.sh -debian 10
 				reboot
-				exit 0
+				exit
 				;;
 			4)
-				_yellow "开始为你安装Debian 9"
 				dd_linux_mollyLau
 				bash InstallNET.sh -debian 9
 				reboot
-				exit 0
+				exit
 				;;
 			11)
-				_yellow "开始为你安装Ubuntu 24.04"
 				dd_linux_mollyLau
 				bash InstallNET.sh -ubuntu 24.04
 				reboot
-				exit 0
+				exit
 				;;
 			12)
-				_yellow "开始为你安装Ubuntu 22.04"
 				dd_linux_mollyLau
 				bash InstallNET.sh -ubuntu 22.04
 				reboot
-				exit 0
+				exit
 				;;
 			13)
-				_yellow "开始为你安装Ubuntu 20.04"
 				dd_linux_mollyLau
 				bash InstallNET.sh -ubuntu 20.04
 				reboot
-				exit 0
+				exit
 				;;
 			14)
-				_yellow "开始为你安装Ubuntu 18.04"
 				dd_linux_mollyLau
 				bash InstallNET.sh -ubuntu 18.04
 				reboot
-				exit 0
+				exit
 				;;
 			21)
-				_yellow "开始为你安装Rockylinux9"
 				dd_linux_bin456789
 				bash reinstall.sh rocky
 				reboot
-				exit 0
+				exit
                 ;;
 			22)
-				_yellow "开始为你安装Rockylinux8"
 				dd_linux_bin456789
 				bash reinstall.sh rocky 8
 				reboot
-				exit 0
+				exit
 				;;
 			23)
-				_yellow "开始为你安装Alma9"
 				dd_linux_bin456789
 				bash reinstall.sh alma
 				reboot
-				exit 0
+				exit
 				;;
 			24)
-				_yellow "开始为你安装Alma8"
 				dd_linux_bin456789
 				bash reinstall.sh alma 8
 				reboot
-				exit 0
+				exit
 				;;
 			25)
-				_yellow "开始为你安装Oracle9"
 				dd_linux_bin456789
 				bash reinstall.sh oracle
 				reboot
-				exit 0
+				exit
 				;;
 			26)
-				_yellow "开始为你安装Oracle8"
 				dd_linux_bin456789
 				bash reinstall.sh oracle 8
 				reboot
-				exit 0
+				exit
 				;;
 			27)
-				_yellow "开始为你安装Fedora40"
 				dd_linux_bin456789
 				bash reinstall.sh fedora
 				reboot
-				exit 0
+				exit
 				;;
 			28)
-				_yellow "开始为你安装Fedora39"
 				dd_linux_bin456789
 				bash reinstall.sh fedora 39
 				reboot
-				exit 0
+				exit
 				;;
 			29)
-				_yellow "开始为你安装Centos 7"
 				dd_linux_mollyLau
 				bash InstallNET.sh -centos 7
 				reboot
-				exit 0
+				exit
 				;;
 			31)
-				_yellow "开始为你安装Alpine"
 				dd_linux_mollyLau
 				bash InstallNET.sh -alpine
 				reboot
-				exit 0
+				exit
 				;;
 			32)
-				_yellow "开始为你安装Arch"
 				dd_linux_bin456789
 				bash reinstall.sh arch
 				reboot
-				exit 0
+				exit
 				;;
 			33)
-				_yellow "开始为你安装Kali"
 				dd_linux_bin456789
 				bash reinstall.sh kali
 				reboot
-				exit 0
+				exit
 				;;
 			34)
-				_yellow "开始为你安装Openeuler"
 				dd_linux_bin456789
 				bash reinstall.sh openeuler
 				reboot
-				exit 0
+				exit
 				;;
 			35)
-				_yellow "开始为你安装Opensuse"
 				dd_linux_bin456789
 				bash reinstall.sh opensuse
 				reboot
-				exit 0
+				exit
 				;;
 			41)
-				_yellow "开始为你安装Windows11"
 				dd_windows_mollyLau
 				bash InstallNET.sh -windows 11 -lang "cn"
 				reboot
-				exit 0
+				exit
 				;;
 			42)
-				_yellow "开始为你安装Windows10"
 				dd_windows_mollyLau
 				bash InstallNET.sh -windows 10 -lang "cn"
 				reboot
-				exit 0
+				exit
 				;;
 			44)
-				_yellow "开始为你安装Windows server 22"
 				dd_windows_bin456789
 				URL="https://massgrave.dev/windows_server_links"
 				iso_link=$(wget -q -O - "$URL" | grep -oP '(?<=href=")[^"]*cn[^"]*windows_server[^"]*2022[^"]*x64[^"]*\.iso')
 				bash reinstall.sh windows --iso="$iso_link" --image-name='Windows Server 2022 SERVERDATACENTER'
 				reboot
-				exit 0
+				exit
 				;;
 			45)
-				_yellow "开始为你安装Windows server 19"
 				dd_windows_mollyLau
 				bash InstallNET.sh -windows 2019 -lang "cn"
 				reboot
-				exit 0
+				exit
 				;;
 			46)
-				_yellow "开始为你安装Windows server 16"
 				dd_windows_mollyLau
 				bash InstallNET.sh -windows 2016 -lang "cn"
 				reboot
-				exit 0
+				exit
 				;;
 			100)
 				dd_openvz_lxc_check
 				install wget
 				wget -qO OsMutation.sh https://raw.githubusercontent.com/LloydAsp/OsMutation/main/OsMutation.sh && chmod u+x OsMutation.sh && ./OsMutation.sh
 				reboot
-				exit 0
+				exit
 				;;
 			0)
 				break
 				;;
 			*)
 				_red "无效选项,请重新输入"
-				break
 				;;
 		esac
 	done
