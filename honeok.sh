@@ -1724,6 +1724,23 @@ reinstall_system(){
 		fi
 	}
 
+	# 简单判断是否为lxc和openvz容器,随后调用酒神脚本
+	dd_openvz_lxc_check(){
+		if grep -q 'container=lxc' /proc/1/environ; then
+			_green "LXC环境校验通过"
+			return 0 # 通过LXC环境检测
+		fi
+
+		if [ -f /proc/vz/veinfo ]; then
+			_green "OpenVZ环境校验通过"
+			return 0 # 通过OpenVZ环境检测
+		fi
+
+		_red "未检测到支持的虚拟化环境(LXC或OpenVZ)"
+		sleep 1
+		reinstall_system # 返回重装系统菜单
+	}
+
 	# 重装系统
 	local choice
 	while true; do
@@ -1749,6 +1766,8 @@ reinstall_system(){
 		echo "41. Windows 11                42. Windows 10"
 		echo "44. Windows Server 2022"
 		echo "45. Windows Server 2019       46. Windows Server 2016"
+		echo "-------------------------"
+		echo "100. OpenVZ/LXC 重装Debian/CentOS/Alpine"
 		echo "-------------------------"
 		echo "0. 返回上一级菜单"
 		echo "-------------------------"
@@ -1945,6 +1964,13 @@ reinstall_system(){
 				_yellow "开始为你安装Windows server 16"
 				dd_windows_mollyLau
 				bash InstallNET.sh -windows 2016 -lang "cn"
+				reboot
+				exit 0
+				;;
+			100)
+				install wget
+				dd_openvz_lxc_check
+				wget -qO OsMutation.sh https://raw.githubusercontent.com/LloydAsp/OsMutation/main/OsMutation.sh && chmod u+x OsMutation.sh && ./OsMutation.sh
 				reboot
 				exit 0
 				;;
