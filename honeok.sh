@@ -668,8 +668,10 @@ docker_image() {
 }
 
 docker_ipv6_on() {
-	local CONFIG_FILE="/etc/docker/daemon.json"
+	need_root
+	install python3 >/dev/null 2>&1
 
+	local CONFIG_FILE="/etc/docker/daemon.json"
 	local REQUIRED_IPV6_CONFIG='{
 		"ipv6": true,
 		"fixed-cidr-v6": "2001:db8:1::/64"
