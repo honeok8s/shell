@@ -755,7 +755,7 @@ docker_ipv6_off() {
     if [ ! -f /etc/docker/daemon.json ]; then
         _yellow "未找到 Docker 配置文件，跳过修改"
         return
-    }
+    fi
 
     install python3 >/dev/null 2>&1
 
