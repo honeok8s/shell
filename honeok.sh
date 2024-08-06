@@ -2278,20 +2278,17 @@ reinstall_system(){
 	}
 
 	# 简单判断是否为lxc和openvz容器,随后调用酒神脚本
-	dd_openvz_lxc_check(){
-		if grep -q 'container=lxc' /proc/1/environ; then
-			_green "Lxc环境校验通过"
-			return 0 # 通过LXC环境检测
+	dd_openvz_lxc_LloydAsp() {
+		if grep -q 'container=lxc' /proc/1/environ || [ -f /proc/vz/veinfo ]; then
+			_green "虚拟化环境校验通过"
+			install wget
+			wget -qO OsMutation.sh https://raw.githubusercontent.com/LloydAsp/OsMutation/main/OsMutation.sh && chmod u+x OsMutation.sh
+			bash OsMutation.sh
+		else
+			_red "未检测到支持的虚拟化环境(Lxc或OpenVZ)"
+			sleep 2
+			continue # 返回重装系统菜单
 		fi
-
-		if [ -f /proc/vz/veinfo ]; then
-			_green "OpenVZ环境校验通过"
-			return 0 # 通过OpenVZ环境检测
-		fi
-
-		_red "未检测到支持的虚拟化环境(Lxc或OpenVZ)"
-		sleep 2
-		reinstall_system # 返回重装系统菜单
 	}
 
 	# 重装系统
@@ -2494,11 +2491,7 @@ reinstall_system(){
 				exit
 				;;
 			100)
-				dd_openvz_lxc_check
-				install wget
-				wget -qO OsMutation.sh https://raw.githubusercontent.com/LloydAsp/OsMutation/main/OsMutation.sh && chmod u+x OsMutation.sh && ./OsMutation.sh
-				reboot
-				exit
+				dd_openvz_lxc_LloydAsp
 				;;
 			0)
 				break
