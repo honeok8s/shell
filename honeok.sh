@@ -717,13 +717,13 @@ EOF
 		# 执行Python脚本并获取结果
 		local RESULT=$(python3 -c "$PYTHON_CODE" "$CONFIG_FILE")
 
-		echo "Python脚本结果: $RESULT"
+		#echo "Python脚本结果: $RESULT"
 
 		# 根据Python脚本的输出结果进行相应操作
 		if [[ "$RESULT" == *"RELOAD"* ]]; then
-			reload docker
+			restart docker
 		elif [[ "$RESULT" == *"NO_CHANGE"* ]]; then
-			_yellow "配置已是最新,无需重启"
+			_yellow "当前已开启IPV6访问"
 		else
 			_red "处理配置时发生错误"
 		fi
@@ -771,12 +771,12 @@ EOF
 
 	local RESULT=$(python3 -c "$PYTHON_CODE" "$CONFIG_FILE")
 
-	echo "Python脚本结果: $RESULT"
+	#echo "Python脚本结果: $RESULT"
 
 	if [[ "$RESULT" == *"RELOAD"* ]]; then
-		reload docker
+		restart docker
 	elif [[ "$RESULT" == *"NO_CHANGE"* ]]; then
-		_yellow "配置已是最新,无需重启"
+		_yellow "当前已关闭IPV6访问"
 	else
 		_red "处理配置时发生错误"
 	fi
