@@ -668,12 +668,12 @@ docker_image() {
 }
 
 docker_ipv6_on() {
-	# 创建目录(如果需要)
+	# 创建目录（如果需要）
 	mkdir -p /etc/docker >/dev/null 2>&1
 
 	install python3 >/dev/null 2>&1
 
-	# 使用Python脚本来处理JSON文件
+	# 使用 Python 脚本来处理 JSON 文件
 	python3 << EOF
 import json
 import os
@@ -687,7 +687,7 @@ default_config = {
 # 初始化配置更新标记
 config_updated = False
 
-# 检查是否存在JSON文件
+# 检查是否存在 JSON 文件
 if os.path.exists(daemon_file):
     with open(daemon_file, 'r') as file:
         try:
@@ -706,12 +706,12 @@ if config.get('fixed-cidr-v6') != "fd00:dead:beef:c0::/80":
     config['fixed-cidr-v6'] = "fd00:dead:beef:c0::/80"
     config_updated = True
 
-# 如果配置文件有更新,则写入新的配置
+# 如果配置文件有更新，则写入新的配置
 if config_updated:
-    # 转换为JSON字符串并处理尾随的逗号
+    # 转换为 JSON 字符串并处理尾随的逗号
     json_data = json.dumps(config, indent=2)
     
-    # 处理 fixed-cidr-v6为最后一行时的逗号问题
+    # 处理 fixed-cidr-v6 为最后一行时的逗号问题
     if '"fixed-cidr-v6": "fd00:dead:beef:c0::/80"' in json_data:
         json_data = json_data.replace(',\n\n}', '\n\n}')
     
@@ -723,25 +723,42 @@ else:
 
 EOF
 
-	# 使用Python检查是否需要重载
-	if [ "$(python3 -c 'import json; import os; daemon_file = "/etc/docker/daemon.json"; config_updated = False; if os.path.exists(daemon_file): with open(daemon_file, "r") as file: try: config = json.load(file) except json.JSONDecodeError: config = {}; if config.get("ipv6") != True: config_updated = True; if config.get("fixed-cidr-v6") != "fd00:dead:beef:c0::/80": config_updated = True; print("True" if config_updated else "False")')" = "True" ]; then
+	# 使用 Python 检查是否需要重载
+	if [ "$(python3 -c '
+import json
+import os
+
+daemon_file = "/etc/docker/daemon.json"
+config_updated = False
+if os.path.exists(daemon_file):
+    with open(daemon_file, "r") as file:
+        try:
+            config = json.load(file)
+        except json.JSONDecodeError:
+            config = {}
+        if config.get("ipv6") != True:
+            config_updated = True
+        if config.get("fixed-cidr-v6") != "fd00:dead:beef:c0::/80":
+            config_updated = True
+print("True" if config_updated else "False")
+	')" = "True" ]; then
 		reload docker
 		_green "docker已开启v6访问"
 	else
-		_red "docker已经开启v6访问,无需再次开启"
+		_red "docker已开启v6访问,无需再次开启"
 	fi
 }
 
 docker_ipv6_off() {
-	# 检查是否存在Docker配置文件
+	# 检查是否存在 Docker 配置文件
 	if [ ! -f /etc/docker/daemon.json ]; then
-		_yellow "未找到Docker配置文件,跳过修改"
+		_yellow "未找到 Docker 配置文件，跳过修改"
 		return
 	fi
 
 	install python3 >/dev/null 2>&1
 
-	# 使用Python脚本来处理JSON文件
+	# 使用 Python 脚本来处理 JSON 文件
 	python3 << EOF
 import json
 import os
@@ -757,7 +774,7 @@ with open(daemon_file, 'r') as file:
 
 # 检查并修改 IPv6 配置
 if config.get('ipv6') == False:
-    print("IPv6 已经为 false,不需要更改")
+    print("IPv6 已经为 false，不需要更改。")
 else:
     config['ipv6'] = False
     
@@ -768,7 +785,7 @@ else:
     # 转换为 JSON 字符串并处理尾随的逗号
     json_data = json.dumps(config, indent=2)
     
-    # 处理fixed-cidr-v6为最后一行时的逗号问题
+    # 处理 fixed-cidr-v6 为最后一行时的逗号问题
     if '"fixed-cidr-v6": "fd00:dead:beef:c0::/80"' in json_data:
         json_data = json_data.replace(',\n\n}', '\n\n}')
     
@@ -776,16 +793,33 @@ else:
     with open(daemon_file, 'w') as file:
         file.write(json_data)
     # 输出成功标志
-    print("配置文件已更新,IPv6 已关闭")
+    print("配置文件已更新，IPv6 已关闭。")
 
 EOF
 
-	# 如果配置文件有更新,则重载Docker服务
-	if [ "$(python3 -c 'import json; import os; daemon_file = "/etc/docker/daemon.json"; if os.path.exists(daemon_file): with open(daemon_file, "r") as file: try: config = json.load(file) except json.JSONDecodeError: config = {}; if config.get("ipv6") == False: print("False") else: print("True")')" = "True" ]; then
+	# 如果配置文件有更新，则重载 Docker 服务
+	if [ "$(python3 -c '
+import json
+import os
+
+daemon_file = "/etc/docker/daemon.json"
+if os.path.exists(daemon_file):
+    with open(daemon_file, "r") as file:
+        try:
+            config = json.load(file)
+        except json.JSONDecodeError:
+            config = {}
+        if config.get("ipv6") == False:
+            print("False")
+        else:
+            print("True")
+else:
+    print("True")
+	')" = "True" ]; then
 		reload docker
 		_green "docker已关闭v6访问"
 	else
-		_red "docker已经关闭v6访问,无需再次关闭"
+		_yellow "docker已关闭v6访问,无需再次关闭"
 	fi
 }
 
