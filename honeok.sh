@@ -704,7 +704,7 @@ docker_manager() {
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
 		read choice
 
-		case $sub_choice in
+		case $choice in
 			1)
 				clear
 				_yellow "嘿嘿"
