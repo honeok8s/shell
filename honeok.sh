@@ -43,9 +43,7 @@ print_logo(){
 	echo -e "${cyan}${logo}${reset}"
 	echo ""
 	local text="Tools: ${honeok_v}"
-	local text_length=${#text}
-	local logo_width=$(echo -e "$logo" | awk '{print length($0)}' | sort -nu | tail -n 1)
-	local padding=$(printf '%*s' $((logo_width - text_length)) '')
+	local padding="                                   "
 	echo -e "${padding}${yellow}${bold}${text}${reset}"
 }
 
