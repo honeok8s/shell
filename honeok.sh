@@ -671,7 +671,8 @@ docker_ipv6_on() {
 	# 创建目录(如果需要)
 	mkdir -p /etc/docker >/dev/null 2>&1
 
-	install python3
+	install python3 >/dev/null 2>&1
+
 	# 使用Python脚本来处理JSON文件
 	python3 << EOF
 import json
@@ -679,30 +680,42 @@ import os
 
 daemon_file = '/etc/docker/daemon.json'
 default_config = {
-    "ipv6": true,
+    "ipv6": True,
     "fixed-cidr-v6": "fd00:dead:beef:c0::/80"
 }
 
-# 检查是否存在 JSON 文件
+# 检查是否存在JSON文件
 if os.path.exists(daemon_file):
     with open(daemon_file, 'r') as file:
         try:
             config = json.load(file)
         except json.JSONDecodeError:
             config = {}
-        
-        # 检查并更新配置
-        if config.get('ipv6') != True:
-            config['ipv6'] = True
-            config['fixed-cidr-v6'] = "fd00:dead:beef:c0::/80"
-        elif 'fixed-cidr-v6' not in config:
-            config['fixed-cidr-v6'] = "fd00:dead:beef:c0::/80"
 else:
-    config = default_config
+    config = {}
 
-# 写入配置
-with open(daemon_file, 'w') as file:
-    json.dump(config, file, indent=2)
+# 检查并更新配置
+config_updated = False
+if config.get('ipv6') != True:
+    config['ipv6'] = True
+    config_updated = True
+
+if config.get('fixed-cidr-v6') != "fd00:dead:beef:c0::/80":
+    config['fixed-cidr-v6'] = "fd00:dead:beef:c0::/80"
+    config_updated = True
+
+# 如果配置文件有更新,则写入新的配置
+if config_updated:
+    # 转换为 JSON 字符串并处理尾随的逗号
+    json_data = json.dumps(config, indent=2)
+    
+    # 处理fixed-cidr-v6为最后一行时的逗号问题
+    if '"fixed-cidr-v6": "fd00:dead:beef:c0::/80"' in json_data:
+        json_data = json_data.replace(',\n\n}', '\n\n}')
+    
+    # 写入修改后的配置
+    with open(daemon_file, 'w') as file:
+        file.write(json_data)
 
 EOF
 
@@ -718,7 +731,7 @@ docker_ipv6_off() {
 		return
 	fi
 
-	install python3
+	install python3 >/dev/null 2>&1
 
 	# 使用Python脚本来处理JSON文件
 	python3 << EOF
