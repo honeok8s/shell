@@ -677,11 +677,12 @@ docker_ipv6_on() {
 		"fixed-cidr-v6": "2001:db8:1::/64"
 	}'
 
+	# 检查配置文件是否存在,如果不存在则创建文件并写入默认设置
 	if [ ! -f "$CONFIG_FILE" ]; then
 		echo "$REQUIRED_IPV6_CONFIG" > "$CONFIG_FILE"
 		reload docker
-		_green "重载docker服务"
 	else
+		# Python代码用于处理配置文件的更新
 		local PYTHON_CODE=$(cat <<EOF
 import json
 import sys
@@ -713,12 +714,16 @@ else:
     print("RELOAD")
 EOF
 		)
+		# 执行Python脚本并获取结果
 		local RESULT=$(python3 -c "$PYTHON_CODE" "$CONFIG_FILE")
 
+		echo "Python脚本结果: $RESULT"
+
+		# 根据Python脚本的输出结果进行相应操作
 		if [[ "$RESULT" == *"RELOAD"* ]]; then
 			reload docker
 		elif [[ "$RESULT" == *"NO_CHANGE"* ]]; then
-			_yellow "配置已是最新,无需重载"
+			_yellow "配置已是最新,无需重启"
 		else
 			_red "处理配置时发生错误"
 		fi
@@ -726,76 +731,54 @@ EOF
 }
 
 docker_ipv6_off() {
-	# 检查是否存在Docker配置文件
-	if [ ! -f /etc/docker/daemon.json ]; then
-		_red "未找到Docker配置文件,跳过修改"
-		return
-	fi
+	need_root
+	install python3 >/dev/null 2>&1
 
-	# 安装 Python3(如果需要)
-	if ! command -v python3 >/dev/null 2>&1; then
-		install python3 >/dev/null 2>&1
-	fi
-
-	# 使用Python脚本来处理JSON文件
-	python3 << EOF
+	local CONFIG_FILE="/etc/docker/daemon.json"
+	local PYTHON_CODE=$(cat <<EOF
 import json
-import os
+import sys
 
-daemon_file = '/etc/docker/daemon.json'
+config_file = sys.argv[1]
 
-# 读取配置文件
-if os.path.exists(daemon_file):
-	with open(daemon_file, 'r') as file:
-		try:
-			config = json.load(file)
-		except json.JSONDecodeError:
-			config = {}
+# 期望的配置
+required_config = {
+    "ipv6": False,
+}
+
+try:
+    with open(config_file, 'r') as f:
+        config = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    config = {}
+
+original_config = dict(config)
+
+# 更新配置项,确保ipv6关闭,且移除fixed-cidr-v6
+config['ipv6'] = False
+config.pop('fixed-cidr-v6', None)
+
+final_config = dict(config)
+
+if original_config == final_config:
+    print("NO_CHANGE")
 else:
-	config = {}
-
-# 更新配置
-config_updated = False
-if config.get('ipv6') != False:
-	config['ipv6'] = False
-	config_updated = True
-if 'fixed-cidr-v6' in config:
-	del config['fixed-cidr-v6']
-	config_updated = True
-
-# 写入配置文件
-if config_updated:
-	with open(daemon_file, 'w') as file:
-		json.dump(config, file, indent=2)
-	print("True")
-else:
-	print("False")
-
+    with open(config_file, 'w') as f:
+        json.dump(final_config, f, indent=4, sort_keys=False)
+    print("RELOAD")
 EOF
+	)
 
-	# 检查是否需要重载Docker服务
-	if [ "$(python3 -c '
-import json
-import os
+	local RESULT=$(python3 -c "$PYTHON_CODE" "$CONFIG_FILE")
 
-daemon_file = "/etc/docker/daemon.json"
-if os.path.exists(daemon_file):
-	with open(daemon_file, "r") as file:
-		try:
-			config = json.load(file)
-		except json.JSONDecodeError:
-			config = {}
-		if config.get("ipv6") == False:
-			print("False")
-		else:
-			print("True")
-else:
-	print("True")
-	')" = "False" ]; then
+	echo "Python脚本结果: $RESULT"
+
+	if [[ "$RESULT" == *"RELOAD"* ]]; then
 		reload docker
-		_green "docker已关闭IPv6访问"
+	elif [[ "$RESULT" == *"NO_CHANGE"* ]]; then
+		_yellow "配置已是最新,无需重启"
 	else
-		_red "docker已关闭IPv6访问,无法重复关闭"
+		_red "处理配置时发生错误"
 	fi
 }
 
