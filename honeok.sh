@@ -1747,7 +1747,7 @@ reinstall_system(){
 		need_root
 		clear
 		_yellow "重装有风险失联,不放心者慎用,重装预计花费15分钟,请提前备份数据"
-		_yellow "感谢MollyLau和bin456789的脚本支持!"
+		echo "感谢MollyLau和bin456789的脚本支持!"
 		echo "-------------------------"
 		echo "1. Debian 12                  2. Debian 11"
 		echo "3. Debian 10                  4. Debian 9"
