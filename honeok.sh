@@ -668,13 +668,13 @@ docker_image() {
 }
 
 docker_ipv6_on() {
-	# 创建目录（如果需要）
-	mkdir -p /etc/docker >/dev/null 2>&1
+    # 创建目录（如果需要）
+    mkdir -p /etc/docker >/dev/null 2>&1
 
-	install python3 >/dev/null 2>&1
+    install python3 >/dev/null 2>&1
 
-	# 使用 Python 脚本来处理 JSON 文件
-	python3 << EOF
+    # 使用 Python 脚本来处理 JSON 文件
+    python3 << EOF
 import json
 import os
 
@@ -706,7 +706,7 @@ if config.get('fixed-cidr-v6') != "fd00:dead:beef:c0::/80":
     config['fixed-cidr-v6'] = "fd00:dead:beef:c0::/80"
     config_updated = True
 
-# 如果配置文件有更新,则写入新的配置
+# 如果配置文件有更新，则写入新的配置
 if config_updated:
     # 转换为 JSON 字符串并处理尾随的逗号
     json_data = json.dumps(config, indent=2)
@@ -724,8 +724,8 @@ else:
 
 EOF
 
-	# 使用 Python 检查是否需要重载
-	if [ "$(python3 -c '
+    # 使用 Python 检查是否需要重载
+    if [ "$(python3 -c '
 import json
 import os
 
@@ -742,25 +742,25 @@ if os.path.exists(daemon_file):
             print("True")
 else:
     print("True")
-	')" = "True" ]; then
-		reload docker
-		_green "docker已开启v6访问"
-	else
-		_red "docker已开启v6访问,无需再次开启"
-	fi
+    ')" = "True" ]; then
+        reload docker
+        _green "docker已开启v6访问"
+    else
+        _red "docker已开启v6访问，无需再次开启"
+    fi
 }
 
 docker_ipv6_off() {
-	# 检查是否存在 Docker 配置文件
-	if [ ! -f /etc/docker/daemon.json ]; then
-		_yellow "未找到Docker配置文件,跳过修改"
-		return
-	fi
+    # 检查是否存在 Docker 配置文件
+    if [ ! -f /etc/docker/daemon.json ]; then
+        _yellow "未找到 Docker 配置文件，跳过修改"
+        return
+    fi
 
-	install python3 >/dev/null 2>&1
+    install python3 >/dev/null 2>&1
 
-	# 使用 Python 脚本来处理 JSON 文件
-	python3 << EOF
+    # 使用 Python 脚本来处理 JSON 文件
+    python3 << EOF
 import json
 import os
 
@@ -775,7 +775,7 @@ with open(daemon_file, 'r') as file:
 
 # 检查并修改 IPv6 配置
 if config.get('ipv6') == False:
-    print("IPv6已经为false,不需要更改。")
+    print("False")
 else:
     config['ipv6'] = False
     
@@ -793,13 +793,12 @@ else:
     # 写入修改后的配置
     with open(daemon_file, 'w') as file:
         file.write(json_data)
-    # 输出成功标志
     print("True")
 
 EOF
 
-	# 检查 IPv6 是否已被成功关闭
-	if [ "$(python3 -c '
+    # 检查 IPv6 是否已被成功关闭
+    if [ "$(python3 -c '
 import json
 import os
 
@@ -810,19 +809,18 @@ if os.path.exists(daemon_file):
             config = json.load(file)
         except json.JSONDecodeError:
             config = {}
-        # 确认是否 IPv6 已关闭
         if config.get("ipv6") == False:
             print("False")
         else:
             print("True")
 else:
     print("True")
-	')" = "False" ]; then
-		reload docker
-		_green "docker已关闭v6访问"
-	else
-		_red "docker已关闭v6访问,无需再次关闭"
-	fi
+    ')" = "False" ]; then
+        reload docker
+        _green "docker已关闭v6访问"
+    else
+        _red "docker已关闭v6访问，无需再次关闭"
+    fi
 }
 
 docker_manager() {
