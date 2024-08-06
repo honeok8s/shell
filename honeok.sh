@@ -143,6 +143,16 @@ restart() {
 	fi
 }
 
+# 重载服务
+reload() {
+	systemctl reload "$1"
+	if [ $? -eq 0 ]; then
+		_green "$1 服务已重启"
+	else
+		_red "错误: 重启 $1 服务失败"
+	fi
+}
+
 # 启动服务
 start() {
 	systemctl start "$1"
@@ -657,8 +667,9 @@ docker_image() {
 
 docker_ipv6_on() {
 	# 创建目录(如果需要)
-	mkdir -p /etc/docker &>/dev/null
+	mkdir -p /etc/docker >/dev/null 2>&1
 
+	install python3
 	# 使用Python脚本来处理JSON文件
 	python3 << EOF
 import json
@@ -666,7 +677,7 @@ import os
 
 daemon_file = '/etc/docker/daemon.json'
 default_config = {
-    "ipv6": True,
+    "ipv6": true,
     "fixed-cidr-v6": "fd00:dead:beef:c0::/80"
 }
 
@@ -693,15 +704,56 @@ with open(daemon_file, 'w') as file:
 
 EOF
 
-	# 重启Docker服务
-	restart docker
+	# 重载Docker服务
+	reload docker
 	_green "Docker已开启v6访问"
 }
 
 docker_ipv6_off() {
-	rm -fr /etc/docker/daemon.json &>/dev/null
+	# 检查是否存在Docker配置文件
+	if [ ! -f /etc/docker/daemon.json ]; then
+		_yellow "未找到Docker配置文件,跳过修改"
+		return
+	fi
 
-	restart docker
+	install python3
+
+	# 使用Python脚本来处理JSON文件
+	python3 << EOF
+import json
+import os
+
+daemon_file = '/etc/docker/daemon.json'
+
+# 加载配置文件
+with open(daemon_file, 'r') as file:
+    try:
+        config = json.load(file)
+    except json.JSONDecodeError:
+        config = {}
+
+# 检查并修改 IPv6 配置
+if config.get('ipv6') == False:
+    print("IPv6 已经为 false，不需要更改。")
+else:
+    config['ipv6'] = False
+    
+    # 删除 fixed-cidr-v6 键
+    if 'fixed-cidr-v6' in config:
+        del config['fixed-cidr-v6']
+    
+    # 转换为 JSON 字符串并处理尾随的逗号
+    json_data = json.dumps(config, indent=2)
+    json_data = json_data.replace(",\n\n}", "\n\n}")
+    
+    # 写入修改后的配置
+    with open(daemon_file, 'w') as file:
+        file.write(json_data)
+
+EOF
+
+	# 重载Docker服务
+	reload docker
 	_green "Docker已关闭v6访问"
 }
 
