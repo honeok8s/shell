@@ -689,41 +689,42 @@ config_updated = False
 
 # 检查是否存在 JSON 文件
 if os.path.exists(daemon_file):
-    with open(daemon_file, 'r') as file:
-        try:
-            config = json.load(file)
-        except json.JSONDecodeError:
-            config = {}
+	with open(daemon_file, 'r') as file:
+		try:
+			config = json.load(file)
+		except json.JSONDecodeError:
+			config = {}
 else:
-    config = {}
+	config = {}
 
 # 检查并更新配置
 if config.get('ipv6') != True:
-    config['ipv6'] = True
-    config_updated = True
+	config['ipv6'] = True
+	config_updated = True
 
 if config.get('fixed-cidr-v6') != "fd00:dead:beef:c0::/80":
-    config['fixed-cidr-v6'] = "fd00:dead:beef:c0::/80"
-    config_updated = True
+	config['fixed-cidr-v6'] = "fd00:dead:beef:c0::/80"
+	config_updated = True
 
 # 如果配置文件有更新,则写入新的配置
 if config_updated:
-    # 转换为 JSON 字符串并处理尾随的逗号
-    json_data = json.dumps(config, indent=2)
-    
-    # 处理 fixed-cidr-v6 为最后一行时的逗号问题
-    if '"fixed-cidr-v6": "fd00:dead:beef:c0::/80"' in json_data:
-        json_data = json_data.replace(',\n\n}', '\n\n}')
-    
-    # 写入修改后的配置
-    with open(daemon_file, 'w') as file:
-        file.write(json_data)
+	# 转换为 JSON 字符串并处理尾随的逗号
+	json_data = json.dumps(config, indent=2)
+	
+	# 处理 fixed-cidr-v6 为最后一行时的逗号问题
+	if json_data.endswith(',\n}'):
+		json_data = json_data.rstrip(',\n}') + '\n}'
+
+	# 写入修改后的配置
+	with open(daemon_file, 'w') as file:
+		file.write(json_data)
+	print("True")
 else:
-    print("IPv6已经开启,无需更改")
+	print("False")
 
 EOF
 
-	# 使用Python检查是否需要重载
+	# 使用 Python 检查是否需要重载
 	if [ "$(python3 -c '
 import json
 import os
@@ -731,15 +732,15 @@ import os
 daemon_file = "/etc/docker/daemon.json"
 config_updated = False
 if os.path.exists(daemon_file):
-    with open(daemon_file, "r") as file:
-        try:
-            config = json.load(file)
-        except json.JSONDecodeError:
-            config = {}
-        if config.get("ipv6") != True:
-            config_updated = True
-        if config.get("fixed-cidr-v6") != "fd00:dead:beef:c0::/80":
-            config_updated = True
+	with open(daemon_file, "r") as file:
+		try:
+			config = json.load(file)
+		except json.JSONDecodeError:
+			config = {}
+		if config.get("ipv6") != True:
+			config_updated = True
+		if config.get("fixed-cidr-v6") != "fd00:dead:beef:c0::/80":
+			config_updated = True
 print("True" if config_updated else "False")
 	')" = "True" ]; then
 		reload docker
@@ -820,7 +821,7 @@ else:
 		reload docker
 		_green "docker已关闭v6访问"
 	else
-		_yellow "docker已关闭v6访问,无需再次关闭"
+		_red "docker已关闭v6访问,无需再次关闭"
 	fi
 }
 
