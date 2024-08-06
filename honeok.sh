@@ -2290,7 +2290,7 @@ reinstall_system(){
 		fi
 
 		_red "未检测到支持的虚拟化环境(Lxc或OpenVZ)"
-		end_of
+		sleep 2
 		reinstall_system # 返回重装系统菜单
 	}
 
