@@ -2379,7 +2379,7 @@ reinstall_system(){
 				bash reinstall.sh rocky
 				reboot
 				exit
-                ;;
+				;;
 			22)
 				dd_linux_bin456789
 				bash reinstall.sh rocky 8
