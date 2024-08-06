@@ -2280,7 +2280,7 @@ reinstall_system(){
 	# 简单判断是否为lxc和openvz容器,随后调用酒神脚本
 	dd_openvz_lxc_check(){
 		if grep -q 'container=lxc' /proc/1/environ; then
-			_green "LXC环境校验通过"
+			_green "Lxc环境校验通过"
 			return 0 # 通过LXC环境检测
 		fi
 
@@ -2289,7 +2289,7 @@ reinstall_system(){
 			return 0 # 通过OpenVZ环境检测
 		fi
 
-		_red "未检测到支持的虚拟化环境(LXC或OpenVZ)"
+		_red "未检测到支持的虚拟化环境(Lxc或OpenVZ)"
 		end_of
 		reinstall_system # 返回重装系统菜单
 	}
