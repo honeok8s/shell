@@ -1968,8 +1968,8 @@ reinstall_system(){
 				exit 0
 				;;
 			100)
-				install wget
 				dd_openvz_lxc_check
+				install wget
 				wget -qO OsMutation.sh https://raw.githubusercontent.com/LloydAsp/OsMutation/main/OsMutation.sh && chmod u+x OsMutation.sh && ./OsMutation.sh
 				reboot
 				exit 0
