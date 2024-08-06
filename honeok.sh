@@ -657,19 +657,20 @@ docker_image() {
 
 docker_ipv6_on() {
 	mkdir /etc/docker &>/dev/null
-
 	cat > /etc/docker/daemon.json << EOF
 {
   "ipv6": true,
   "fixed-cidr-v6": "fd00:dead:beef:c0::/80",
 }
 EOF
+
 	restart docker
 	_green "Docker已开启v6访问"
 }
 
 docker_ipv6_off() {
 	rm -fr /etc/docker/daemon.json &>/dev/null
+
 	restart docker
 	_green "Docker已关闭v6访问"
 }
