@@ -139,9 +139,9 @@ systemctl() {
 restart() {
 	systemctl restart "$1"
 	if [ $? -eq 0 ]; then
-		_green "$1 服务已重启"
+		_green "$1服务已重启"
 	else
-		_red "错误: 重启$1服务失败"
+		_red "错误:重启$1服务失败"
 	fi
 }
 
@@ -149,9 +149,9 @@ restart() {
 reload() {
 	systemctl reload "$1"
 	if [ $? -eq 0 ]; then
-		_green "$1 服务已重载"
+		_green "$1服务已重载"
 	else
-		_red "错误: 重载$1服务失败"
+		_red "错误:重载$1服务失败"
 	fi
 }
 
@@ -161,7 +161,7 @@ start() {
 	if [ $? -eq 0 ]; then
 		_green "$1服务已启动"
 	else
-		_red "错误: 启动$1服务失败"
+		_red "错误:启动$1服务失败"
 	fi
 }
 
@@ -169,9 +169,9 @@ start() {
 stop() {
 	systemctl stop "$1"
 	if [ $? -eq 0 ]; then
-		_green "$1 服务已停止"
+		_green "$1服务已停止"
 	else
-		_red "错误: 停止 $1 服务失败"
+		_red "错误:停止$1服务失败"
 	fi
 }
 
@@ -179,9 +179,9 @@ stop() {
 status() {
 	systemctl status "$1"
 	if [ $? -eq 0 ]; then
-		_green "$1 服务状态已显示"
+		_green "$1服务状态已显示"
 	else
-		_red "错误: 无法显示 $1 服务状态"
+		_red "错误:无法显示$1服务状态"
 	fi
 }
 
@@ -194,7 +194,7 @@ enable() {
 		/bin/systemctl enable "$SERVICE_NAME"
 	fi
 
-	_green "$SERVICE_NAME 已设置为开机自启"
+	_green "$SERVICE_NAME已设置为开机自启"
 }
 
 bbr_on(){
@@ -721,7 +721,7 @@ EOF
 
 	# 重载Docker服务
 	reload docker
-	_green "Docker已开启v6访问"
+	_green "docker已开启v6访问"
 }
 
 docker_ipv6_off() {
@@ -769,7 +769,7 @@ EOF
 
 	# 重载Docker服务
 	reload docker
-	_green "Docker已关闭v6访问"
+	_green "docker已关闭v6访问"
 }
 
 docker_manager() {
