@@ -668,7 +668,7 @@ docker_image() {
 }
 
 docker_ipv6_on() {
-	# 创建目录（如果需要）
+	# 创建目录(如果需要)
 	mkdir -p /etc/docker >/dev/null 2>&1
 
 	install python3 >/dev/null 2>&1
@@ -759,7 +759,7 @@ docker_ipv6_off() {
 
 	install python3 >/dev/null 2>&1
 
-	# 使用Python脚本来处理JSON 文件
+	# 使用 Python 脚本来处理 JSON 文件
 	python3 << EOF
 import json
 import os
@@ -779,26 +779,26 @@ if config.get('ipv6') == False:
 else:
     config['ipv6'] = False
     
-    # 删除fixed-cidr-v6键
+    # 删除 fixed-cidr-v6 键
     if 'fixed-cidr-v6' in config:
         del config['fixed-cidr-v6']
     
-    # 转换为JSON字符串并处理尾随的逗号
+    # 转换为 JSON 字符串并处理尾随的逗号
     json_data = json.dumps(config, indent=2)
     
     # 处理 fixed-cidr-v6 为最后一行时的逗号问题
-    if '"fixed-cidr-v6": "fd00:dead:beef:c0::/80"' in json_data:
-        json_data = json_data.replace(',\n\n}', '\n\n}')
+    if json_data.endswith(',\n}'):
+        json_data = json_data.rstrip(',\n}') + '\n}'
     
     # 写入修改后的配置
     with open(daemon_file, 'w') as file:
         file.write(json_data)
     # 输出成功标志
-    print("配置文件已更新,IPv6已关闭")
+    print("True")
 
 EOF
 
-	# 检查IPv6是否已被成功关闭
+	# 检查 IPv6 是否已被成功关闭
 	if [ "$(python3 -c '
 import json
 import os
@@ -810,7 +810,7 @@ if os.path.exists(daemon_file):
             config = json.load(file)
         except json.JSONDecodeError:
             config = {}
-        # 确认是否IPv6已关闭
+        # 确认是否 IPv6 已关闭
         if config.get("ipv6") == False:
             print("False")
         else:
