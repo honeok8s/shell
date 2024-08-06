@@ -2285,9 +2285,10 @@ reinstall_system(){
 			wget -qO OsMutation.sh https://raw.githubusercontent.com/LloydAsp/OsMutation/main/OsMutation.sh && chmod u+x OsMutation.sh
 			bash OsMutation.sh
 		else
+			clear
 			_red "未检测到支持的虚拟化环境(Lxc或OpenVZ)"
 			sleep 2
-			break
+			return
 		fi
 	}
 
@@ -2307,7 +2308,7 @@ reinstall_system(){
 		echo "-------------------------"
 		echo "21. Rocky Linux 9             22. Rocky Linux 8"
 		echo "23. Alma Linux 9              24. Alma Linux 8"
-		echo "25. oracle Linux 9            26. oracle Linux 8"
+		echo "25. Oracle Linux 9            26. Oracle Linux 8"
 		echo "27. Fedora Linux 40           28. Fedora Linux 39"
 		echo "29. CentOS 7"
 		echo "-------------------------"
