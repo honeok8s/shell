@@ -717,7 +717,6 @@ EOF
 
 		if [[ "$RESULT" == *"RELOAD"* ]]; then
 			reload docker
-			_green "重载docker服务"
 		elif [[ "$RESULT" == *"NO_CHANGE"* ]]; then
 			_yellow "配置已是最新,无需重载"
 		else
