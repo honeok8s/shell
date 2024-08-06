@@ -755,7 +755,7 @@ docker_ipv6_off() {
     if [ ! -f /etc/docker/daemon.json ]; then
         _yellow "未找到 Docker 配置文件，跳过修改"
         return
-    fi
+    }
 
     install python3 >/dev/null 2>&1
 
@@ -808,6 +808,7 @@ if os.path.exists(daemon_file):
 else:
     print("True")
     ')" = "False" ]; then
+        # 只有在需要时才重载 Docker
         reload docker
         _green "docker已关闭v6访问"
     else
