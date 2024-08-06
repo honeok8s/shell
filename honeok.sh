@@ -1121,15 +1121,15 @@ cloudflare_ddns() {
 		clear
 		echo "Cloudflare ddns解析"
 		echo "-------------------------"
-		if [ -f /usr/local/bin/cf-ddns.sh ];then
+		if [ -f /usr/local/bin/cf-ddns.sh ] || [ -f ~/cf-v4-ddns.sh ];then
 			echo -e "${yellow}Cloudflare ddns: ${white}${green}已安装${white}"
 			crontab -l | grep "/usr/local/bin/cf-ddns.sh"
 		else
 			_yellow "Cloudflare ddns: 未安装"
 			_yellow "使用动态解析之前请解析一个域名,如ddns.honeok.com到你的当前公网IP"
 		fi
-		echo "当前公网IPV4地址: ${ipv4_address}"
-		echo "当前公网IPV6地址: ${ipv6_address}"
+		echo "公网IPV4地址: ${ipv4_address}"
+		echo "公网IPV6地址: ${ipv6_address}"
 		echo "-------------------------"
 		echo "1. 设置DDNS动态域名解析    2. 删除DDNS动态域名解析"
 		echo "-------------------------"
