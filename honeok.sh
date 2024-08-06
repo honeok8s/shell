@@ -656,14 +656,44 @@ docker_image() {
 }
 
 docker_ipv6_on() {
-	mkdir /etc/docker &>/dev/null
-	cat > /etc/docker/daemon.json << EOF
-{
-  "ipv6": true,
-  "fixed-cidr-v6": "fd00:dead:beef:c0::/80",
+	# 创建目录(如果需要)
+	mkdir -p /etc/docker &>/dev/null
+
+	# 使用Python脚本来处理JSON文件
+	python3 << EOF
+import json
+import os
+
+daemon_file = '/etc/docker/daemon.json'
+default_config = {
+    "ipv6": True,
+    "fixed-cidr-v6": "fd00:dead:beef:c0::/80"
 }
+
+# 检查是否存在 JSON 文件
+if os.path.exists(daemon_file):
+    with open(daemon_file, 'r') as file:
+        try:
+            config = json.load(file)
+        except json.JSONDecodeError:
+            config = {}
+        
+        # 检查并更新配置
+        if config.get('ipv6') != True:
+            config['ipv6'] = True
+            config['fixed-cidr-v6'] = "fd00:dead:beef:c0::/80"
+        elif 'fixed-cidr-v6' not in config:
+            config['fixed-cidr-v6'] = "fd00:dead:beef:c0::/80"
+else:
+    config = default_config
+
+# 写入配置
+with open(daemon_file, 'w') as file:
+    json.dump(config, file, indent=2)
+
 EOF
 
+	# 重启Docker服务
 	restart docker
 	_green "Docker已开启v6访问"
 }
