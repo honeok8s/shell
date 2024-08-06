@@ -520,12 +520,12 @@ docker_ps() {
 				$dockername
 				;;
 			2)
-				echo -n "请输入容器名(多个容器名请用空格分隔)" dockername
+				echo -n "请输入容器名(多个容器名请用空格分隔):" dockername
 				read dockername
 				docker start $dockername
 				;;
 			3)
-				echo -n "请输入容器名(多个容器名请用空格分隔)"
+				echo -n "请输入容器名(多个容器名请用空格分隔):"
 				read dockername
 				docker stop $dockername
 				;;
