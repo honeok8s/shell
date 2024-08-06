@@ -668,49 +668,60 @@ docker_image() {
 }
 
 docker_ipv6_on() {
-	local config_file="/etc/docker/daemon.json"
+	local CONFIG_FILE="/etc/docker/daemon.json"
 
-	# 创建目录(如果需要)
-	mkdir -p /etc/docker
+	local REQUIRED_IPV6_CONFIG='{
+		"ipv6": true,
+		"fixed-cidr-v6": "2001:db8:1::/64"
+	}'
 
-	# 检查并安装 Python3(如果需要)
-	if ! command -v python3 >/dev/null 2>&1; then
-		install python3 >/dev/null 2>&1
-	fi
-
-	# 检查配置文件是否存在
-	if [ ! -f "$config_file" ]; then
-		echo "{}" > "$config_file"
-	fi
-
-	# 使用Python更新配置
-	python3 << EOF
+	if [ ! -f "$CONFIG_FILE" ]; then
+		echo "$REQUIRED_IPV6_CONFIG" > "$CONFIG_FILE"
+		reload docker
+		_green "重载docker服务"
+	else
+		local PYTHON_CODE=$(cat <<EOF
 import json
+import sys
 
-file_path = "$config_file"
+config_file = sys.argv[1]
 
-# 加载现有配置
-with open(file_path, 'r') as f:
-	config = json.load(f)
+required_config = {
+    "ipv6": True,
+    "fixed-cidr-v6": "2001:db8:1::/64"
+}
 
-# 更新配置
-config['ipv6'] = True
-config['fixed-cidr-v6'] = "fd00:dead:beef:c0::/80"
+try:
+    with open(config_file, 'r') as f:
+        config = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    config = {}
 
-# 写回配置文件
-with open(file_path, 'w') as f:
-	json.dump(config, f, indent=2, separators=(',', ': '))
+original_config = dict(config)
+
+config.update(required_config)
+
+final_config = dict(config)
+
+if original_config == final_config:
+    print("NO_CHANGE")
+else:
+    with open(config_file, 'w') as f:
+        json.dump(final_config, f, indent=4, sort_keys=False)
+    print("RELOAD")
 EOF
+		)
+		local RESULT=$(python3 -c "$PYTHON_CODE" "$CONFIG_FILE")
 
-	# 检查配置文件是否已更新
-	if ! grep -q '"ipv6": true' "$config_file" || ! grep -q '"fixed-cidr-v6": "fd00:dead:beef:c0::/80"' "$config_file"; then
-		_red "docker已开启IPv6访问,无法重复开启"
-		return
+		if [[ "$RESULT" == *"RELOAD"* ]]; then
+			reload docker
+			_green "重载docker服务"
+		elif [[ "$RESULT" == *"NO_CHANGE"* ]]; then
+			_yellow "配置已是最新,无需重载"
+		else
+			_red "处理配置时发生错误"
+		fi
 	fi
-
-	# 重启Docker服务
-	reload docker
-	_green "docker已关闭IPv6访问"
 }
 
 docker_ipv6_off() {
