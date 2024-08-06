@@ -69,6 +69,7 @@ need_root(){
 	fi
 }
 
+# 安装软件包
 install(){
 	if [ $# -eq 0 ]; then
 		_red "未提供软件包参数"
@@ -97,6 +98,7 @@ install(){
 	return 0
 }
 
+# 卸载软件包
 remove(){
 	if [ $# -eq 0 ]; then
 		_red "未提供软件包参数"
@@ -139,7 +141,7 @@ restart() {
 	if [ $? -eq 0 ]; then
 		_green "$1 服务已重启"
 	else
-		_red "错误: 重启 $1 服务失败"
+		_red "错误: 重启$1服务失败"
 	fi
 }
 
@@ -147,9 +149,9 @@ restart() {
 reload() {
 	systemctl reload "$1"
 	if [ $? -eq 0 ]; then
-		_green "$1 服务已重启"
+		_green "$1 服务已重载"
 	else
-		_red "错误: 重启 $1 服务失败"
+		_red "错误: 重载$1服务失败"
 	fi
 }
 
@@ -157,9 +159,9 @@ reload() {
 start() {
 	systemctl start "$1"
 	if [ $? -eq 0 ]; then
-		_green "$1 服务已启动"
+		_green "$1服务已启动"
 	else
-		_red "错误: 启动 $1 服务失败"
+		_red "错误: 启动$1服务失败"
 	fi
 }
 
