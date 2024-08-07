@@ -201,13 +201,16 @@ bbr_on(){
 	local config_file="/etc/sysctl.conf"
 	local current_value
 
-	# 使用grep查找现有配置,忽略等号周围的空格
-	if grep -q "^\s*${congestion_control}\s*=\s*" "${config_file}"; then
+	# 使用grep查找现有配置,忽略等号周围的空格,排除注释行
+	if grep -q "^[^#]*${congestion_control}\s*=" "${config_file}"; then
 		# 存在该设置项,检查其值
-		current_value=$(grep "^\s*${congestion_control}\s*=\s*" "${config_file}" | sed -E "s/^\s*${congestion_control}\s*=\s*(.*)/\1/")
-		if [ "$current_value" != "$congestion_bbr" ]; then
+		current_value=$(grep "^[^#]*${congestion_control}\s*=" "${config_file}" | sed -E "s/^[^#]*${congestion_control}\s*=\s*(.*)/\1/")
+		if [ "$current_value" = "$congestion_bbr" ]; then
+			# 如果当前值已经是bbr,则跳过
+			return
+		else
 			# 如果当前值不是bbr,则替换为bbr
-			sed -i -E "s|^\s*${congestion_control}\s*=\s*.*|${congestion_control}=${congestion_bbr}|" "${config_file}"
+			sed -i -E "s|^[^#]*${congestion_control}\s*=\s*.*|${congestion_control}=${congestion_bbr}|" "${config_file}"
 			sysctl -p
 		fi
 	else
