@@ -76,7 +76,7 @@ install(){
 
 	for package in "$@"; do
 		if ! command -v "$package" &>/dev/null; then
-			_yellow "正在安装 $package"
+			_yellow "正在安装$package"
 			if command -v dnf &>/dev/null; then
 				dnf install -y "$package"
 			elif command -v yum &>/dev/null; then
@@ -90,7 +90,7 @@ install(){
 				return 1
 			fi
 		else
-			_green "$package 已经安装"
+			_green "$package已经安装"
 		fi
 	done
 	return 0
@@ -104,7 +104,7 @@ remove(){
 	fi
 
 	for package in "$@"; do
-		_yellow "正在卸载 $package"
+		_yellow "正在卸载$package"
 		if command -v dnf &>/dev/null; then
 			dnf remove -y "${package}"*
 		elif command -v yum &>/dev/null; then
