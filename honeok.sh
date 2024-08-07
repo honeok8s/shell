@@ -195,6 +195,67 @@ enable() {
 	_green "$SERVICE_NAME已设置为开机自启"
 }
 
+# 用于检查并设置net.core.default_qdisc参数
+set_default_qdisc(){
+	local qdisc_control="net.core.default_qdisc"
+	local default_qdisc="fq"
+	local config_file="/etc/sysctl.conf"
+	local current_value
+	local choice
+	local chosen_qdisc
+
+	# 使用grep查找现有配置,忽略等号周围的空格,排除注释行
+	if grep -q "^[^#]*${qdisc_control}\s*=" "${config_file}"; then
+		# 存在该设置项,检查其值
+		current_value=$(grep "^[^#]*${qdisc_control}\s*=" "${config_file}" | sed -E "s/^[^#]*${qdisc_control}\s*=\s*(.*)/\1/")
+		_yellow "当前队列规则为:$current_value"
+	else
+		# 没有找到该设置项
+		current_value=""
+	fi
+
+	# 提供用户选择菜单
+	while true; do
+		echo "请选择要设置的队列规则"
+		echo "-------------------------"
+		echo "1. fq (默认)"
+		echo "2 .fq_pie"
+		echo "-------------------------"
+
+		echo -n -e "${yellow}请输入选项并按回车键确认(回车使用默认值:fq):${white}"
+		read choice
+
+		case "$choice" in
+			1|"")
+				chosen_qdisc="fq"
+				break
+				;;
+			2)
+				chosen_qdisc="fq_pie"
+				break
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+	done
+
+	# 如果当前值不等于选择的值,进行更新
+	if [ "$current_value" != "$chosen_qdisc" ]; then
+		if [ -z "$current_value" ]; then
+			# 如果没有设置项,则新增
+			echo "${qdisc_control}=${chosen_qdisc}" >> "${config_file}"
+		else
+			# 如果设置项存在但值不匹配,进行替换
+			sed -i -E "s|^[^#]*${qdisc_control}\s*=\s*.*|${qdisc_control}=${chosen_qdisc}|" "${config_file}"
+		fi
+		sysctl -p
+		_green "队列规则已设置为:$chosen_qdisc"
+	else
+		_yellow "队列规则已经是$current_value,无需更改。"
+	fi
+}
+
 bbr_on(){
 	local congestion_control="net.ipv4.tcp_congestion_control"
 	local congestion_bbr="bbr"
@@ -2214,6 +2275,7 @@ xanmod_bbr3(){
 				apt update -y
 				apt install -y linux-xanmod-x64v$kernel_version
 
+				set_default_qdisc
 				bbr_on
 
 				_green "XanMod内核安装并启用BBR3成功,重启后生效!"
@@ -2233,13 +2295,25 @@ xanmod_bbr3(){
 }
 		
 reinstall_system(){
+	MollyLau_script(){
+		wget --no-check-certificate -qO InstallNET.sh 'https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh' && chmod a+x InstallNET.sh
+	}
+
+	bin456789_script(){
+		if [ $(curl -s ipinfo.io/country) != "CN" ];then
+			curl -O https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh
+		else
+			curl -O https://jihulab.com/bin456789/reinstall/-/raw/main/reinstall.sh
+		fi
+	}
+
 	dd_linux_mollyLau(){
 		_yellow "重装后初始用户名: \"root\"  默认密码: \"LeitboGi0ro\"  默认ssh端口: \"22\""
 		_yellow "详细参数参考Github项目地址：https://github.com/leitbogioro/Tools"
 		_yellow "按任意键继续"
 		read -n 1 -s -r -p ""
 		install wget
-		wget --no-check-certificate -qO InstallNET.sh 'https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh' && chmod a+x InstallNET.sh
+		MollyLau_script
 	}
 
 	dd_windows_mollyLau() {
@@ -2248,7 +2322,7 @@ reinstall_system(){
 		_yellow "按任意键继续"
 		read -n 1 -s -r -p ""
 		install wget
-		wget --no-check-certificate -qO InstallNET.sh 'https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh' && chmod a+x InstallNET.sh
+		MollyLau_script
 	}
 
 	dd_linux_bin456789() {
@@ -2256,26 +2330,15 @@ reinstall_system(){
 		_yellow "详细参数参考Github项目地址：https://github.com/bin456789/reinstall"
 		_yellow "按任意键继续"
 		read -n 1 -s -r -p ""
-		install curl
-		if [ $(curl -s ipinfo.io/country) != "CN" ];then
-			curl -O https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh
-		else
-			curl -O https://jihulab.com/bin456789/reinstall/-/raw/main/reinstall.sh
-		fi
+		bin456789_script
 	}
-
 
 	dd_windows_bin456789() {
 		_yellow "Windows默认用户名：\"Administrator\" 默认密码：\"123@@@\" 默认远程连接端口: \"3389\""
 		_yellow "详细参数参考Github项目地址：https://github.com/bin456789/reinstall"
 		_yellow "按任意键继续"
 		read -n 1 -s -r -p ""
-		install curl
-		if [ $(curl -s ipinfo.io/country) != "CN" ];then
-			curl -O https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh
-		else
-			curl -O https://jihulab.com/bin456789/reinstall/-/raw/main/reinstall.sh
-		fi
+		bin456789_script
 	}
 
 	# 简单判断是否为lxc和openvz容器,随后调用酒神脚本
@@ -2298,7 +2361,7 @@ reinstall_system(){
 	while true; do
 		need_root
 		clear
-		_yellow "重装有风险失联,不放心者慎用,重装预计花费15分钟,请提前备份数据"
+		echo "重装有风险失联,不放心者慎用,重装预计花费15分钟,请提前备份数据"
 		echo "感谢MollyLau和bin456789的脚本支持!"
 		echo "-------------------------"
 		echo "1. Debian 12                  2. Debian 11"
@@ -2329,150 +2392,175 @@ reinstall_system(){
 
 		case "$choice" in
 			1)
+				_yellow "重装debian 12"
 				dd_linux_mollyLau
 				bash InstallNET.sh -debian 12
 				reboot
 				exit
 				;;
-			2) 
+			2)
+				_yellow "重装debian 11"
 				dd_linux_mollyLau
 				bash InstallNET.sh -debian 11
 				reboot
 				exit
 				;;
-			3) 
+			3)
+				_yellow "重装debian 10"
 				dd_linux_mollyLau
 				bash InstallNET.sh -debian 10
 				reboot
 				exit
 				;;
 			4)
+				_yellow "重装debian 9"
 				dd_linux_mollyLau
 				bash InstallNET.sh -debian 9
 				reboot
 				exit
 				;;
 			11)
+				_yellow "重装ubuntu 24.04"
 				dd_linux_mollyLau
 				bash InstallNET.sh -ubuntu 24.04
 				reboot
 				exit
 				;;
 			12)
+				_yellow "重装ubuntu 22.04"
 				dd_linux_mollyLau
 				bash InstallNET.sh -ubuntu 22.04
 				reboot
 				exit
 				;;
 			13)
+				_yellow "重装ubuntu 20.04"
 				dd_linux_mollyLau
 				bash InstallNET.sh -ubuntu 20.04
 				reboot
 				exit
 				;;
 			14)
+				_yellow "重装ubuntu 18.04"
 				dd_linux_mollyLau
 				bash InstallNET.sh -ubuntu 18.04
 				reboot
 				exit
 				;;
 			21)
+				_yellow "重装rockylinux9"
 				dd_linux_bin456789
 				bash reinstall.sh rocky
 				reboot
 				exit
 				;;
 			22)
+				_yellow "重装rockylinux8"
 				dd_linux_bin456789
 				bash reinstall.sh rocky 8
 				reboot
 				exit
 				;;
 			23)
+				_yellow "重装Alma9"
 				dd_linux_bin456789
 				bash reinstall.sh alma
 				reboot
 				exit
 				;;
 			24)
+				_yellow "重装Alma8"
 				dd_linux_bin456789
 				bash reinstall.sh alma 8
 				reboot
 				exit
 				;;
 			25)
+				_yellow "重装Oracle9"
 				dd_linux_bin456789
 				bash reinstall.sh oracle
 				reboot
 				exit
 				;;
 			26)
+				_yellow "重装Oracle8"
 				dd_linux_bin456789
 				bash reinstall.sh oracle 8
 				reboot
 				exit
 				;;
 			27)
+				_yellow "重装Fedora40"
 				dd_linux_bin456789
 				bash reinstall.sh fedora
 				reboot
 				exit
 				;;
 			28)
+				_yellow "重装Fedora39"
 				dd_linux_bin456789
 				bash reinstall.sh fedora 39
 				reboot
 				exit
 				;;
 			29)
+				_yellow "重装centos 7"
 				dd_linux_mollyLau
 				bash InstallNET.sh -centos 7
 				reboot
 				exit
 				;;
 			31)
+				_yellow "重装Alpine"
 				dd_linux_mollyLau
 				bash InstallNET.sh -alpine
 				reboot
 				exit
 				;;
 			32)
+				_yellow "重装Arch"
 				dd_linux_bin456789
 				bash reinstall.sh arch
 				reboot
 				exit
 				;;
 			33)
+				_yellow "重装Kali"
 				dd_linux_bin456789
 				bash reinstall.sh kali
 				reboot
 				exit
 				;;
 			34)
+				_yellow "重装Openeuler"
 				dd_linux_bin456789
 				bash reinstall.sh openeuler
 				reboot
 				exit
 				;;
 			35)
+				_yellow "重装Opensuse"
 				dd_linux_bin456789
 				bash reinstall.sh opensuse
 				reboot
 				exit
 				;;
 			41)
+				_yellow "重装Windows11"
 				dd_windows_mollyLau
 				bash InstallNET.sh -windows 11 -lang "cn"
 				reboot
 				exit
 				;;
 			42)
+				_yellow "重装Windows10"
 				dd_windows_mollyLau
 				bash InstallNET.sh -windows 10 -lang "cn"
 				reboot
 				exit
 				;;
 			44)
+				_yellow "重装Windows server 22"
 				dd_windows_bin456789
 				URL="https://massgrave.dev/windows_server_links"
 				iso_link=$(wget -q -O - "$URL" | grep -oP '(?<=href=")[^"]*cn[^"]*windows_server[^"]*2022[^"]*x64[^"]*\.iso')
@@ -2481,18 +2569,21 @@ reinstall_system(){
 				exit
 				;;
 			45)
+				_yellow "重装Windows server 19"
 				dd_windows_mollyLau
 				bash InstallNET.sh -windows 2019 -lang "cn"
 				reboot
 				exit
 				;;
 			46)
+				_yellow "重装Windows server 16"
 				dd_windows_mollyLau
 				bash InstallNET.sh -windows 2016 -lang "cn"
 				reboot
 				exit
 				;;
 			100)
+				_yellow "重装Lxc或OpenVZ"
 				dd_openvz_lxc_LloydAsp
 				;;
 			0)
@@ -2500,6 +2591,7 @@ reinstall_system(){
 				;;
 			*)
 				_red "无效选项,请重新输入"
+				break
 				;;
 		esac
 	done
