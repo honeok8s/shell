@@ -11,7 +11,7 @@
 ##############################
 
 # 配置
-BARK_URL="https://api.honeok.com/LYqnYRnftPnKkLxJUyowvb/"
+BARK_URL="https://api.honeok.com/LYqnYRnftPnKkLiopyowvb/"
 LAT="30.5728"  # 成都的纬度
 LON="104.0668"  # 成都的经度
 WEATHER_API="https://api.open-meteo.com/v1/forecast"
