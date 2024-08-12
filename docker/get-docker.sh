@@ -116,7 +116,7 @@ centos_install_docker(){
 
 	# 检查是否为CentOS7
 	if ! grep -q '^ID="centos"$' /etc/os-release || ! grep -q '^VERSION_ID="7"$' /etc/os-release; then
-		_red "检测到操作系统为CentOS,但本脚本仅支持在CentOS7上安装Docker,如有需求请www.honeok.com留言"
+		_red "本脚本仅支持在CentOS7上安装Docker,如有需求请www.honeok.com留言"
 		script_completion_message
 		exit 0
 	fi
@@ -156,8 +156,51 @@ centos_install_docker(){
 	fi
 }
 
+#alpine_install_docker(){
+#	local repo_url=""
+#	local local alpine_version=$(grep '^VERSION_ID=' /etc/os-release | cut -d'=' -f2 | tr -d '"')
+
+#	# 根据服务器位置选择镜像源
+#	if [ "$(curl -s https://ipinfo.io/country)" == 'CN' ]; then
+#		repo_url=https://mirrors.tuna.tsinghua.edu.cn/alpine/$alpine_version/community
+#	else
+#		repo_url=https://dl-cdn.alpinelinux.org/alpine/$alpine_version/community
+#	fi
+
+#	echo $repo_url >>/etc/apk/repositories
+	
+	# 更新apk索引
+#	apk update
+	
+	# 安装Docker及相关工具
+#	commands=(
+#		"apk add --no-cache docker"
+#		"rc-update add docker default"
+#		"service docker start"
+#	)
+	
+	# 初始化步骤计数
+#	step=0
+#	total_steps=${#commands[@]}  # 总命令数
+	
+#	for command in "${commands[@]}"; do
+#		eval $command
+#		print_progress $((++step)) $total_steps
+#	done
+	
+	# 结束进度条
+#	printf "\n"
+	
+#	if ! docker --version >/dev/null 2>&1; then
+#		_red "Docker安装失败,请手动检查"
+#		exit 1
+#	else
+#		_green "Docker已成功安装并启动"
+#	else
+#}
+
 # 在 Debian/Ubuntu 上安装 Docker
-debian_install_docker(){
+install_docker(){
 	local repo_url=""
 	local gpg_key_url=""
 	local codename="$(lsb_release -cs)"
@@ -326,7 +369,7 @@ uninstall_docker() {
 generate_docker_config() {
 	local config_file="/etc/docker/daemon.json"
 	local is_china_server='false'
-	install python3
+	install python3 >/dev/null 2>&1
 
 	# 检查服务器是否在中国
 	if [ "$(curl -s https://ipinfo.io/country)" == 'CN' ]; then
@@ -493,7 +536,7 @@ main(){
 		docker_main_version
 		;;
 	*Debian*|*debian*|*Ubuntu*|*ubuntu*)
-		debian_install_docker
+		install_docker
 		generate_docker_config
 		docker_main_version
 		;;
