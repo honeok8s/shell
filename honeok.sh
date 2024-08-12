@@ -2394,169 +2394,145 @@ reinstall_system(){
 			1)
 				_yellow "重装debian 12"
 				dd_linux_mollyLau
-				bash InstallNET.sh -debian 12
-				reboot
+				bash InstallNET.sh -debian 12 && reboot || reboot
 				exit
 				;;
 			2)
 				_yellow "重装debian 11"
 				dd_linux_mollyLau
-				bash InstallNET.sh -debian 11
-				reboot
+				bash InstallNET.sh -debian 11 && reboot || reboot
 				exit
 				;;
 			3)
 				_yellow "重装debian 10"
 				dd_linux_mollyLau
-				bash InstallNET.sh -debian 10
-				reboot
+				bash InstallNET.sh -debian 10 && reboot || reboot
 				exit
 				;;
 			4)
 				_yellow "重装debian 9"
 				dd_linux_mollyLau
-				bash InstallNET.sh -debian 9
-				reboot
+				bash InstallNET.sh -debian 9 && reboot || reboot
 				exit
 				;;
 			11)
 				_yellow "重装ubuntu 24.04"
 				dd_linux_mollyLau
-				bash InstallNET.sh -ubuntu 24.04
-				reboot
+				bash InstallNET.sh -ubuntu 24.04 && reboot || reboot
 				exit
 				;;
 			12)
 				_yellow "重装ubuntu 22.04"
 				dd_linux_mollyLau
-				bash InstallNET.sh -ubuntu 22.04
-				reboot
+				bash InstallNET.sh -ubuntu 22.04 && reboot || reboot
 				exit
 				;;
 			13)
 				_yellow "重装ubuntu 20.04"
 				dd_linux_mollyLau
-				bash InstallNET.sh -ubuntu 20.04
-				reboot
+				bash InstallNET.sh -ubuntu 20.04 && reboot || reboot
 				exit
 				;;
 			14)
 				_yellow "重装ubuntu 18.04"
 				dd_linux_mollyLau
-				bash InstallNET.sh -ubuntu 18.04
-				reboot
+				bash InstallNET.sh -ubuntu 18.04 && reboot || reboot
 				exit
 				;;
 			21)
 				_yellow "重装rockylinux9"
 				dd_linux_bin456789
-				bash reinstall.sh rocky
-				reboot
+				bash reinstall.sh rocky && reboot || reboot
 				exit
 				;;
 			22)
 				_yellow "重装rockylinux8"
 				dd_linux_bin456789
-				bash reinstall.sh rocky 8
-				reboot
+				bash reinstall.sh rocky 8 && reboot || reboot
 				exit
 				;;
 			23)
 				_yellow "重装Alma9"
 				dd_linux_bin456789
-				bash reinstall.sh alma
-				reboot
+				bash reinstall.sh alma && reboot || reboot
 				exit
 				;;
 			24)
 				_yellow "重装Alma8"
 				dd_linux_bin456789
-				bash reinstall.sh alma 8
-				reboot
+				bash reinstall.sh alma 8 && reboot || reboot
 				exit
 				;;
 			25)
 				_yellow "重装Oracle9"
 				dd_linux_bin456789
-				bash reinstall.sh oracle
-				reboot
+				bash reinstall.sh oracle && reboot || reboot
 				exit
 				;;
 			26)
 				_yellow "重装Oracle8"
 				dd_linux_bin456789
-				bash reinstall.sh oracle 8
-				reboot
+				bash reinstall.sh oracle 8 && reboot || reboot
 				exit
 				;;
 			27)
 				_yellow "重装Fedora40"
 				dd_linux_bin456789
-				bash reinstall.sh fedora
-				reboot
+				bash reinstall.sh fedora && reboot || reboot
 				exit
 				;;
 			28)
 				_yellow "重装Fedora39"
 				dd_linux_bin456789
-				bash reinstall.sh fedora 39
-				reboot
+				bash reinstall.sh fedora 39 && reboot || reboot
 				exit
 				;;
 			29)
 				_yellow "重装centos 7"
 				dd_linux_mollyLau
-				bash InstallNET.sh -centos 7
-				reboot
+				bash InstallNET.sh -centos 7 && reboot || reboot
 				exit
 				;;
 			31)
 				_yellow "重装Alpine"
 				dd_linux_mollyLau
-				bash InstallNET.sh -alpine
-				reboot
+				bash InstallNET.sh -alpine && reboot || reboot
 				exit
 				;;
 			32)
 				_yellow "重装Arch"
 				dd_linux_bin456789
-				bash reinstall.sh arch
-				reboot
+				bash reinstall.sh arch && reboot || reboot
 				exit
 				;;
 			33)
 				_yellow "重装Kali"
 				dd_linux_bin456789
-				bash reinstall.sh kali
-				reboot
+				bash reinstall.sh kali && reboot || reboot
 				exit
 				;;
 			34)
 				_yellow "重装Openeuler"
 				dd_linux_bin456789
-				bash reinstall.sh openeuler
-				reboot
+				bash reinstall.sh openeuler && reboot || reboot
 				exit
 				;;
 			35)
 				_yellow "重装Opensuse"
 				dd_linux_bin456789
-				bash reinstall.sh opensuse
-				reboot
+				bash reinstall.sh opensuse && reboot || reboot
 				exit
 				;;
 			41)
 				_yellow "重装Windows11"
 				dd_windows_mollyLau
-				bash InstallNET.sh -windows 11 -lang "cn"
-				reboot
+				bash InstallNET.sh -windows 11 -lang "cn" && reboot || reboot
 				exit
 				;;
 			42)
 				_yellow "重装Windows10"
 				dd_windows_mollyLau
-				bash InstallNET.sh -windows 10 -lang "cn"
-				reboot
+				bash InstallNET.sh -windows 10 -lang "cn" && reboot || reboot
 				exit
 				;;
 			44)
@@ -2564,22 +2540,19 @@ reinstall_system(){
 				dd_windows_bin456789
 				URL="https://massgrave.dev/windows_server_links"
 				iso_link=$(wget -q -O - "$URL" | grep -oP '(?<=href=")[^"]*cn[^"]*windows_server[^"]*2022[^"]*x64[^"]*\.iso')
-				bash reinstall.sh windows --iso="$iso_link" --image-name='Windows Server 2022 SERVERDATACENTER'
-				reboot
+				bash reinstall.sh windows --iso="$iso_link" --image-name='Windows Server 2022 SERVERDATACENTER' && reboot || reboot
 				exit
 				;;
 			45)
 				_yellow "重装Windows server 19"
 				dd_windows_mollyLau
-				bash InstallNET.sh -windows 2019 -lang "cn"
-				reboot
+				bash InstallNET.sh -windows 2019 -lang "cn" && reboot || reboot
 				exit
 				;;
 			46)
 				_yellow "重装Windows server 16"
 				dd_windows_mollyLau
-				bash InstallNET.sh -windows 2016 -lang "cn"
-				reboot
+				bash InstallNET.sh -windows 2016 -lang "cn" && reboot || reboot
 				exit
 				;;
 			100)
