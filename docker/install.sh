@@ -72,12 +72,10 @@ check_ip_address(){
 	local isp_info=$(curl -s https://ipinfo.io | grep '"org":' | awk -F'"' '{print $4}')
 	local location=$(curl -s ipinfo.io/city)
 
-	_yellow "-------------------------"
 	_yellow "公网IPv4地址: ${ipv4_address}"
 	_yellow "公网IPv6地址: ${ipv6_address}"
 	_yellow "运营商: ${isp_info}"
 	_yellow "地理位置: ${location}"
-	_yellow "-------------------------"
 }
 
 # 检查Docker或Docker Compose是否已安装,用于在函数操作系统安装docker中嵌套
@@ -223,62 +221,99 @@ debian_install_docker(){
 
 # 卸载Docker
 uninstall_docker() {
-	local uninstall_check_system=$(cat /etc/os-release)
-	printf "${yellow}准备卸载Docker. ${white}\n"
-	sleep 2s
+	local os_name
+	local os_release
+	local docker_files=("/var/lib/docker" "/var/lib/containerd" "/etc/docker" "/opt/containerd")
+	local repo_files=("/etc/yum.repos.d/docker.*" "/etc/apt/sources.list.d/docker.*" "/etc/apt/keyrings/docker.*")
+
+	os_name=$(lsb_release -si)
+	os_release=$(lsb_release -cs)
+
+	_yellow "准备卸载Docker"
 
 	# 检查Docker是否安装
 	if ! command -v docker &> /dev/null; then
-		printf "${red}错误: Docker未安装在系统上,无法继续卸载.${white}\n"
+		_red "Docker未安装在系统上,无法继续卸载"
 		script_completion_message
 		exit 1
 	fi
 
-	if [[ $uninstall_check_system == *"CentOS"* ]]; then
-		printf "${yellow}从${os_release}卸载Docker. ${white}\n"
-		sudo docker rm -f $(docker ps -q) >/dev/null 2>&1 || true && sudo systemctl stop docker >/dev/null 2>&1 && sudo systemctl disable docker >/dev/null 2>&1
-		sudo yum remove docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras -y
-		sudo rm -fr /var/lib/docker && sudo rm -fr /var/lib/containerd && sudo rm -rf /etc/docker/*
-		# 删除/opt/containerd目录
-  		if [ -d /opt/containerd ]; then
-    			sudo rm -fr /opt/containerd >/dev/null 2>&1
-       		fi
-		# 完全卸载CentOS的docker软件安装源
-		if [ -f /etc/yum.repos.d/docker.* ];then
-			sudo rm -f /etc/yum.repos.d/docker.*
-		fi
-	elif [[ $uninstall_check_system == *"Ubuntu"* ]] || [[ $uninstall_check_system == *"Debian"* ]]; then
-		printf "${yellow}从${os_release}卸载Docker. ${white}\n"
-		sudo docker rm -f $(docker ps -q) >/dev/null 2>&1 || true && sudo systemctl stop docker >/dev/null 2>&1 && sudo systemctl disable docker >/dev/null 2>&1
-		sudo apt-get purge docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras -y
-		sudo rm -fr /var/lib/docker && sudo rm -fr /var/lib/containerd && sudo rm -fr /etc/docker/*
-  		# 删除/opt/containerd目录
-  		if [ -d /opt/containerd ]; then
-    			sudo rm -fr /opt/containerd >/dev/null 2>&1
-       		fi
-		# 完全卸载debian/ubuntu的docker软件安装源
-		if ls /etc/apt/sources.list.d/docker.* >/dev/null 2>&1; then
-			sudo rm -f /etc/apt/sources.list.d/docker.*
-		fi
-		if ls /etc/apt/keyrings/docker.* >/dev/null 2>&1; then
-			sudo rm -f /etc/apt/keyrings/docker.*
-		fi
+	stop_and_remove_docker() {
+		sudo docker rm -f $(docker ps -q) >/dev/null 2>&1 || true
+		sudo systemctl stop docker >/dev/null 2>&1
+		sudo systemctl disable docker >/dev/null 2>&1
+	}
+
+	remove_docker_files() {
+		for file in "${docker_files[@]}"; do
+			if [ -e "$file" ]; then
+				sudo rm -fr "$file" >/dev/null 2>&1
+			fi
+		done
+	}
+
+	remove_repo_files() {
+		for file in "${repo_files[@]}"; do
+			if ls "$file" >/dev/null 2>&1; then
+				sudo rm -f "$file" >/dev/null 2>&1
+			fi
+		done
+	}
+
+	if [[ "$os_name" == "CentOS" ]]; then
+		stop_and_remove_docker
+
+		commands=(
+			"sudo yum remove docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras -y"
+		)
+		# 初始化步骤计数
+		step=0
+		total_steps=${#commands[@]}  # 总命令数
+
+		# 执行命令并打印进度条
+		for command in "${commands[@]}"; do
+			eval $command
+			print_progress $((++step)) $total_steps
+		done
+
+		# 结束进度条
+		printf "\n"
+
+		remove_docker_files
+		remove_repo_files
+	elif [[ "$os_name" == "Ubuntu" || "$os_name" == "Debian" ]]; then
+		stop_and_remove_docker
+
+		commands=(
+			"sudo apt-get purge docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras -y"
+		)
+		# 初始化步骤计数
+		step=0
+		total_steps=${#commands[@]}  # 总命令数
+
+		# 执行命令并打印进度条
+		for command in "${commands[@]}"; do
+			eval $command
+			print_progress $((++step)) $total_steps
+		done
+
+		# 结束进度条
+		printf "\n"
+
+		remove_docker_files
+		remove_repo_files
 	else
-		printf "${red}抱歉,此脚本不支持您的Linux发行版. ${white}\n"
+		_red "抱歉, 此脚本不支持您的Linux发行版"
 		exit 1
 	fi
 
 	# 检查卸载是否成功
 	if command -v docker &> /dev/null; then
-		printf "${red}错误: Docker卸载失败,请手动检查.${white}\n"
+		_red "Docker卸载失败,请手动检查"
 		exit 1
 	else
-		echo ""
-		printf "${green}Docker和Docker Compose已从${os_release}卸载,并清理文件夹和相关依赖. ${white}\n"
-		sleep 2s
+		_green "Docker和Docker Compose已从${os_release}卸载, 并清理文件夹和相关依赖"
 	fi
-
-	echo ""
 }
 
 # 动态生成并加载Docker配置文件,确保最佳的镜像下载和网络配置
@@ -335,40 +370,37 @@ with open("/etc/docker/daemon.json", "w") as f:
 EOF
 
 	# 校验和重新加载Docker守护进程
-	printf "${green}Docker配置文件已重新加载并重启Docker服务. ${white}\n"
+	_green "Docker配置文件已重新加载并重启Docker服务"
 	sudo systemctl daemon-reload && sudo systemctl restart docker
-	printf "${yellow}Docker配置文件已根据服务器IP归属做相关优化,如需修改配置文件请 vim & nano $config_file ${white}\n"
-
-	echo ""
+	_yellow "Docker配置文件已根据服务器IP归属做相关优化,如需调整自行修改$config_file"
 }
 
 # 显示已安装Docker和Docker Compose版本
-docker_main_version(){
+docker_main_version() {
 	local docker_version=""
 	local docker_compose_version=""
 
+	# 获取 Docker 版本
 	if command -v docker >/dev/null 2>&1; then
-		docker_version=$(docker --version | awk '{gsub(/,/, "", $3); print $3}')
+		docker_version=$(docker --version | awk -F '[ ,]' '{print $3}')
 	elif command -v docker.io >/dev/null 2>&1; then
-		docker_version=$(docker.io --version | awk '{gsub(/,/, "", $3); print $3}')
+		docker_version=$(docker.io --version | awk -F '[ ,]' '{print $3}')
 	fi
 
+	# 获取 Docker Compose 版本
 	if command -v docker-compose >/dev/null 2>&1; then
-		docker_compose_version=$(docker-compose version | awk 'NR==1{print $4}')
-	elif command -v docker >/dev/null 2>&1 && docker compose --version >/dev/null 2>&1; then
-		docker_compose_version=$(docker compose version | awk 'NR==1{print $4}')
+		docker_compose_version=$(docker-compose version --short)
+	elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+		docker_compose_version=$(docker compose version --short)
 	fi
 
-	printf "${yellow}已安装Docker版本: v$docker_version ${white}\n"
-	printf "${yellow}已安装Docker Compose版本: $docker_compose_version ${white}\n"
+	_yellow "已安装Docker版本: v$docker_version"
+	_yellow "已安装Docker Compose版本: $docker_compose_version"
 
-	echo ""
-
-	printf "${yellow}正在获取Docker信息${white}\n"
+	_yellow "正在获取Docker信息"
 	sleep 2s
 	sudo docker version
 
-	echo ""
 }
 
 # 退出脚本前显示执行完成信息
@@ -376,7 +408,7 @@ script_completion_message() {
 	local timezone=$(timedatectl | awk '/Time zone/ {print $3}')
 	local current_time=$(date '+%Y-%m-%d %H:%M:%S')
 
-	printf "${green}服务器当前时间: ${current_time} 时区: ${timezone} 脚本执行完成.${white}\n"
+	printf "${green}服务器当前时间: ${current_time} 时区: ${timezone} 脚本执行完成${white}\n"
 
 	_purple "感谢使用本脚本!如有疑问,请访问honeok.com获取更多信息"
 }
@@ -391,11 +423,9 @@ cat << 'EOF'
                                                     
 EOF
 
-	printf "${gray}############################################################## ${white} \n"
-	printf "${yellow}Author: honeok ${white} \n"
-	printf "${blue}Version: $gitdocker_version ${white} \n"
-	printf "${purple}Project: https://github.com/honeok8s/get-docker ${white} \n"
-	printf "${gray}############################################################## ${white} \n"
+	_yellow "Author: honeok"
+	_blue "Version: $gitdocker_version"
+	_purple "Project: https://github.com/honeok8s"
 }
 
 # 执行逻辑
@@ -408,14 +438,14 @@ fi
 # 参数检查
 if [ -n "$1" ] && [ "$1" != "uninstall" ]; then
 	print_getdocker_logo
-	printf "${red}错误: 无效参数! (可选: 没有参数/uninstall). ${white}\n"
+	_red "无效参数! (可选: 没有参数/uninstall)"
 	script_completion_message
 	exit 1
 fi
 
 if [ -n "$2" ]; then
 	print_getdocker_logo
-	printf "${red}错误: 只能提供一个参数 (可选: uninstall). ${white}\n"
+	_red "只能提供一个参数 (可选: uninstall)"
 	script_completion_message
 	exit 1
 fi
@@ -423,10 +453,10 @@ fi
 # 检查操作系统是否受支持(CentOS,Debian,Ubuntu)
 case "$os_release" in
 	*CentOS*|*centos*|*Debian*|*debian*|*Ubuntu*|*ubuntu*)
-		printf "${yellow}检测到本脚本支持的Linux发行版: $os_release ${white}\n"
+		_yellow "检测到本脚本支持的Linux发行版: $os_release"
 		;;
 	*)
-		printf "${red}此脚本不支持的Linux发行版: $os_release ${white}\n"
+		_red "此脚本不支持的Linux发行版: $os_release"
 		exit 1
 		;;
 esac
@@ -462,7 +492,7 @@ main(){
 		docker_main_version
 		;;
 	*)
-		printf "${red}使用方法: ./get_docker.sh [uninstall]${white}\n"
+		_red "使用方法: ./get_docker.sh [uninstall]"
 		exit 1
 		;;
 	esac
