@@ -67,7 +67,7 @@ check_internet_connect(){
 
 # 获取服务器IP地址
 check_ip_address(){
-	local ipv4_address=$(curl -s ipv4.ip.sb)
+	local ipv4_address=$(curl -s -H "X-Forwarded-For: 223.5.5.5" http://ifconfig.me)
 	local ipv6_address=$(curl -s --max-time 1 ipv6.ip.sb)
 	local isp_info=$(curl -s https://ipinfo.io | grep '"org":' | awk -F'"' '{print $4}')
 	local location=$(curl -s ipinfo.io/city)
