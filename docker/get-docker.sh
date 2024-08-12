@@ -270,7 +270,7 @@ uninstall_docker() {
 		stop_and_remove_docker
 
 		commands=(
-			"sudo yum remove docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras -y"
+			"sudo yum remove docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras -y >/dev/null 2>&1"
 		)
 		# 初始化步骤计数
 		step=0
@@ -291,7 +291,7 @@ uninstall_docker() {
 		stop_and_remove_docker
 
 		commands=(
-			"sudo apt-get purge docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras -y"
+			"sudo apt-get purge docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras -y >/dev/null 2>&1"
 		)
 		# 初始化步骤计数
 		step=0
@@ -318,7 +318,7 @@ uninstall_docker() {
 		_red "Docker卸载失败,请手动检查"
 		exit 1
 	else
-		_green "Docker和Docker Compose已从${os_release}卸载, 并清理文件夹和相关依赖"
+		_green "Docker和Docker Compose已卸载, 并清理文件夹和相关依赖"
 	fi
 }
 
