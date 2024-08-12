@@ -226,8 +226,14 @@ uninstall_docker() {
 	local docker_files=("/var/lib/docker" "/var/lib/containerd" "/etc/docker" "/opt/containerd")
 	local repo_files=("/etc/yum.repos.d/docker.*" "/etc/apt/sources.list.d/docker.*" "/etc/apt/keyrings/docker.*")
 
-	os_name=$(lsb_release -si)
-	os_release=$(lsb_release -cs)
+	# 获取操作系统信息
+	if [ -f /etc/os-release ]; then
+		os_name=$(grep '^ID=' /etc/os-release | cut -d'=' -f2 | tr '[:upper:]' '[:lower:]')
+		os_release=$(grep '^VERSION_ID=' /etc/os-release | cut -d'=' -f2 | tr -d '"')
+	else
+		_red "无法识别操作系统版本"
+		exit 1
+	fi
 
 	_yellow "准备卸载Docker"
 
