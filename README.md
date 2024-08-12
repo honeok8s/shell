@@ -8,18 +8,18 @@ curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/honeok.sh &&
 ## Docker一键安装
 根据IP归属地优化配置文件，安装镜像加速
 ```shell
-bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/docker/get-docker.sh)
+bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/docker/install.sh)
 ```
 ```shell
-curl -fsSL https://raw.githubusercontent.com/honeok8s/shell/main/docker/get-docker.sh | bash -
+curl -fsSL https://raw.githubusercontent.com/honeok8s/shell/main/docker/install.sh | bash -
 ```
 下载到本地
 ```shell
-curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/docker/get-docker.sh && chmod +x ./get-docker.sh
+curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/docker/install.sh && chmod +x ./install.sh && ./install.sh
 ```
 一键卸载Docker
 ```shell
-./get-docker.sh uninstall
+./install.sh uninstall
 ```
 ## Serverstatus探针，客户端探针存活监控
 项目地址：https://github.com/cppla/serverstatus
