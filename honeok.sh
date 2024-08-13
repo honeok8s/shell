@@ -2078,16 +2078,9 @@ docker_app() {
 				cd $docker_workdir
 
 				if command -v docker compose >/dev/null 2>&1; then
-					docker compose down
+					docker compose down && docker compose down --rmi all
 				elif command -v docker-compose >/dev/null 2>&1; then
-					docker-compose down
-				fi
-
-				if [ -n "$docker_remove_img" ]; then
-					# 循环删除每个镜像
-					for img in $docker_remove_img; do
-						docker rmi "$img"
-					done
+					docker-compose down && docker-compose down --rmi all
 				fi
 
 				rm -fr "${docker_workdir}"
@@ -2210,9 +2203,6 @@ linux_panel() {
 				docker_url="官网介绍: https://nginxproxymanager.com/"
 				docker_user="echo \"初始用户名: admin@example.com\""
 				docker_passwd="echo \"初始密码: changeme\""
-
-				docker_remove_img=$(docker images -a | awk '/jc21*/ {print $3}')
-
 				docker_app
 				;;
 			5)
@@ -2224,9 +2214,6 @@ linux_panel() {
 				docker_url="官网介绍: https://alist.nn.ci/zh/"
 				docker_user="docker exec -it alist ./alist admin random"
 				docker_passwd=""
-
-				docker_remove_img=$(docker images -a | awk '/xhofe\/alist/ {print $3}')
-
 				docker_app
 				;;
 			6)
@@ -2238,9 +2225,6 @@ linux_panel() {
 				docker_url="官网介绍: https://docs.linuxserver.io/images/docker-webtop/"
 				docker_use=""
 				docker_passwd=""
-
-				docker_remove_img=$(docker images -a | awk '/webtop/ {print $3}')
-
 				docker_app
 				;;
 			7)
@@ -2280,9 +2264,6 @@ linux_panel() {
 				docker_url="官网介绍: https://hub.docker.com/r/linuxserver/qbittorrent"
 				docker_user="sleep 3"
 				docker_passwd="docker logs qbittorrent"
-
-				docker_remove_img=$(docker images -a | awk '/qbittorrent/ {print $3}')
-
 				docker_app
 				;;
 			10)
@@ -2367,9 +2348,6 @@ linux_panel() {
 				docker_url="官网介绍: https://www.zentao.net/"
 				docker_user="echo \"初始用户名: admin\""
 				docker_passwd="echo \"初始密码: 123456\""
-
-				docker_remove_img=$(docker images -a | awk '/idoop\/zentao/ {print $3}')
-
 				docker_app
 				;;
 			12)
@@ -2381,9 +2359,6 @@ linux_panel() {
 				docker_url="官网介绍: https://github.com/whyour/qinglong"
 				docker_user=""
 				docker_passwd=""
-
-				docker_remove_img=$(docker images -a | awk '/whyour\/qinglong/ {print $3}')
-
 				docker_app
 				;;
 			14)
@@ -2395,9 +2370,6 @@ linux_panel() {
 				docker_url="官网介绍: https://github.com/icret/EasyImages2.0"
 				docker_user=""
 				docker_passwd=""
-
-				docker_remove_img=$(docker images -a | awk '/ddsderek\/easyimage/ {print $3}')
-
 				docker_app
 				;;
 			15)
@@ -2409,9 +2381,6 @@ linux_panel() {
 				docker_url="官网介绍: https://emby.media/"
 				docker_user=""
 				docker_passwd=""
-
-				docker_remove_img=$(docker images -a | awk '/linuxserver\/emby/ {print $3}')
-
 				docker_app
 				;;
 			16)
@@ -2423,9 +2392,6 @@ linux_panel() {
 				docker_url="官网介绍: https://github.com/wikihost-opensource/als"
 				docker_user=""
 				docker_passwd=""
-
-				docker_remove_img=$(docker images -a | awk '/wikihostinc\/looking-glass-server/ {print $3}')
-
 				docker_app
 				;;
 			17)
@@ -2437,9 +2403,6 @@ linux_panel() {
 				docker_url="官网介绍: https://hub.docker.com/r/adguard/adguardhome"
 				docker_user=""
 				docker_passwd=""
-
-				docker_remove_img=$(docker images -a | awk '/adguard*/ {print $3}')
-
 				docker_app
 				;;
 			18)
@@ -2451,9 +2414,6 @@ linux_panel() {
 				docker_url="官网介绍: https://www.onlyoffice.com/"
 				docker_user=""
 				docker_passwd=""
-
-				docker_remove_img=$(docker images -a | awk '/onlyoffice\/documentserver/ {print $3}')
-
 				docker_app
 				;;
 			19)
@@ -2526,9 +2486,6 @@ linux_panel() {
 				docker_url="官网介绍: https://www.portainer.io/"
 				docker_user=""
 				docker_passwd=""
-
-				docker_remove_img=$(docker images -a | awk '/portainer*/ {print $3}')
-
 				docker_app
 				;;
 			38)
