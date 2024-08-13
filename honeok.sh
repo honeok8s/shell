@@ -2114,7 +2114,7 @@ linux_panel() {
 		echo "3. 1Panel新一代管理面板                4. NginxProxyManager可视化面板"
 		echo "5. AList多存储文件列表程序             6. Ubuntu远程桌面网页版"
 		echo "7. 哪吒探针VPS监控面板                 8. QB离线BT磁力下载面板"
-		echo "9. Poste.io邮件服务器程序              10. RocketChat多人在线聊天系统"
+		echo "10. RocketChat多人在线聊天系统"
 		echo "------------------------"
 		echo "11. 禅道项目管理软件                   12. 青龙面板定时任务管理平台"
 		echo "13. Cloudreve网盘                      14. 简单图床图片管理程序"
@@ -2226,6 +2226,162 @@ linux_panel() {
 				docker_passwd=""
 
 				docker_remove_img=$(docker images -a | awk '/xhofe\/alist/ {print $3}')
+
+				docker_app
+				;;
+			6)
+				docker_name="webtop-ubuntu"
+				docker_workdir="/data/docker_data/webtop-ubuntu"
+				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/webtop-ubuntu-docker-compose.yml"
+				docker_describe="webtop基于Ubuntu的容器,包含官方支持的完整桌面环境,可通过任何现代Web浏览器访问"
+				docker_url="官网介绍: https://docs.linuxserver.io/images/docker-webtop/"
+				docker_use=""
+				docker_passwd=""
+
+				docker_remove_img=$(docker images -a | awk '/webtop/ {print $3}')
+
+				docker_app
+				;;
+			7)
+				local choice
+				while true; do
+					clear
+					echo "哪吒监控管理"
+					echo "开源,轻量,易用的服务器监控与运维工具"
+					echo "------------------------"
+					echo "1. 使用           0. 返回上一级"
+					echo "------------------------"
+					
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					read choice
+
+					case $choice in
+						1)
+							curl -L https://raw.githubusercontent.com/naiba/nezha/master/script/install.sh  -o nezha.sh && chmod +x nezha.sh
+							./nezha.sh
+							;;
+						2)
+							break
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac
+					end_of
+				done
+				;;
+			8)
+				docker_name="qbittorrent"
+				docker_workdir="/data/docker_data/qbittorrent"
+				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/qbittorrent-docker-compose.yml"
+				docker_describe="qbittorrent离线BT磁力下载服务"
+				docker_port=8081
+				docker_url="官网介绍: https://hub.docker.com/r/linuxserver/qbittorrent"
+				docker_use="sleep 3"
+				docker_passwd="docker logs qbittorrent"
+
+				docker_remove_img=$(docker images -a | awk '/qbittorrent/ {print $3}')
+
+				docker_app
+				;;
+			10)
+				has_ipv4_has_ipv6
+				docker_name=rocketchat
+				docker_workdir="/data/docker_data/rocketchat"
+				docker_port=3000
+
+				while true; do
+					check_docker_app
+					clear
+					echo -e "聊天服务 $check_docker"
+					echo "Rocket.Chat是一个开源的团队通讯平台,支持实时聊天,音视频通话,文件共享等多种功能"
+					echo "官网介绍: https://www.rocket.chat"
+
+					if docker inspect "$docker_name" &>/dev/null; then
+						check_docker_app_ip
+					fi
+					echo ""
+
+					echo "------------------------"
+					echo "1. 安装           2. 更新           3. 卸载"
+					echo "------------------------"
+					echo "0. 返回上一级"
+					echo "------------------------"
+
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					read choice
+
+					case $choice in
+						1)
+							#install_docker
+							[ ! -d $docker_workdir ] && mkdir -p $docker_workdir
+							docker run --name rocketchat_db -d --restart=unless-stopped \
+								-v $docker_workdir/dump:/dump \
+								mongo:latest --replSet rs5 --oplogSize 256
+							sleep 1
+							docker exec -it rocketchat_db mongosh --eval "printjson(rs.initiate())"
+							sleep 5
+							docker run --name rocketchat --restart=unless-stopped -p 3000:3000 --link rocketchat_db --env ROOT_URL=http://localhost --env MONGO_OPLOG_URL=mongodb://rocketchat_db:27017/rs5 -d rocket.chat
+
+							clear
+							ip_address
+							echo "rocket.chat已经安装完成"
+							check_docker_app_ip
+							echo ""
+							;;
+						2)
+							docker rm -f rocketchat
+							docker rmi -f $(docker images -a | awk '/rocket.chat/ {print $3}')
+							docker run --name rocketchat --restart=unless-stopped -p 3000:3000 --link rocketchat_db --env ROOT_URL=http://localhost --env MONGO_OPLOG_URL=mongodb://rocketchat_db:27017/rs5 -d rocket.chat
+							clear
+							ip_address
+							_green "rocket.chat更新完成"
+							check_docker_app_ip
+							echo ""
+							;;
+						3)
+							docker rm -f rocketchat
+							docker rmi -f $(docker images -a | awk '/rocket.chat/ {print $3}')
+							docker rm -f rocketchat_db
+							docker rmi -f mongo:latest
+							rm -fr $docker_workdir
+							_green "rocket.chat卸载完成"
+							;;
+						0)
+							break
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac
+					end_of
+				done
+				;;
+			11)
+				docker_name="zentao-server"
+				docker_workdir="/data/docker_data/zentao-server"
+				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/zentao-server-docker-compose.yml"
+				docker_describe="禅道是通用的项目管理软件"
+				docker_port=80
+				docker_url="官网介绍: https://www.zentao.net/"
+				docker_user="echo \"初始用户名: admin\""
+				docker_passwd="echo \"初始密码: 123456\""
+
+				docker_remove_img=$(docker images -a | awk '/idoop\/zentao/ {print $3}')
+
+				docker_app
+				;;
+			12)
+				docker_name="qinglong"
+				docker_workdir="/data/docker_data/qinglong"
+				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/qinglong-docker-compose.yml"
+				docker_describe="青龙面板是一个定时任务管理平台"
+				docker_port=5700
+				docker_url="官网介绍: https://github.com/whyour/qinglong"
+				docker_user=""
+				docker_passwd=""
+
+				docker_remove_img=$(docker images -a | awk '/whyour\/qinglong/ {print $3}')
 
 				docker_app
 				;;
