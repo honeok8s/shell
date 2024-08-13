@@ -3925,8 +3925,7 @@ honeok(){
 		print_logo
 		echo "-------------------------------------------------------"
 		_orange "适配Ubuntu/Debian/CentOS/Alpine系统"
-		_gray "Ubuntu/Debian/CentOS/Alpineシステムに対応"
-		_cyan "Author: honeok"
+		_cyan "Author: honeok" _gray "基于kejilion.sh改版"
 		_green "服务器当前时间: $(date +"%Y-%m-%d %H:%M:%S")"
 		echo "-------------------------------------------------------"
 		echo "1. 系统信息查询                   2. 系统更新"
