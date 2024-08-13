@@ -2229,6 +2229,11 @@ linux_panel() {
 
 				docker_app
 				;;
+			38)
+				clear
+				#install_docker
+				bash -c "$(curl --insecure -fsSL https://ddsrem.com/xiaoya_install.sh)"
+				;;
 			0)
 				honeok
 				;;
