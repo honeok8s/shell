@@ -2488,6 +2488,28 @@ linux_panel() {
 				docker_passwd=""
 				docker_app
 				;;
+			21)
+				docker_name="vscode-web"
+				docker_workdir="/data/docker_data/vscode-web"
+				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/vscode-web-docker-compose.yml"
+				docker_describe="VScode是一款强大的在线代码编写工具"
+				docker_port=8080
+				docker_url="官网介绍: https://github.com/coder/code-server"
+				docker_user="sleep 3"
+				docker_passwd="docker exec vscode-web cat /home/coder/.config/code-server/config.yaml"
+				docker_app
+				;;
+			22)
+				docker_name="uptimekuma"
+				docker_workdir="/data/docker_data/uptimekuma"
+				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/uptimekuma-docker-compose.yml"
+				docker_describe="UptimeKuma易于使用的自托管监控工具"
+				docker_port=3001
+				docker_url="官网介绍: https://github.com/louislam/uptime-kuma"
+				docker_user=""
+				docker_passwd=""
+				docker_app
+				;;
 			38)
 				clear
 				#install_docker
