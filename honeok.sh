@@ -2117,7 +2117,7 @@ linux_panel() {
 		echo "10. RocketChat多人在线聊天系统"
 		echo "------------------------"
 		echo "11. 禅道项目管理软件                   12. 青龙面板定时任务管理平台"
-		echo "13. Cloudreve网盘                      14. 简单图床图片管理程序"
+		echo "14. 简单图床图片管理程序"
 		echo "15. emby多媒体管理系统                 16. Speedtest测速面板"
 		echo "17. AdGuardHome去广告软件              18. onlyoffice在线办公OFFICE"
 		echo "19. 雷池WAF防火墙面板                  20. portainer容器管理面板"
@@ -2386,6 +2386,48 @@ linux_panel() {
 
 				docker_app
 				;;
+			14)
+				docker_name="easyimage"
+				docker_workdir="/data/docker_data/easyimage"
+				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/easyimage-docker-compose.yml"
+				docker_describe="简单图床是一个简单的图床程序"
+				docker_port=80
+				docker_url="官网介绍: https://github.com/icret/EasyImages2.0"
+				docker_user=""
+				docker_passwd=""
+
+				docker_remove_img=$(docker images -a | awk '/ddsderek\/easyimage/ {print $3}')
+
+				docker_app
+				;;
+			15)
+				docker_name="emby"
+				docker_workdir="/data/docker_data/emby"
+				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/emby-docker-compose.yml"
+				docker_describe="emby是一个主从式架构的媒体服务器软件,可以用来整理服务器上的视频和音频,并将音频和视频流式传输到客户端设备"
+				docker_port=8096
+				docker_url="官网介绍: https://emby.media/"
+				docker_user=""
+				docker_passwd=""
+
+				docker_remove_img=$(docker images -a | awk '/linuxserver\/emby/ {print $3}')
+
+				docker_app
+				;;
+			16)
+				docker_name="looking-glass"
+				docker_workdir="/data/docker_data/looking-glass"
+				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/looking-glass-docker-compose.yml"
+				docker_describe="Speedtest测速面板是一个VPS网速测试工具,多项测试功能,还可以实时监控VPS进出站流量"
+				docker_port=80
+				docker_url="官网介绍: https://github.com/wikihost-opensource/als"
+				docker_user=""
+				docker_passwd=""
+
+				docker_remove_img=$(docker images -a | awk '/wikihostinc\/looking-glass-server/ {print $3}')
+
+				docker_app
+				;;
 			17)
 				docker_name="adguardhome"
 				docker_workdir="/data/docker_data/adguardhome"
@@ -2399,6 +2441,81 @@ linux_panel() {
 				docker_remove_img=$(docker images -a | awk '/adguard*/ {print $3}')
 
 				docker_app
+				;;
+			18)
+				docker_name="onlyoffice"
+				docker_workdir="/data/docker_data/onlyoffice"
+				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/onlyoffice-docker-compose.yml"
+				docker_describe="onlyoffice是一款开源的在线office工具,太强大了!"
+				docker_port=80
+				docker_url="官网介绍: https://www.onlyoffice.com/"
+				docker_user=""
+				docker_passwd=""
+
+				docker_remove_img=$(docker images -a | awk '/onlyoffice\/documentserver/ {print $3}')
+
+				docker_app
+				;;
+			19)
+				has_ipv4_has_ipv6
+				docker_name=safeline-mgt
+				docker_port=9443
+				while true; do
+					check_docker_app
+					clear
+					echo -e "雷池服务 $check_docker"
+					echo "雷池是长亭科技开发的WAF站点防火墙程序面板,可以反代站点进行自动化防御"
+
+					if docker inspect "$docker_name" &>/dev/null; then
+						check_docker_app_ip
+					fi
+					echo ""
+
+					echo "------------------------"
+					echo "1. 安装           2. 更新           3. 重置密码           4. 卸载"
+					echo "------------------------"
+					echo "0. 返回上一级"
+					echo "------------------------"
+
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					read choice
+
+					case $choice in
+						1)
+							#install_docker
+							bash -c "$(curl -fsSLk https://waf-ce.chaitin.cn/release/latest/setup.sh)"
+							clear
+							_green "雷池WAF面板已经安装完成"
+							check_docker_app_ip
+							docker exec safeline-mgt resetadmin
+							;;
+						2)
+							bash -c "$(curl -fsSLk https://waf-ce.chaitin.cn/release/latest/upgrade.sh)"
+							docker rmi $(docker images | grep "safeline" | grep "none" | awk '{print $3}')
+							echo ""
+							clear
+							_green "雷池WAF面板已经更新完成"
+							check_docker_app_ip
+							;;
+						3)
+							docker exec safeline-mgt resetadmin
+							;;
+						4)
+							cd /data/safeline
+							docker compose down
+							docker compose down --rmi all
+							echo "如果你是默认安装目录那现在项目已经卸载,如果你是自定义安装目录你需要到安装目录下自行执行:"
+							echo "docker compose down && docker compose down --rmi all"
+							;;
+						0)
+							break
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac
+					end_of
+				done
 				;;
 			20)
 				docker_name="portainer"
