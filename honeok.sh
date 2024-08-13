@@ -2278,7 +2278,7 @@ linux_panel() {
 				docker_describe="qbittorrent离线BT磁力下载服务"
 				docker_port=8081
 				docker_url="官网介绍: https://hub.docker.com/r/linuxserver/qbittorrent"
-				docker_use="sleep 3"
+				docker_user="sleep 3"
 				docker_passwd="docker logs qbittorrent"
 
 				docker_remove_img=$(docker images -a | awk '/qbittorrent/ {print $3}')
