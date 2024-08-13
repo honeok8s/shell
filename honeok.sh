@@ -2204,7 +2204,7 @@ linux_panel() {
 			4)
 				docker_name="npm"
 				docker_workdir="/data/docker_data/npm"
-				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/docker-compose-incomplete.yml"
+				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/npm-docker-compose.yml"
 				docker_describe="如果您已经安装了其他面板工具或者LDNMP建站环境,建议先卸载,再安装npm!"
 				docker_port=81
 				docker_url="官网介绍: https://nginxproxymanager.com/"
@@ -2218,7 +2218,7 @@ linux_panel() {
 			5)
 				docker_name="alist"
 				docker_workdir="/data/docker_data/alist"
-				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/docker-compose-incomplete.yml"
+				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/alist-docker-compose.yml"
 				docker_describe="一个支持多种存储,支持网页浏览和WebDAV的文件列表程序,由gin和Solidjs驱动"
 				docker_port=5244
 				docker_url="官网介绍: https://alist.nn.ci/zh/"
