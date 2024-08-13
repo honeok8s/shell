@@ -2234,6 +2234,7 @@ linux_panel() {
 				docker_workdir="/data/docker_data/webtop-ubuntu"
 				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/webtop-ubuntu-docker-compose.yml"
 				docker_describe="webtop基于Ubuntu的容器,包含官方支持的完整桌面环境,可通过任何现代Web浏览器访问"
+				docker_port=3000
 				docker_url="官网介绍: https://docs.linuxserver.io/images/docker-webtop/"
 				docker_use=""
 				docker_passwd=""
