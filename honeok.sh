@@ -1678,6 +1678,7 @@ linux_ldnmp() {
 								;;
 							4)
 								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf ] && sed -i 's/true/false/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
+								fail2ban_status
 								;;
 							5)
 								echo "------------------------"
