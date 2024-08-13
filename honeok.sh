@@ -2658,11 +2658,8 @@ system_info(){
 	fi
 	# 获取虚拟化类型
 	local virt_type
-	if command -v lscpu >/dev/null 2>&1; then
-		virt_type=$(lscpu | grep -i 'Hypervisor vendor:' | awk '{print $3}')
-	else
-		virt_type=$(grep -i 'virtualization' /sys/class/dmi/id/product_name 2>/dev/null || echo "Unknown")
-	fi
+	virt_type=$(hostnamectl | awk -F ': ' '/Virtualization/ {print $2}')
+
 	# 获取内核版本信息
 	local kernel_version
 	if command -v hostnamectl >/dev/null 2>&1; then
