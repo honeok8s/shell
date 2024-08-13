@@ -664,7 +664,7 @@ docker_ps() {
 				docker stop $(docker ps -q)
 				;;
 			8)
-				_yellow "确定删除所有容器吗?(y/n)"
+				echo -n -e "${yellow}确定删除所有容器吗?(y/n):${white}"
 				read choice
 
 				case "$choice" in
