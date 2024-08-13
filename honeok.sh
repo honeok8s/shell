@@ -1869,7 +1869,7 @@ linux_ldnmp() {
 					esac
 				else
 					clear
-					install_docker
+					#install_docker
 
 					docker rm -f nginx
 					
@@ -1886,7 +1886,12 @@ linux_ldnmp() {
 					default_server_ssl
 
 					wget -O docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/nginx/docker-compose.yml
-					docker compose up -d
+					
+					if command -v docker compose >/dev/null 2>&1; then
+						docker compose up -d
+					elif command -v docker-compose >/dev/null 2>&1; then
+						docker-compose up -d
+					fi
 
 					docker exec -it nginx chmod -R 777 /var/www/html
 
@@ -1896,7 +1901,7 @@ linux_ldnmp() {
 					cd /data/docker_data/fail2ban/config/fail2ban/jail.d
 					curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/nginx-docker-cc.conf
 
-					sed -i "/cloudflare/d" /path/to/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
+					sed -i "/cloudflare/d" /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
 
 					cd ~
 					fail2ban_status
