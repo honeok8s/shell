@@ -2229,6 +2229,34 @@ linux_panel() {
 
 				docker_app
 				;;
+			17)
+				docker_name="adguardhome"
+				docker_workdir="/data/docker_data/adguardhome"
+				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/adguardhome-docker-compose.yml"
+				docker_describe="AdGuardHome是一款全网广告拦截与反跟踪软件,未来将不止是一个DNS服务器"
+				docker_port=3000
+				docker_url="官网介绍: https://hub.docker.com/r/adguard/adguardhome"
+				docker_user=""
+				docker_passwd=""
+
+				docker_remove_img=$(docker images -a | awk '/adguard*/ {print $3}')
+
+				docker_app
+				;;
+			20)
+				docker_name="portainer"
+				docker_workdir="/data/docker_data/portainer"
+				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/portainer-docker-compose.yml"
+				docker_describe="portainer是一个轻量级的docker容器管理面板"
+				docker_port=9000
+				docker_url="官网介绍: https://www.portainer.io/"
+				docker_user=""
+				docker_passwd=""
+
+				docker_remove_img=$(docker images -a | awk '/portainer*/ {print $3}')
+
+				docker_app
+				;;
 			38)
 				clear
 				#install_docker
