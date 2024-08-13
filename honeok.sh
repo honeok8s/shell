@@ -5,16 +5,16 @@
 set -o errexit
 clear
 
-yellow='\033[1;33m'  # 提示信息
-red='\033[1;31m'     # 警告信息
-magenta='\033[1;35m' # 品红色
-green='\033[1;32m'   # 成功信息
-blue='\033[1;34m'    # 一般信息
-cyan='\033[1;36m'    # 特殊信息
-purple='\033[1;35m'  # 紫色或粉色信息
-gray='\033[1;30m'    # 灰色信息
-orange='\033[1;38;5;208m'
-white='\033[0m'      # 结束颜色设置
+yellow='\033[1;33m'       # 黄色
+red='\033[1;31m'          # 红色
+magenta='\033[1;35m'      # 品红色
+green='\033[1;32m'        # 绿色
+blue='\033[1;34m'         # 蓝色
+cyan='\033[1;36m'         # 青色
+purple='\033[1;35m'       # 紫色
+gray='\033[1;30m'         # 灰色
+orange='\033[1;38;5;208m' # 橙色
+white='\033[0m'           # 白色
 _yellow() { echo -e ${yellow}$@${white}; }
 _red() { echo -e ${red}$@${white}; }
 _magenta() { echo -e ${magenta}$@${white}; }
@@ -1584,21 +1584,22 @@ fail2ban_status() {
 	docker exec -it fail2ban fail2ban-client status
 }
 
-fail2ban_status_xxx() {
-	docker exec -it fail2ban fail2ban-client status $xxx
+fail2ban_status_jail() {
+	docker exec -it fail2ban fail2ban-client status $jail_name
 }
 
 fail2ban_sshd() {
 	if grep -q 'Alpine' /etc/issue; then
-		xxx=alpine-sshd
-		f2b_status_xxx
+		jail_name=alpine-sshd
+		fail2ban_status_jail
 	else
-		xxx=linux-sshd
-		f2b_status_xxx
+		jail_name=linux-sshd
+		fail2ban_status_jail
 	fi
 }
 
 fail2ban_install_sshd() {
+	[ ! -d /data/docker_data/fail2ban ] && mkdir -p /data/docker_data/fail2ban
 	wget -O /data/docker_data/fail2ban/docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/docker-compose.yml
 	cd /data/docker_data/fail2ban
 	docker compose up -d
@@ -1660,23 +1661,23 @@ linux_ldnmp() {
 						
 						case $choice in
 							1)
-								sed -i 's/false/true/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/alpine-ssh.conf
-								sed -i 's/false/true/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/linux-ssh.conf
-								sed -i 's/false/true/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/centos-ssh.conf
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/alpine-ssh.conf ] && sed -i 's/false/true/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/alpine-ssh.conf
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/linux-ssh.conf ] && sed -i 's/false/true/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/linux-ssh.conf
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/centos-ssh.conf ] && sed -i 's/false/true/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/centos-ssh.conf
 								fail2ban_status
 								;;
 							2)
-								sed -i 's/true/false/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/alpine-ssh.conf
-								sed -i 's/true/false/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/linux-ssh.conf
-								sed -i 's/true/false/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/centos-ssh.conf
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/alpine-ssh.conf ] && sed -i 's/true/false/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/alpine-ssh.conf
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/linux-ssh.conf ] && sed -i 's/true/false/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/linux-ssh.conf
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/centos-ssh.conf ] && sed -i 's/true/false/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/centos-ssh.conf
 								fail2ban_status
 								;;
 							3)
-								sed -i 's/false/true/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf ] && sed -i 's/false/true/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
 								fail2ban_status
 								;;
 							4)
-								sed -i 's/true/false/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf ] && sed -i 's/true/false/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
 								;;
 							5)
 								echo "------------------------"
@@ -1685,23 +1686,23 @@ linux_ldnmp() {
 								;;
 							6)
 								echo "------------------------"
-								xxx=fail2ban-nginx-cc
-								fail2ban_status_xxx
+								jail_name=fail2ban-nginx-cc
+								fail2ban_status_jail
 								echo "------------------------"
-								xxx=docker-nginx-bad-request
-								fail2ban_status_xxx
+								jail_name=docker-nginx-bad-request
+								fail2ban_status_jail
 								echo "------------------------"
-								xxx=docker-nginx-botsearch
-								fail2ban_status_xxx
+								jail_name=docker-nginx-botsearch
+								fail2ban_status_jail
 								echo "------------------------"
-								xxx=docker-nginx-http-auth
-								fail2ban_status_xxx
+								jail_name=docker-nginx-http-auth
+								fail2ban_status_jail
 								echo "------------------------"
-								xxx=docker-nginx-limit-req
-								fail2ban_status_xxx
+								jail_name=docker-nginx-limit-req
+								fail2ban_status_jail
 								echo "------------------------"
-								xxx=docker-php-url-fopen
-								fail2ban_status_xxx
+								jail_name=docker-php-url-fopen
+								fail2ban_status_jail
 								echo "------------------------"
 								;;
 							7)
