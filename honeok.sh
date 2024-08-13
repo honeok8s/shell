@@ -2289,7 +2289,7 @@ linux_panel() {
 				docker_workdir="/data/docker_data/webtop-ubuntu"
 				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/webtop-ubuntu-docker-compose.yml"
 				docker_describe="webtop基于Ubuntu的容器,包含官方支持的完整桌面环境,可通过任何现代Web浏览器访问"
-				docker_port=3000
+				docker_port=3006
 				docker_url="官网介绍: https://docs.linuxserver.io/images/docker-webtop/"
 				docker_use=""
 				docker_passwd=""
@@ -2338,7 +2338,7 @@ linux_panel() {
 				has_ipv4_has_ipv6
 				docker_name=rocketchat
 				docker_workdir="/data/docker_data/rocketchat"
-				docker_port=3000
+				docker_port=3897
 
 				while true; do
 					check_docker_app
@@ -2371,7 +2371,7 @@ linux_panel() {
 							sleep 1
 							docker exec -it rocketchat_db mongosh --eval "printjson(rs.initiate())"
 							sleep 5
-							docker run --name rocketchat --restart=unless-stopped -p 3000:3000 --link rocketchat_db --env ROOT_URL=http://localhost --env MONGO_OPLOG_URL=mongodb://rocketchat_db:27017/rs5 -d rocket.chat
+							docker run --name rocketchat --restart=unless-stopped -p 3897:3000 --link rocketchat_db --env ROOT_URL=http://localhost --env MONGO_OPLOG_URL=mongodb://rocketchat_db:27017/rs5 -d rocket.chat
 
 							clear
 							ip_address
@@ -2382,7 +2382,7 @@ linux_panel() {
 						2)
 							docker rm -f rocketchat
 							docker rmi -f $(docker images -a | awk '/rocket.chat/ {print $3}')
-							docker run --name rocketchat --restart=unless-stopped -p 3000:3000 --link rocketchat_db --env ROOT_URL=http://localhost --env MONGO_OPLOG_URL=mongodb://rocketchat_db:27017/rs5 -d rocket.chat
+							docker run --name rocketchat --restart=unless-stopped -p 3897:3000 --link rocketchat_db --env ROOT_URL=http://localhost --env MONGO_OPLOG_URL=mongodb://rocketchat_db:27017/rs5 -d rocket.chat
 							clear
 							ip_address
 							_green "rocket.chat更新完成"
@@ -2412,7 +2412,7 @@ linux_panel() {
 				docker_workdir="/data/docker_data/zentao-server"
 				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/zentao-server-docker-compose.yml"
 				docker_describe="禅道是通用的项目管理软件"
-				docker_port=80
+				docker_port=82
 				docker_url="官网介绍: https://www.zentao.net/"
 				docker_user="echo \"初始用户名: admin\""
 				docker_passwd="echo \"初始密码: 123456\""
@@ -2434,7 +2434,7 @@ linux_panel() {
 				docker_workdir="/data/docker_data/easyimage"
 				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/easyimage-docker-compose.yml"
 				docker_describe="简单图床是一个简单的图床程序"
-				docker_port=80
+				docker_port=85
 				docker_url="官网介绍: https://github.com/icret/EasyImages2.0"
 				docker_user=""
 				docker_passwd=""
@@ -2456,7 +2456,7 @@ linux_panel() {
 				docker_workdir="/data/docker_data/looking-glass"
 				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/looking-glass-docker-compose.yml"
 				docker_describe="Speedtest测速面板是一个VPS网速测试工具,多项测试功能,还可以实时监控VPS进出站流量"
-				docker_port=80
+				docker_port=89
 				docker_url="官网介绍: https://github.com/wikihost-opensource/als"
 				docker_user=""
 				docker_passwd=""
@@ -2478,7 +2478,7 @@ linux_panel() {
 				docker_workdir="/data/docker_data/onlyoffice"
 				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/onlyoffice-docker-compose.yml"
 				docker_describe="onlyoffice是一款开源的在线office工具,太强大了!"
-				docker_port=80
+				docker_port=8082
 				docker_url="官网介绍: https://www.onlyoffice.com/"
 				docker_user=""
 				docker_passwd=""
@@ -2561,7 +2561,7 @@ linux_panel() {
 				docker_workdir="/data/docker_data/vscode-web"
 				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/vscode-web-docker-compose.yml"
 				docker_describe="VScode是一款强大的在线代码编写工具"
-				docker_port=8080
+				docker_port=8180
 				docker_url="官网介绍: https://github.com/coder/code-server"
 				docker_user="sleep 3"
 				docker_passwd="docker exec vscode-web cat /home/coder/.config/code-server/config.yaml"
@@ -2572,7 +2572,7 @@ linux_panel() {
 				docker_workdir="/data/docker_data/uptimekuma"
 				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/uptimekuma-docker-compose.yml"
 				docker_describe="UptimeKuma易于使用的自托管监控工具"
-				docker_port=3001
+				docker_port=3003
 				docker_url="官网介绍: https://github.com/louislam/uptime-kuma"
 				docker_user=""
 				docker_passwd=""
@@ -2626,7 +2626,7 @@ linux_panel() {
 				docker_workdir="/data/docker_data/bililive"
 				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/bililive-docker-compose.yml"
 				docker_describe="Bililive-go是一个支持多种直播平台的直播录制工具"
-				docker_port=8080
+				docker_port=8039
 				docker_url="官网介绍: https://github.com/hr3lxphr6j/bililive-go"
 				docker_user=""
 				docker_passwd=""
