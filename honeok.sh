@@ -1095,6 +1095,18 @@ docker_manager() {
 	done
 }
 
+default_server_ssl() {
+
+	install openssl
+
+	if command -v dnf &>/dev/null || command -v yum &>/dev/null; then
+		openssl req -x509 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -keyout /data/docker_data/nginx/certs/default_server.key -out /data/docker_data/nginx/certs/default_server.crt -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
+	else
+		openssl genpkey -algorithm Ed25519 -out /data/docker_data/nginx/certs/default_server.key
+		openssl req -x509 -key /data/docker_data/nginx/certs/default_server.key -out /data/docker_data/nginx/certs/default_server.crt -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
+	fi
+}
+
 linux_tools() {
 	while true; do
 		clear
@@ -1806,11 +1818,11 @@ linux_ldnmp() {
 								cd ~
 								install jq bc
 								check_crontab_installed
-								curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/CF-Under-Attack.sh
+								curl -sS -O https://raw.githubusercontent.com/honeok8s/shell/main/callscript/CF-Under-Attack.sh
 								chmod +x CF-Under-Attack.sh
-								sed -i "s/AAAA/$cfuser/g" ~/CF-Under-Attack.sh
-								sed -i "s/BBBB/$cftoken/g" ~/CF-Under-Attack.sh
-								sed -i "s/CCCC/$cfzonID/g" ~/CF-Under-Attack.sh
+								sed -i "s/AAAA/$CFUSER/g" ~/CF-Under-Attack.sh
+								sed -i "s/BBBB/$CFKEY/g" ~/CF-Under-Attack.sh
+								sed -i "s/CCCC/$CFZoneID/g" ~/CF-Under-Attack.sh
 
 								cron_job="*/5 * * * * ~/CF-Under-Attack.sh"
 								existing_cron=$(crontab -l 2>/dev/null | grep -F "$cron_job")
@@ -1855,18 +1867,25 @@ linux_ldnmp() {
 					install_docker
 
 					docker rm -f nginx
-					wget -O /data/docker_data/nginx/nginx.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/nginx-2C2G.conf
-					wget -O /data/docker_data/nginx/conf.d/default.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default11.conf
 					
+					[ ! -d /data/docker_data/nginx ] && mkdir -p /data/docker_data/nginx
+					cd !$
+
+					wget -O nginx.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/nginx-2C2G.conf
+
+					for dir in ./conf.d ./certs; do
+						[ ! -d "$dir" ] && mkdir -p "$dir"
+					done
+					wget -O ./conf.d/default.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default11.conf
+
 					default_server_ssl
 
-					wget -O /data/docker_data/nginx/docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/nginx/docker-compose.yml
-					cd /data/docker_data/nginx
+					wget -O docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/nginx/docker-compose.yml
 					docker compose up -d
-					
-					docker exec -it nginx chmod -R 777 /var/www/html
-					fail2ban_install_sshd
 
+					docker exec -it nginx chmod -R 777 /var/www/html
+
+					fail2ban_install_sshd
 					cd /data/docker_data/fail2ban/config/fail2ban/filter.d
 					curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/fail2ban-nginx-cc.conf
 					cd /data/docker_data/fail2ban/config/fail2ban/jail.d
