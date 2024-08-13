@@ -2589,10 +2589,48 @@ linux_panel() {
 				docker_passwd=""
 				docker_app
 				;;
+			36)
+				docker_name="lobe-chat"
+				docker_workdir="/data/docker_data/lobe-chat"
+				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/lobe-chat-docker-compose.yml"
+				docker_describe="LobeChat聚合市面上主流的AI大模型,ChatGPT/Claude/Gemini/Groq/Ollama"
+				docker_port=8036
+				docker_url="官网介绍: https://github.com/lobehub/lobe-chat"
+				docker_user=""
+				docker_passwd=""
+				docker_app
+				;;
+			37)
+				docker_name="myip"
+				docker_workdir="/data/docker_data/myip"
+				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/myip-docker-compose.yml"
+				docker_describe="是一个多功能IP工具箱,可以查看自己IP信息及连通性,用网页面板呈现"
+				docker_port=18966
+				docker_url="官网介绍: https://github.com/jason5ng32/MyIP/blob/main/README_ZH.md"
+				docker_user=""
+				docker_passwd=""
+				docker_app
+				;;
 			38)
 				clear
 				#install_docker
 				bash -c "$(curl --insecure -fsSL https://ddsrem.com/xiaoya_install.sh)"
+				;;
+			39)
+				if [ ! -d /data/docker_data/bililive ]; then
+					mkdir -p /data/docker_data/bililive > /dev/null 2>&1
+					wget -O /data/docker_data/bililive/config.yml https://raw.githubusercontent.com/hr3lxphr6j/bililive-go/master/config.yml > /dev/null 2>&1
+				fi
+
+				docker_name="bililive"
+				docker_workdir="/data/docker_data/bililive"
+				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/bililive-docker-compose.yml"
+				docker_describe="Bililive-go是一个支持多种直播平台的直播录制工具"
+				docker_port=8080
+				docker_url="官网介绍: https://github.com/hr3lxphr6j/bililive-go"
+				docker_user=""
+				docker_passwd=""
+				docker_app
 				;;
 			0)
 				honeok
