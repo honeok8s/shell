@@ -1869,7 +1869,7 @@ linux_ldnmp() {
 					docker rm -f nginx
 					
 					[ ! -d /data/docker_data/nginx ] && mkdir -p /data/docker_data/nginx
-					cd !$
+					cd /data/docker_data/nginx
 
 					wget -O nginx.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/nginx-2C2G.conf
 
@@ -1890,11 +1890,12 @@ linux_ldnmp() {
 					curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/fail2ban-nginx-cc.conf
 					cd /data/docker_data/fail2ban/config/fail2ban/jail.d
 					curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/nginx-docker-cc.conf
+
 					sed -i "/cloudflare/d" /path/to/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
 
 					cd ~
 					fail2ban_status
-					echo "防御程序已开启"
+					_green "防御程序已开启"
 				fi
 				;;
 			0)
