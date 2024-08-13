@@ -1,5 +1,5 @@
 #!/bin/bash
-# Author: honeok
+# Author: honeok Fork kejilion
 # Blog: https://www.honeok.com
 
 set -o errexit
@@ -435,6 +435,57 @@ update_system(){
 		DEBIAN_FRONTEND=noninteractive apt full-upgrade -y
 	elif command -v apk &>/dev/null; then
 		apk update && apk upgrade
+	else
+		_red "未知的包管理器!"
+		return 1
+	fi
+
+	return 0
+}
+
+linux_clean() {
+	wait_for_lock(){
+		local timeout=300  # 设置超时时间为300秒(5分钟)
+		local waited=0
+
+		while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+			_yellow "等待dpkg锁释放"
+			sleep 1
+			waited=$((waited + 1))
+			if [ $waited -ge $timeout ]; then
+				_red "等待dpkg锁超时"
+				break # 等待dpkg锁超时后退出循环
+			fi
+		done
+	}
+
+	# 修复dpkg中断问题
+	fix_dpkg(){
+		DEBIAN_FRONTEND=noninteractive dpkg --configure -a
+	}
+
+	_yellow "正在系统清理"
+	if command -v yum &>/dev/null; then
+		yum autoremove -y
+		yum clean all
+		yum makecache
+		journalctl --rotate
+		journalctl --vacuum-time=1s
+		journalctl --vacuum-size=500M
+	elif command -v apt &>/dev/null; then
+		wait_for_lock
+		fix_dpkg
+		apt autoremove --purge -y
+		apt clean -y
+		apt autoclean -y
+		journalctl --rotate
+		journalctl --vacuum-time=1s
+		journalctl --vacuum-size=500M
+	elif command -v apk &>/dev/null; then
+		apk cache clean
+		rm -rf /var/log/*
+		rm -rf /var/cache/apk/*
+		rm -rf /tmp/*
 	else
 		_red "未知的包管理器!"
 		return 1
@@ -3925,7 +3976,7 @@ honeok(){
 		print_logo
 		echo "-------------------------------------------------------"
 		_orange "适配Ubuntu/Debian/CentOS/Alpine系统"
-		_cyan "Author: honeok" _gray "基于kejilion.sh改版"
+		_cyan "Author: honeok"
 		_green "服务器当前时间: $(date +"%Y-%m-%d %H:%M:%S")"
 		echo "-------------------------------------------------------"
 		echo "1. 系统信息查询                   2. 系统更新"
@@ -3957,7 +4008,8 @@ honeok(){
 				update_system
 				;;
 			3)
-				echo "敬请期待"
+				clear
+				linux_clean
 				;;
 			4)
 				linux_tools
