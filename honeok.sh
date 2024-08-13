@@ -2510,6 +2510,17 @@ linux_panel() {
 				docker_passwd=""
 				docker_app
 				;;
+			23)
+				docker_name="memeos"
+				docker_workdir="/data/docker_data/memeos"
+				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/memeos-docker-compose.yml"
+				docker_describe="Memos是一款轻量级,自托管的备忘录中心"
+				docker_port=5230
+				docker_url="官网介绍: https://github.com/usememos/memos"
+				docker_user=""
+				docker_passwd=""
+				docker_app
+				;;
 			38)
 				clear
 				#install_docker
