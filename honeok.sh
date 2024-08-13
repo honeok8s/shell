@@ -67,6 +67,11 @@ need_root(){
 	fi
 }
 
+ip_address() {
+	ipv4_address=$(curl -s -H "X-Forwarded-For: 223.5.5.5" http://ifconfig.me)
+	ipv6_address=$(curl -s --max-time 1 ipv6.ip.sb || echo "")
+}
+
 # 安装软件包
 install(){
 	if [ $# -eq 0 ]; then
@@ -1909,6 +1914,332 @@ linux_ldnmp() {
 	done
 }
 
+has_ipv4_has_ipv6() {
+	ip_address
+	if [ -z "$ipv4_address" ]; then
+		has_ipv4=false
+	else
+		has_ipv4=true
+	fi
+
+	if [ -z "$ipv6_address" ]; then
+		has_ipv6=false
+	else
+		has_ipv6=true
+	fi
+}
+
+check_docker_app_ip() {
+	echo "------------------------"
+	echo "访问地址:"
+	if $has_ipv4; then
+		echo "http://$ipv4_address:$docker_port"
+	fi
+	if $has_ipv6; then
+		echo "http://[$ipv6_address]:$docker_port"
+	fi
+}
+
+check_docker_app() {
+	if docker inspect "$docker_name" &>/dev/null; then
+		check_docker="${green}已安装${white}"
+	else
+		check_docker="${yellow}未安装${white}"
+	fi
+}
+
+check_panel_app() {
+	if $path; then
+		check_panel="${green}已安装${white}"
+	else
+		check_panel="${yellow}未安装${white}"
+	fi
+}
+
+install_panel() {
+	local choice
+	while true; do
+		clear
+		check_panel_app
+		echo -e "$panelname $check_panel"
+		echo "${panelname}是一款时下流行且强大的运维管理面板。"
+		echo "官网介绍: $panelurl "
+
+		echo ""
+		echo "------------------------"
+		echo "1. 安装            2. 管理            3. 卸载"
+		echo "------------------------"
+		echo "0. 返回上一级"
+		echo "------------------------"
+
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read choice
+
+		case $choice in
+			1)
+				iptables_open
+				install wget
+				if grep -q 'Alpine' /etc/issue; then
+					$ubuntu_command
+					$ubuntu_command2
+				elif command -v dnf &>/dev/null; then
+					$centos_command
+					$centos_command2
+				elif grep -qi 'Ubuntu' /etc/os-release; then
+					$ubuntu_command
+					$ubuntu_command2
+				elif grep -qi 'Debian' /etc/os-release; then
+					$ubuntu_command
+					$ubuntu_command2
+				else
+					echo "不支持的系统"
+				fi
+				;;
+			2)
+				$feature1
+				$feature1_1
+				;;
+			3)
+				$feature2
+				$feature2_1
+				$feature2_2
+				;;
+			0)
+				break
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+		end_of
+	done
+}
+
+docker_app() {
+	local choice
+	has_ipv4_has_ipv6
+	while true; do
+		clear
+		check_docker_app
+		echo -e "$docker_name $check_docker"
+		echo "$docker_describe"
+		echo "$docker_url"
+		if docker inspect "$docker_name" &>/dev/null; then
+			check_docker_app_ip
+		fi
+		echo ""
+		echo "------------------------"
+		echo "1. 安装            2. 更新            3. 卸载"
+		echo "------------------------"
+		echo "0. 返回上一级"
+		echo "------------------------"
+
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read choice
+
+		case $choice in
+			1)
+				#install_docker
+				[ ! -d $docker_workdir ] && mkdir -p $docker_workdir
+				cd $docker_workdir
+
+				$docker_app_url
+
+				if command -v docker compose >/dev/null 2>&1; then
+					docker compose up -d
+				elif command -v docker-compose >/dev/null 2>&1; then
+					docker-compose up -d
+				fi
+
+				clear
+				_green "${docker_name}安装完成"
+				check_docker_app_ip
+				echo ""
+				$docker_user
+				$docker_passwd
+				;;
+			2)
+				cd $docker_workdir
+
+				if command -v docker compose >/dev/null 2>&1; then
+					docker compose up -d
+				elif command -v docker-compose >/dev/null 2>&1; then
+					docker-compose up -d
+				fi
+
+				clear
+				_green "$docker_name更新完成"
+				check_docker_app_ip
+				echo ""
+				$docker_user
+				$docker_passwd
+				;;
+			3)
+				cd $docker_workdir
+
+				if command -v docker compose >/dev/null 2>&1; then
+					docker compose down
+				elif command -v docker-compose >/dev/null 2>&1; then
+					docker-compose down
+				fi
+
+				if [ -n "$docker_remove_img" ]; then
+					# 循环删除每个镜像
+					for img in $docker_remove_img; do
+						docker rmi "$img"
+					done
+				fi
+
+				rm -fr "${docker_workdir}"
+				_green "${docker_name}应用已卸载"
+				;;
+			0)
+				break
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+		end_of
+	done
+}
+
+linux_panel() {
+	local choice
+	while true; do
+		clear
+		echo "▶ 面板工具"
+		echo "------------------------"
+		echo "1. 宝塔面板官方版                      2. aaPanel宝塔国际版"
+		echo "3. 1Panel新一代管理面板                4. NginxProxyManager可视化面板"
+		echo "5. AList多存储文件列表程序             6. Ubuntu远程桌面网页版"
+		echo "7. 哪吒探针VPS监控面板                 8. QB离线BT磁力下载面板"
+		echo "9. Poste.io邮件服务器程序              10. RocketChat多人在线聊天系统"
+		echo "------------------------"
+		echo "11. 禅道项目管理软件                   12. 青龙面板定时任务管理平台"
+		echo "13. Cloudreve网盘                      14. 简单图床图片管理程序"
+		echo "15. emby多媒体管理系统                 16. Speedtest测速面板"
+		echo "17. AdGuardHome去广告软件              18. onlyoffice在线办公OFFICE"
+		echo "19. 雷池WAF防火墙面板                  20. portainer容器管理面板"
+		echo "------------------------"
+		echo "21. VScode网页版                       22. UptimeKuma监控工具"
+		echo "23. Memos网页备忘录                    24. Webtop远程桌面网页版"
+		echo "25. Nextcloud网盘                      26. QD-Today定时任务管理框架"
+		echo "27. Dockge容器堆栈管理面板             28. LibreSpeed测速工具"
+		echo "29. searxng聚合搜索站                  30. PhotoPrism私有相册系统"
+		echo "------------------------"
+		echo "31. StirlingPDF工具大全                32. drawio免费的在线图表软件"
+		echo "33. Sun-Panel导航面板                  34. Pingvin-Share文件分享平台"
+		echo "35. 极简朋友圈                         36. LobeChatAI聊天聚合网站"
+		echo "37. MyIP工具箱                         38. 小雅alist全家桶"
+		echo "39. Bililive直播录制工具"
+		echo "------------------------"
+		echo "0. 返回主菜单"
+		echo "------------------------"
+
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read choice
+
+		case $choice in
+			1)
+				path="[ -d "/www/server/panel" ]"
+				panelname="宝塔面板"
+
+				feature1="bt"
+				feature1_1=""
+				feature2="curl -o bt-uninstall.sh http://download.bt.cn/install/bt-uninstall.sh > /dev/null 2>&1 && chmod +x bt-uninstall.sh && ./bt-uninstall.sh"
+				feature2_1="chmod +x bt-uninstall.sh"
+				feature2_2="./bt-uninstall.sh"
+
+				panelurl="https://www.bt.cn/new/index.html"
+
+				centos_command="wget -O install.sh https://download.bt.cn/install/install_6.0.sh"
+				centos_command2="sh install.sh ed8484bec"
+
+				ubuntu_command="wget -O install.sh https://download.bt.cn/install/install-ubuntu_6.0.sh"
+				ubuntu_command2="bash install.sh ed8484bec"
+
+				install_panel
+				;;
+			2)
+				path="[ -d "/www/server/panel" ]"
+				panelname="aapanel"
+
+				feature1="bt"
+				feature1_1=""
+				feature2="curl -o bt-uninstall.sh http://download.bt.cn/install/bt-uninstall.sh > /dev/null 2>&1 && chmod +x bt-uninstall.sh && ./bt-uninstall.sh"
+				feature2_1="chmod +x bt-uninstall.sh"
+				feature2_2="./bt-uninstall.sh"
+
+				panelurl="https://www.aapanel.com/new/index.html"
+
+				centos_command="wget -O install.sh http://www.aapanel.com/script/install_6.0_en.sh"
+				centos_command2="bash install.sh aapanel"
+
+				ubuntu_command="wget -O install.sh http://www.aapanel.com/script/install-ubuntu_6.0_en.sh"
+				ubuntu_command2="bash install.sh aapanel"
+
+				install_panel
+				;;
+			3)
+				path="command -v 1pctl &> /dev/null"
+				panelname="1Panel"
+
+				feature1="1pctl user-info"
+				feature1_1="1pctl update password"
+				feature2="1pctl uninstall"
+				feature2_1=""
+				feature2_2=""
+
+				panelurl="https://1panel.cn/"
+
+				centos_command="curl -sSL https://resource.fit2cloud.com/1panel/package/quick_start.sh -o quick_start.sh"
+				centos_command2="sh quick_start.sh"
+
+				ubuntu_command="curl -sSL https://resource.fit2cloud.com/1panel/package/quick_start.sh -o quick_start.sh"
+				ubuntu_command2="bash quick_start.sh"
+
+				install_panel
+				;;
+			4)
+				docker_name="npm"
+				docker_workdir="/data/docker_data/npm"
+				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/docker-compose-incomplete.yml"
+				docker_describe="如果您已经安装了其他面板工具或者LDNMP建站环境,建议先卸载,再安装npm!"
+				docker_port=81
+				docker_url="官网介绍: https://nginxproxymanager.com/"
+				docker_user="echo \"初始用户名: admin@example.com\""
+				docker_passwd="echo \"初始密码: changeme\""
+
+				docker_remove_img=$(docker images -a | awk '/jc21*/ {print $3}')
+
+				docker_app
+				;;
+			5)
+				docker_name="alist"
+				docker_workdir="/data/docker_data/alist"
+				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/docker-compose-incomplete.yml"
+				docker_describe="一个支持多种存储,支持网页浏览和WebDAV的文件列表程序,由gin和Solidjs驱动"
+				docker_port=5244
+				docker_url="官网介绍: https://alist.nn.ci/zh/"
+				docker_user="docker exec -it alist ./alist admin random"
+				docker_passwd=""
+
+				docker_remove_img=$(docker images -a | awk '/xhofe\/alist/ {print $3}')
+
+				docker_app
+				;;
+			0)
+				honeok
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+		end_of
+	done	
+}
+
 # 查看系统信息
 system_info(){
 	local hostname=$(hostnamectl | sed -n 's/^[[:space:]]*Static hostname:[[:space:]]*\(.*\)$/\1/p')
@@ -3333,7 +3664,7 @@ honeok(){
 				linux_ldnmp
 				;;
 			12)
-				echo "敬请期待"
+				linux_panel
 				;;
 			13)
 				linux_system_tools
