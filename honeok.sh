@@ -845,7 +845,19 @@ EOF
 	fi
 }
 
-docker_manager() {
+iptables_open(){
+	iptables -P INPUT ACCEPT
+	iptables -P FORWARD ACCEPT
+	iptables -P OUTPUT ACCEPT
+	iptables -F
+
+	ip6tables -P INPUT ACCEPT
+	ip6tables -P FORWARD ACCEPT
+	ip6tables -P OUTPUT ACCEPT
+	ip6tables -F
+}
+
+docker_manager(){
 	while true; do
 		clear
 		echo "▶ Docker管理"
