@@ -1165,7 +1165,8 @@ docker_manager(){
 		echo "7. 清理无用的docker容器和镜像网络数据卷"
 		echo "------------------------"
 		echo "8. 更换Docker源"
-		echo "9. 编辑daemon.json文件"
+		echo "9. 编辑Docker配置文件"
+		echo "10. Docker配置文件一键优化(CN提供镜像加速)"
 		echo "------------------------"
 		echo "11. 开启Docker-ipv6访问"
 		echo "12. 关闭Docker-ipv6访问"
@@ -1370,6 +1371,9 @@ docker_manager(){
 				clear
 				mkdir /etc/docker -p && vim /etc/docker/daemon.json
 				restart docker
+				;;
+			10)
+				generate_docker_config
 				;;
 			11)
 				clear
