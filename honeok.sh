@@ -201,6 +201,20 @@ enable() {
 	_green "$SERVICE_NAME已设置为开机自启"
 }
 
+# 打印进度条
+print_progress() {
+	local step=$1
+	local total_steps=$2
+	local progress=$((100 * step / total_steps))
+	local bar_length=50
+	local filled_length=$((bar_length * progress / 100))
+	local empty_length=$((bar_length - filled_length))
+	local bar=$(printf "%${filled_length}s" | tr ' ' '#')
+	local empty=$(printf "%${empty_length}s" | tr ' ' '-')
+
+	printf "\r[${bar}${empty}] ${progress}%% 完成"
+}
+
 install_docker() {
 	if ! command -v docker >/dev/null 2>&1; then
 		install_add_docker
