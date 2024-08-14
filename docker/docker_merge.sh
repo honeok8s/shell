@@ -2,8 +2,6 @@
 # Author: honeok
 # Blog: https://www.honeok.com
 
-set -o errexit
-
 yellow='\033[1;33m'       # 黄色
 red='\033[1;31m'          # 红色
 magenta='\033[1;35m'      # 品红色
@@ -179,6 +177,20 @@ enable() {
 generate_docker_config() {
 	local config_file="/etc/docker/daemon.json"
 	local is_china_server='false'
+
+	if ! command -v docker &> /dev/null; then
+		_red "Docker未安装在系统上,无法优化"
+		return 1
+	fi
+
+	if [ -f "$config_file" ]; then
+		# 如果文件存在,检查是否已经优化过
+		if grep -q '"storage-driver": "overlay2"' "$config_file"; then
+			_yellow "Docker配置文件已经优化,无需再次优化"
+			return 0
+		fi
+	fi
+
 	install python3 >/dev/null 2>&1
 
 	# 检查服务器是否在中国
@@ -296,7 +308,7 @@ uninstall_docker() {
 		os_name=$(grep '^ID=' /etc/os-release | cut -d'=' -f2 | tr -d '"' | tr '[:upper:]' '[:lower:]')
 	else
 		_red "无法识别操作系统版本"
-		break
+		return 1
 	fi
 
 	_yellow "准备卸载Docker"
@@ -304,6 +316,7 @@ uninstall_docker() {
 	# 检查Docker是否安装
 	if ! command -v docker &> /dev/null; then
 		_red "Docker未安装在系统上,无法继续卸载"
+		return 1
 	fi
 
 	stop_and_remove_docker() {
@@ -438,4 +451,5 @@ uninstall_docker() {
 				_red "无效选项,请重新输入"
 				;;
 		esac
+		end_of
 	done

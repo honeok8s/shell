@@ -2,9 +2,6 @@
 # Author: honeok Fork kejilion
 # Blog: https://www.honeok.com
 
-set -o errexit
-clear
-
 yellow='\033[1;33m'       # 黄色
 red='\033[1;31m'          # 红色
 magenta='\033[1;35m'      # 品红色
@@ -102,7 +99,7 @@ install(){
 }
 
 # 卸载软件包
-remove(){
+remove() {
 	if [ $# -eq 0 ]; then
 		_red "未提供软件包参数"
 		return 1
@@ -110,14 +107,18 @@ remove(){
 
 	for package in "$@"; do
 		_yellow "正在卸载$package"
-		if command -v dnf &>/dev/null; then
-			dnf remove -y "${package}"*
-		elif command -v yum &>/dev/null; then
-			yum remove -y "${package}"*
+		if command -v yum &>/dev/null; then
+			if rpm -q "${package}" >/dev/null 2>&1; then
+				yum remove -y "${package}"* >/dev/null 2>&1 || true
+			fi
 		elif command -v apt &>/dev/null; then
-			apt purge -y "${package}"*
+			if dpkg -l | grep -qw "${package}"; then
+				apt purge -y "${package}"* >/dev/null 2>&1 || true
+			fi
 		elif command -v apk &>/dev/null; then
-			apk del "${package}"*
+			if apk info | grep -qw "${package}"; then
+				apk del "${package}"* >/dev/null 2>&1 || true
+			fi
 		else
 			_red "未知的包管理器"
 			return 1
@@ -198,6 +199,245 @@ enable() {
 	fi
 
 	_green "$SERVICE_NAME已设置为开机自启"
+}
+
+install_docker() {
+	if ! command -v docker >/dev/null 2>&1; then
+		install_add_docker
+	else
+		_green "Docker环境已经安装"
+	fi
+}
+
+install_add_docker() {
+    _yellow "正在安装docker环境"
+
+	if [ -f /etc/os-release ] && grep -q "Fedora" /etc/os-release; then
+		install_docker_official
+	elif command -v apt &>/dev/null || command -v yum &>/dev/null; then
+		install_docker_official
+	else
+		install docker docker-compose
+		systemctl enable docker
+		systemctl start docker
+	fi
+
+	sleep 2
+}
+
+install_docker_official() {
+	if [[ "$(curl -s ipinfo.io/country)" == "CN" ]]; then
+		cd ~
+		curl -sS -O https://raw.githubusercontent.com/honeok8s/shell/main/docker/get-docker-official.sh && chmod +x get-docker-official.sh
+		sh get-docker-official.sh --mirror Aliyun
+		rm -f get-docker-official.sh
+	else
+		curl -fsSL https://get.docker.com | sh
+	fi
+
+	systemctl enable docker
+	systemctl start docker
+}
+
+generate_docker_config() {
+	local config_file="/etc/docker/daemon.json"
+	local is_china_server='false'
+
+	if ! command -v docker &> /dev/null; then
+		_red "Docker未安装在系统上,无法优化"
+		return 1
+	fi
+
+	if [ -f "$config_file" ]; then
+		# 如果文件存在,检查是否已经优化过
+		if grep -q '"storage-driver": "overlay2"' "$config_file"; then
+			_yellow "Docker配置文件已经优化,无需再次优化"
+			return 0
+		fi
+	fi
+
+	install python3 >/dev/null 2>&1
+
+	# 检查服务器是否在中国
+	if [ "$(curl -s https://ipinfo.io/country)" == 'CN' ]; then
+		is_china_server='true'
+	fi
+
+	# Python脚本
+	python3 - <<EOF
+import json
+import sys
+
+registry_mirrors = [
+	"https://registry.honeok.com",
+	"https://registry2.honeok.com",
+	"https://docker.ima.cm",
+	"https://hub.littlediary.cn",
+	"https://h.ysicing.net"
+]
+
+base_config = {
+	"exec-opts": [
+		"native.cgroupdriver=systemd"
+	],
+	"max-concurrent-downloads": 10,
+	"max-concurrent-uploads": 5,
+	"log-driver": "json-file",
+	"log-opts": {
+		"max-size": "30m",
+		"max-file": "3"
+	},
+	"storage-driver": "overlay2",
+	"ipv6": False
+}
+
+# 如果是中国服务器，将 registry-mirrors 放在前面
+if "$is_china_server" == "true":
+	config = {
+		"registry-mirrors": registry_mirrors,
+		**base_config
+	}
+else:
+	config = base_config
+
+with open("/etc/docker/daemon.json", "w") as f:
+	json.dump(config, f, indent=4)
+
+EOF
+
+	# 校验和重新加载Docker守护进程
+	_green "Docker配置文件已重新加载并重启Docker服务"
+	sudo systemctl daemon-reload && systemctl restart docker
+	_yellow "Docker配置文件已根据服务器IP归属做相关优化,如需调整自行修改$config_file"
+}
+
+# 卸载Docker
+uninstall_docker() {
+	local os_name
+	local docker_files=("/var/lib/docker" "/var/lib/containerd" "/etc/docker" "/opt/containerd")
+	local repo_files=("/etc/yum.repos.d/docker.*" "/etc/apt/sources.list.d/docker.*" "/etc/apt/keyrings/docker.*")
+
+	# 获取操作系统信息
+	if [ -f /etc/os-release ]; then
+		os_name=$(grep '^ID=' /etc/os-release | cut -d'=' -f2 | tr -d '"' | tr '[:upper:]' '[:lower:]')
+	else
+		_red "无法识别操作系统版本"
+		return 1
+	fi
+
+	_yellow "准备卸载Docker"
+
+	# 检查Docker是否安装
+	if ! command -v docker &> /dev/null; then
+		_red "Docker未安装在系统上,无法继续卸载"
+		return 1
+	fi
+
+	stop_and_remove_docker() {
+		local running_containers
+
+		# 获取所有容器的 ID
+		running_containers=$(docker ps -aq)
+		# 检查是否有容器 ID
+		if [ -n "$running_containers" ]; then
+			sudo docker rm -f $running_containers >/dev/null 2>&1
+		fi
+
+		sudo systemctl stop docker >/dev/null 2>&1
+		sudo systemctl disable docker >/dev/null 2>&1
+	}
+
+	remove_docker_files() {
+		for file in "${docker_files[@]}"; do
+			if [ -e "$file" ]; then
+				sudo rm -fr "$file" >/dev/null 2>&1
+			fi
+		done
+	}
+
+	remove_repo_files() {
+		for file in "${repo_files[@]}"; do
+			if [ -e "$file" ]; then
+				sudo rm -f "$file" >/dev/null 2>&1
+			fi
+		done
+	}
+
+	if [[ "$os_name" == "centos" ]]; then
+		stop_and_remove_docker
+
+		commands=(
+			"sudo yum remove docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras -y >/dev/null 2>&1"
+		)
+		# 初始化步骤计数
+		step=0
+		total_steps=${#commands[@]}  # 总命令数
+
+		# 执行命令并打印进度条
+		for command in "${commands[@]}"; do
+			eval $command
+			print_progress $((++step)) $total_steps
+		done
+
+		# 结束进度条
+		printf "\n"
+
+		remove_docker_files
+		remove_repo_files
+	elif [[ "$os_name" == "ubuntu" || "$os_name" == "debian" ]]; then
+		stop_and_remove_docker
+
+		commands=(
+			"sudo apt-get purge docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras -y >/dev/null 2>&1"
+		)
+		# 初始化步骤计数
+		step=0
+		total_steps=${#commands[@]}  # 总命令数
+
+		# 执行命令并打印进度条
+		for command in "${commands[@]}"; do
+			eval $command
+			print_progress $((++step)) $total_steps
+		done
+
+		# 结束进度条
+		printf "\n"
+
+		remove_docker_files
+		remove_repo_files
+	elif [[ "$os_name" == "alpine" ]]; then
+		stop_and_remove_docker
+
+		commands=(
+			"sudo apk del docker docker-compose >/dev/null 2>&1"
+		)
+		# 初始化步骤计数
+		step=0
+		total_steps=${#commands[@]}  # 总命令数
+
+		# 执行命令并打印进度条
+		for command in "${commands[@]}"; do
+			eval $command
+			print_progress $((++step)) $total_steps
+		done
+
+		# 结束进度条
+		printf "\n"
+
+		remove_docker_files
+		remove_repo_files
+	else
+		_red "抱歉, 此脚本不支持您的Linux发行版"
+		break
+	fi
+
+	# 检查卸载是否成功
+	if command -v docker &> /dev/null; then
+		_red "Docker卸载失败,请手动检查"
+		break
+	else
+		_green "Docker和Docker Compose已卸载, 并清理文件夹和相关依赖"
+	fi
 }
 
 # 用于检查并设置net.core.default_qdisc参数
@@ -941,13 +1181,17 @@ docker_manager(){
 		case $choice in
 			1)
 				clear
-				_yellow "嘿嘿"
+				install_add_docker
 				;;
 			2)
 				clear
 				echo "Docker版本"
 				docker -v
-				docker compose version
+				if command -v docker compose >/dev/null 2>&1; then
+					docker compose version
+				elif command -v docker-compose >/dev/null 2>&1; then
+					docker-compose version
+				fi
 				echo ""
 				echo "Docker镜像列表"
 				docker image ls
@@ -1142,8 +1386,7 @@ docker_manager(){
 
 				case "$choice" in
 					[Yy])
-						docker rm $(docker ps -a -q) && docker rmi $(docker images -q) && docker network prune
-						remove docker docker-compose docker-ce docker-ce-cli containerd.io
+						uninstall_docker
 						;;
 					[Nn])
 						;;
@@ -1548,7 +1791,7 @@ oracle_script() {
 				
 				case "$ins" in
 					[Yy])
-						#install_docker
+						install_docker
 						# 设置默认值
 						DEFAULT_CPU_CORE=1
 						DEFAULT_CPU_UTIL="10-20"
@@ -1932,7 +2175,7 @@ linux_ldnmp() {
 					esac
 				else
 					clear
-					#install_docker
+					install_docker
 
 					docker rm -f nginx
 					
@@ -2107,7 +2350,7 @@ docker_app() {
 
 		case $choice in
 			1)
-				#install_docker
+				install_docker
 				[ ! -d $docker_workdir ] && mkdir -p $docker_workdir
 				cd $docker_workdir
 
@@ -2363,7 +2606,7 @@ linux_panel() {
 
 					case $choice in
 						1)
-							#install_docker
+							install_docker
 							[ ! -d $docker_workdir ] && mkdir -p $docker_workdir
 							docker run --name rocketchat_db -d --restart=unless-stopped \
 								-v $docker_workdir/dump:/dump \
@@ -2510,7 +2753,7 @@ linux_panel() {
 
 					case $choice in
 						1)
-							#install_docker
+							install_docker
 							bash -c "$(curl -fsSLk https://waf-ce.chaitin.cn/release/latest/setup.sh)"
 							clear
 							_green "雷池WAF面板已经安装完成"
@@ -2613,7 +2856,7 @@ linux_panel() {
 				;;
 			38)
 				clear
-				#install_docker
+				install_docker
 				bash -c "$(curl --insecure -fsSL https://ddsrem.com/xiaoya_install.sh)"
 				;;
 			39)
