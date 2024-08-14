@@ -467,6 +467,8 @@ uninstall_docker() {
 		return 1
 	fi
 
+	sleep 3
+
 	# 检查卸载是否成功
 	if command -v docker &> /dev/null; then
 		_red "Docker卸载失败,请手动检查"
