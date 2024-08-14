@@ -442,13 +442,13 @@ uninstall_docker() {
 		remove_repo_files
 	else
 		_red "抱歉, 此脚本不支持您的Linux发行版"
-		break
+		return 1
 	fi
 
 	# 检查卸载是否成功
 	if command -v docker &> /dev/null; then
 		_red "Docker卸载失败,请手动检查"
-		break
+		return 1
 	else
 		_green "Docker和Docker Compose已卸载, 并清理文件夹和相关依赖"
 	fi
