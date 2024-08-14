@@ -1921,7 +1921,7 @@ oracle_script() {
 
 fail2ban_status() {
 	docker restart fail2ban
-	sleep 3
+	sleep 5
 	docker exec -it fail2ban fail2ban-client status
 }
 
@@ -2051,7 +2051,7 @@ linux_ldnmp() {
 								docker exec -it fail2ban fail2ban-client status
 								;;
 							8)
-								tail -f /data/docker_data/fail2ban/config/log/fail2ban/fail2ban.log
+								timeout 5 tail -f /data/docker_data/fail2ban/config/log/fail2ban/fail2ban.log
 								;;
 							9)
 								docker rm -f fail2ban
