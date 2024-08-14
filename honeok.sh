@@ -2913,7 +2913,7 @@ linux_panel() {
 
 				docker_app_url=$(bash -c "
 					curl -sS -o ${docker_workdir}/docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/nextcloud-docker-compose.yml &&
-					sed -i 's/NEXTCLOUD_ADMIN_PASSWORD=.*/NEXTCLOUD_ADMIN_PASSWORD=${rootpasswd}/' docker-compose.yml
+					sed -i 's/NEXTCLOUD_ADMIN_PASSWORD=.*/NEXTCLOUD_ADMIN_PASSWORD=${rootpasswd}/' ${docker_workdir}/docker-compose.yml
 				")
 
 				docker_describe="Nextcloud拥有超过400,000个部署,是您可以下载的最受欢迎的本地内容协作平台"
