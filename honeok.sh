@@ -253,6 +253,28 @@ install_docker_official() {
 	systemctl start docker
 }
 
+docker_main_version() {
+	local docker_version=""
+	local docker_compose_version=""
+
+	# 获取 Docker 版本
+	if command -v docker >/dev/null 2>&1; then
+		docker_version=$(docker --version | awk -F '[ ,]' '{print $3}')
+	elif command -v docker.io >/dev/null 2>&1; then
+		docker_version=$(docker.io --version | awk -F '[ ,]' '{print $3}')
+	fi
+
+	# 获取 Docker Compose 版本
+	if command -v docker-compose >/dev/null 2>&1; then
+		docker_compose_version=$(docker-compose version --short)
+	elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+		docker_compose_version=$(docker compose version --short)
+	fi
+
+	_yellow "已安装Docker版本: v$docker_version"
+	_yellow "已安装Docker Compose版本: $docker_compose_version"
+}
+
 generate_docker_config() {
 	local config_file="/etc/docker/daemon.json"
 	local is_china_server='false'
@@ -1196,7 +1218,28 @@ docker_manager(){
 		case $choice in
 			1)
 				clear
-				install_add_docker
+				if ! command -v docker >/dev/null 2>&1; then
+					install_add_docker
+				else
+					docker_main_version
+					while true; do
+						echo -n -e "是否升级Docker环境?(y/n):"
+						read answer
+
+						case $answer in
+							[Y/y])
+								install_add_docker
+								break
+								;;
+							[N/n])
+								break
+								;;
+							*)
+								_red "无效选项,请重新输入"
+								;;
+						esac
+					done
+				fi
 				;;
 			2)
 				clear
