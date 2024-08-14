@@ -2895,6 +2895,17 @@ linux_panel() {
 				docker_passwd=""
 				docker_app
 				;;
+			24)
+				docker_name="webtop"
+				docker_workdir="/data/docker_data/webtop"
+				docker_app_url="curl -sS -o docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/webtop-docker-compose.yml"
+				docker_describe="webtop基于Alpine,Ubuntu,Fedora和Arch的容器,包含官方支持的完整桌面环境,可通过任何现代Web浏览器访问"
+				docker_port=3083
+				docker_url="官网介绍: https://docs.linuxserver.io/images/docker-webtop/"
+				docker_user=""
+				docker_passwd=""
+				docker_app
+				;;
 			36)
 				docker_name="lobe-chat"
 				docker_workdir="/data/docker_data/lobe-chat"
