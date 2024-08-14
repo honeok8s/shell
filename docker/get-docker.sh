@@ -450,6 +450,24 @@ docker_main_version() {
 	sleep 2s
 	sudo docker version
 
+	echo "================================================================================"
+ 	echo ""
+	echo "To run Docker as a non-privileged user, consider setting up the"
+	echo "Docker daemon in rootless mode for your user:"
+	echo ""
+	echo "dockerd-rootless-setuptool.sh install"
+	echo ""
+	echo "Visit https://docs.docker.com/go/rootless/ to learn about rootless mode."
+	echo ""
+	echo ""
+	echo "To run the Docker daemon as a fully privileged service, but granting non-root"
+	echo "users access, refer to https://docs.docker.com/go/daemon-access/"
+	echo ""
+	echo "WARNING: Access to the remote API on a privileged Docker daemon is equivalent"
+	echo "         to root access on the host. Refer to the 'Docker daemon attack surface'"
+	echo "         documentation for details: https://docs.docker.com/go/attack-surface/"
+	echo ""
+	echo "================================================================================"
 }
 
 # 退出脚本前显示执行完成信息
