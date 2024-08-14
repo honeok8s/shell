@@ -3207,7 +3207,7 @@ services:
     volumes:
       - ./data:/usr/share/tesseract-ocr/5/tessdata
       - ./config:/configs
-	  - ./logs:/logs
+      - ./logs:/logs
     environment:
       - DOCKER_ENABLE_SECURITY=false
 EOF
