@@ -2415,9 +2415,9 @@ docker_app() {
 			1)
 				install_docker
 				[ ! -d $docker_workdir ] && mkdir -p $docker_workdir
-				cd $docker_workdir
+				cd $docker_workdir || return 1
 
-				$docker_app_url
+				bash -c "$docker_app_url"
 
 				if command -v docker compose >/dev/null 2>&1; then
 					docker compose up -d
@@ -2433,7 +2433,7 @@ docker_app() {
 				$docker_passwd
 				;;
 			2)
-				cd $docker_workdir
+				cd $docker_workdir || return 1
 
 				if command -v docker compose >/dev/null 2>&1; then
 					docker compose pull && docker compose up -d
@@ -2449,7 +2449,7 @@ docker_app() {
 				$docker_passwd
 				;;
 			3)
-				cd $docker_workdir
+				cd $docker_workdir || return 1
 
 				if command -v docker compose >/dev/null 2>&1; then
 					docker compose down && docker compose down --rmi all
@@ -2903,6 +2903,23 @@ linux_panel() {
 				docker_port=3083
 				docker_url="官网介绍: https://docs.linuxserver.io/images/docker-webtop/"
 				docker_user=""
+				docker_passwd=""
+				docker_app
+				;;
+			25)
+				docker_name="nextcloud"
+				docker_workdir="/data/docker_data/nextcloud"
+				rootpasswd=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
+
+				docker_app_url=$(bash -c "
+					curl -sS -o ${docker_workdir}/docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/nextcloud-docker-compose.yml &&
+					sed -i 's/NEXTCLOUD_ADMIN_PASSWORD=.*/NEXTCLOUD_ADMIN_PASSWORD=${rootpasswd}/' docker-compose.yml
+				")
+
+				docker_describe="Nextcloud拥有超过400,000个部署,是您可以下载的最受欢迎的本地内容协作平台"
+				docker_port=8989
+				docker_url="官网介绍: https://nextcloud.com/"
+				docker_user="echo \"账号: nextcloud  密码: $rootpasswd\""
 				docker_passwd=""
 				docker_app
 				;;
