@@ -2436,9 +2436,9 @@ docker_app() {
 				cd $docker_workdir
 
 				if command -v docker compose >/dev/null 2>&1; then
-					docker compose up -d
+					docker compose pull && docker compose up -d
 				elif command -v docker-compose >/dev/null 2>&1; then
-					docker-compose up -d
+					docker-compose pull && docker-compose up -d
 				fi
 
 				clear
