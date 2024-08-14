@@ -748,7 +748,7 @@ linux_clean() {
 		yum clean all
 		yum makecache
 		journalctl --rotate
-		journalctl --vacuum-time=1s
+		journalctl --vacuum-time=7d # 删除所有早于7天前的日志
 		journalctl --vacuum-size=500M
 	elif command -v apt &>/dev/null; then
 		wait_for_lock
@@ -757,7 +757,7 @@ linux_clean() {
 		apt clean -y
 		apt autoclean -y
 		journalctl --rotate
-		journalctl --vacuum-time=1s
+		journalctl --vacuum-time=7d # 删除所有早于7天前的日志
 		journalctl --vacuum-size=500M
 	elif command -v apk &>/dev/null; then
 		apk cache clean
