@@ -3350,17 +3350,18 @@ EOF
 				check_available_port
 
 							docker_compose_content=$(cat <<EOF
-searxng:
-  image: alandoyle/searxng:latest
-  container_name: searxng
-  init: true
-  volumes:
-    - ./config:/etc/searxng
-    - ./templates:/usr/local/searxng/searx/templates/simple
-    - ./theme:/usr/local/searxng/searx/static/themes/simple
-  ports:
-    - "$docker_port:8080"
-  restart: unless-stopped
+services:
+  searxng:
+    image: alandoyle/searxng:latest
+    container_name: searxng
+    init: true
+    volumes:
+      - ./config:/etc/searxng
+      - ./templates:/usr/local/searxng/searx/templates/simple
+      - ./theme:/usr/local/searxng/searx/static/themes/simple
+    ports:
+      - "$docker_port:8080"
+    restart: unless-stopped
 EOF
 )
 				docker_use=""
