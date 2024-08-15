@@ -7,17 +7,11 @@ curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/honeok.sh &&
 ```
 ## Docker一键安装
 根据IP归属地优化配置文件，安装镜像加速
-* 安装(两种执行方式)
-```shell
-bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/docker/get-docker.sh)
-```
+* 安装
 ```shell
 curl -fsSL https://raw.githubusercontent.com/honeok8s/shell/main/docker/get-docker.sh | bash -
 ```
-* 卸载(两种执行方式)
-```shell
-bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/docker/get-docker.sh) uninstall
-```
+* 卸载
 ```shell
 curl -fsSL https://raw.githubusercontent.com/honeok8s/shell/main/docker/get-docker.sh | bash -s -- uninstall
 ```
