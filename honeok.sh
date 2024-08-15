@@ -5261,9 +5261,11 @@ honeok(){
 						2)
 							if [ -f ~/palworld.sh ]; then
 								rm ~/palworld.sh
-							elif [ -f /usr/local/bin/p ];then
+							fi
+							if [ -f /usr/local/bin/p ]; then
 								rm /usr/local/bin/p
-							else
+							fi
+							if [ ! -f ~/palworld.sh ] && [ ! -f /usr/local/bin/p ]; then
 								_red "幻兽帕鲁开服脚本未安装"
 							fi
 							;;
