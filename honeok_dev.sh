@@ -5075,8 +5075,55 @@ honeok(){
 				echo "敬请期待"
 				;;
 			99)
-				curl -fsSL -o ~/palworld.sh https://raw.githubusercontent.com/honeok8s/shell/main/callscript/palworld.sh && chmod a+x ~/palworld.sh && ./palworld.sh
-				exit 0
+				need_root
+				until false;do
+					clear
+
+					if [ -f ~/palworld.sh ]; then
+						echo -e "${white}幻兽帕鲁脚本: ${green}已安装${white}"
+					else
+						echo -e "${white}幻兽帕鲁脚本: ${yellow}未安装${white}"
+					fi
+
+					echo ""
+					echo "幻兽帕鲁管理"
+					echo "Author: kejilion"
+					echo "-------------------------"
+					echo "1. 安装脚本  2. 卸载脚本  3. 运行脚本"
+					echo "-------------------------"
+					echo "0. 返回主菜单"
+					echo "-------------------------"
+
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					read choice
+
+					case $choice in
+						1)
+							cd ~
+							curl -fsSL -o ./palworld.sh https://raw.githubusercontent.com/honeok8s/shell/main/callscript/palworld.sh && chmod a+x ./palworld.sh
+							;;
+						2)
+							if [ -f ~/palworld.sh ]; then
+								rm ~/palworld.sh
+							else
+								_red "幻兽帕鲁开服脚本未安装"
+							fi
+							;;
+						3)
+							if [ -f ~/palworld.sh ]; then
+								bash ~/palworld.sh
+							else
+								cd ~ && curl -fsSL -o palworld.sh https://raw.githubusercontent.com/honeok8s/shell/main/callscript/palworld.sh && chmod a+x palworld.sh && bash palworld.sh
+							fi
+							;;
+						0)
+							honeok
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac
+				done
 				;;
 			00)
 				_green "当前已是最新版本"
