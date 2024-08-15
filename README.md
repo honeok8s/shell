@@ -3,9 +3,6 @@
 ```shell
 bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/honeok.sh)
 ```
-```shell
-curl -fsSL https://raw.githubusercontent.com/honeok8s/shell/main/honeok.sh | bash -
-```
 * 下载本地执行
 ```shell
 curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/honeok.sh && chmod +x ./honeok.sh && ./honeok.sh
