@@ -2461,7 +2461,7 @@ docker_app() {
 
 				rm -fr "${docker_workdir}"
 				_green "${docker_name}应用已卸载"
-				break
+				break # 卸载后返回面板工具菜单,环境变量重新赋值
 				;;
 			0)
 				break
