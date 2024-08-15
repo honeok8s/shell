@@ -392,14 +392,15 @@ while true; do
 			docker rmi -f cm2network/steamcmd
 			;;
 		00)
-			cd ~
-			curl -sS -O https://kejilion.pro/pal_log.sh && chmod +x pal_log.sh && ./pal_log.sh
-			rm pal_log.sh
-			echo ""
-			curl -sS -O https://kejilion.pro/palworld.sh && chmod +x palworld.sh
-			echo "脚本已更新到最新版本！"
-			break_end
-			palworld
+  			echo "更不了一点新!"
+			#cd ~
+			#curl -sS -O https://kejilion.pro/pal_log.sh && chmod +x pal_log.sh && ./pal_log.sh
+			#rm pal_log.sh
+			#echo ""
+			#curl -sS -O https://kejilion.pro/palworld.sh && chmod +x palworld.sh
+			#echo "脚本已更新到最新版本！"
+			#break_end
+			#palworld
 			;;
 		0)
 			clear
