@@ -24,6 +24,11 @@ _orange() { echo -e ${orange}$@${white}; }
 
 honeok_v="v1.0.0"
 
+# 脚本通过 <(wget ...)方式执行,不执行拷贝操作
+if [ -t 0 ]; then
+	cp ./honeok.sh /usr/local/bin/h > /dev/null 2>&1
+fi
+
 print_logo(){
 	local cyan=$(tput setaf 6)
 	local reset=$(tput sgr0)
@@ -4777,6 +4782,8 @@ linux_system_tools(){
 		echo "------------------------"
 		echo "99. 重启服务器"
 		echo "------------------------"
+		echo "101. 卸载honeok脚本"
+		echo "------------------------"
 		echo "0. 返回主菜单"
 		echo "------------------------"
 
@@ -4981,6 +4988,38 @@ linux_system_tools(){
 				clear
 				server_reboot
 				;;
+			101)
+				until false;do
+					clear
+					echo "卸载honeok脚本"
+					echo "将彻底卸载honeok脚本,不影响你其他功能"
+					echo "------------------------"
+					echo "1. 卸载       2.取消卸载"
+					echo "------------------------"
+
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					read choice
+
+					case "$choice" in
+						1)
+							clear
+							rm -f /usr/local/bin/h
+							rm ./honeok.sh
+							echo -e "\033[1;32m脚本已卸载,再见\033[0m"
+							end_of
+							clear
+							exit 0
+							;;
+						2)
+							_yellow "已取消"
+							break
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac	
+				done			
+				;;
 			0)
 				honeok
 				;;
@@ -4990,6 +5029,32 @@ linux_system_tools(){
 		esac
 		end_of
 	done
+}
+
+honeok_update() {
+	local new_version old_version
+
+	# 检测是否通过 <(wget ...) 执行
+	if [ -t 0 ]; then
+		# 标准输入是终端，说明脚本不是通过 <(wget ...) 执行的
+		new_version=$(curl -s https://raw.githubusercontent.com/honeok8s/shell/main/honeok.sh | sed -n '25p')
+		old_version=$(sed -n '25p' /usr/local/bin/h)
+
+		if [[ "$new_version" > "$old_version" ]]; then
+			_yellow "检测到新版本,正在更新"
+
+			curl -fsSL -o ./honeok.sh https://raw.githubusercontent.com/honeok8s/shell/main/honeok.sh
+			chmod a+x ./honeok.sh
+			cp ./honeok.sh /usr/local/bin/h > /dev/null 2>&1
+
+			_green "脚本已更新至最新版本"
+		else
+			_yellow "脚本已经是最新版本, 无需更新"
+		fi
+	else
+		# 标准输入不是终端，说明脚本是通过<(wget ...)执行的
+		_yellow "你是通过<(wget ...)运行此脚本,默认已是最新版本"
+	fi
 }
 
 honeok(){
@@ -5002,6 +5067,7 @@ honeok(){
 		echo "-------------------------------------------------------"
 		_orange "适配Ubuntu/Debian/CentOS/Alpine系统"
 		_cyan "Author: honeok"
+		_yellow "使用Curl下载本地运行,即可使用 h 快速呼出脚本"
 		_green "服务器当前时间: $(date +"%Y-%m-%d %H:%M:%S")"
 		echo "-------------------------------------------------------"
 		echo "1. 系统信息查询                   2. 系统更新"
@@ -5126,9 +5192,7 @@ honeok(){
 				done
 				;;
 			00)
-				_green "当前已是最新版本"
-				sleep 1
-				honeok
+				honeok_update
 				;;
 			0)
 				clear
