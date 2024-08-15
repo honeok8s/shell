@@ -2454,9 +2454,9 @@ docker_app() {
 				cd $docker_workdir || return 1
 
 				if command -v docker compose >/dev/null 2>&1; then
-					docker compose down && docker compose down --rmi all
+					docker compose down --rmi all --volumes
 				elif command -v docker-compose >/dev/null 2>&1; then
-					docker-compose down && docker-compose down --rmi all
+					docker-compose down --rmi all --volumes
 				fi
 
 				rm -fr "${docker_workdir}"
@@ -2622,6 +2622,9 @@ linux_panel() {
 						echo "0. 返回上一级"
 						echo "------------------------"
 						echo -n -e "${yellow}请输入选项并按回车键确认(回车使用默认值:完整安装):${white}"
+
+						# 重置choice变量
+						choice=""
 						read choice
 
 						case $choice in
