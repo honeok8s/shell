@@ -2644,7 +2644,7 @@ linux_panel() {
 								break
 								;;
 							0)
-								break
+								linux_panel # 返回面板管理界面
 								;;
 							*)
 								_red "无效选项,请重新输入"
