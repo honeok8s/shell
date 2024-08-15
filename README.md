@@ -19,7 +19,7 @@ curl -fsSL https://raw.githubusercontent.com/honeok8s/shell/main/docker/get-dock
 bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/docker/get-docker.sh) uninstall
 ```
 ```shell
-curl -fsSL https://raw.githubusercontent.com/honeok8s/shell/main/docker/get-docker.sh | bash - uninstall
+curl -fsSL https://raw.githubusercontent.com/honeok8s/shell/main/docker/get-docker.sh | bash -s -- uninstall
 ```
 ## Serverstatus探针，客户端探针存活监控
 项目地址：https://github.com/cppla/serverstatus
