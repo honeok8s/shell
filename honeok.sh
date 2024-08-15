@@ -2792,7 +2792,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="禅道是通用的项目管理软件"
 				docker_url="官网介绍: https://www.zentao.net/"
-				default_port=80
+				default_port=8080
 				default_database_port=3306
 
 				# 检查HTTP端口,如冲突则使用动态端口
@@ -2802,12 +2802,12 @@ EOF
 					# 检查数据库端口
 					if ss -tuln | grep -q ":$default_database_port "; then
 						# 如果默认数据库端口被占用,使用check_available_port函数查找新的端口
-						docker_database_port=$(find_available_port 30000 50000)
-						_yellow "默认数据库端口$default_database_port被占用, 数据库端口跳跃为$docker_database_port"
+						docker_database_port=$(find_available_port 30500 50000)
+						_yellow "默认端口$default_database_port被占用,端口跳跃为$docker_database_port"
 						sleep 1
 					else
 						docker_database_port=$default_database_port
-						_yellow "使用默认数据库端口$docker_database_port"
+						_yellow "使用默认端口$docker_database_port"
 						sleep 1
 					fi
 				else
@@ -2868,7 +2868,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="简单图床是一个简单的图床程序"
 				docker_url="官网介绍: https://github.com/icret/EasyImages2.0"
-				default_port=80
+				default_port=8080
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -2908,7 +2908,7 @@ EOF
 				if ! docker inspect "$docker_name" >/dev/null 2>&1; then
 					if ss -tuln | grep -q ":$default_https_port "; then
 						# 如果默认HTTPS端口被占用,使用check_available_port函数查找新的端口
-						docker_https_port=$(find_available_port 30000 50000)
+						docker_https_port=$(find_available_port 30500 50000)
 						_yellow "默认HTTPS端口$default_https_port被占用, HTTPS端口跳跃为$docker_https_port"
 					else
 						docker_https_port=$default_https_port
@@ -2946,10 +2946,28 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="Speedtest测速面板是一个VPS网速测试工具,多项测试功能,还可以实时监控VPS进出站流量"
 				docker_url="官网介绍: https://github.com/wikihost-opensource/als"
-				default_port=80
+				default_port=8080
+				default_iperf_port=30000
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
+
+				if ! docker inspect "$docker_name" >/dev/null 2>&1; then
+					# 检查iperf端口
+					if [[ "$docker_port" -eq "$default_iperf_port" ]];then
+						# 如果默认iperf端口被占用,重新分配
+						docker_iperf_port=$(find_available_port 30500 31000)
+						_yellow "默认端口$default_iperf_port被占用,端口跳跃为$docker_iperf_port"
+						sleep 1
+					else
+						docker_iperf_port=$default_iperf_port
+						_yellow "使用默认端口$docker_iperf_port"
+						sleep 1
+					fi
+				else
+					# 从docker ps中提取iperf端口,并排除80端口
+					docker_iperf_port=$(docker ps --filter "name=$docker_name" --format "{{.Ports}}" | grep -oP '(\d+)->\1/tcp' | grep -oP '^\d+' | grep -v '80')
+				fi
 
 							docker_compose_content=$(cat <<EOF
 services:
@@ -2958,6 +2976,16 @@ services:
     container_name: looking-glass
     ports:
       - "$docker_port:80"
+      - "$docker_iperf_port:$docker_iperf_port"
+    environment:
+      - DISPLAY_TRAFFIC=true
+      - ENABLE_SPEEDTEST=true
+      - UTILITIES_PING=true
+      - UTILITIES_SPEEDTESTDOTNET=true
+      - UTILITIES_FAKESHELL=true
+      - UTILITIES_IPERF3=true
+      - UTILITIES_IPERF3_PORT_MIN=$docker_iperf_port
+      - UTILITIES_IPERF3_PORT_MAX=$docker_iperf_port
     restart: unless-stopped
 EOF
 )
@@ -2999,7 +3027,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="onlyoffice是一款开源的在线office工具,太强大了!"
 				docker_url="官网介绍: https://www.onlyoffice.com/"
-				default_port=80
+				default_port=8080
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -3234,7 +3262,7 @@ EOF
 				docker_url="官网介绍: https://nextcloud.com/"
 				rootpasswd=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
 
-				default_port=80
+				default_port=8080
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -3263,7 +3291,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="QD-Today是一个HTTP请求定时任务自动执行框架"
 				docker_url="官网介绍: https://qd-today.github.io/qd/zh_CN/"
-				default_port=80
+				default_port=8080
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -3319,7 +3347,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="speedtest是用Javascript实现的轻量级速度测试工具,即开即用"
 				docker_url="官网介绍: https://github.com/librespeed/speedtest"
-				default_port=80
+				default_port=8080
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
