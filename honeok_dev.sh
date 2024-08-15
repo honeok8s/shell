@@ -2461,6 +2461,7 @@ docker_app() {
 
 				rm -fr "${docker_workdir}"
 				_green "${docker_name}应用已卸载"
+				break
 				;;
 			0)
 				break
@@ -2497,12 +2498,12 @@ check_available_port() {
 				# 查找可用的端口
 				docker_port=$(find_available_port 30000 50000)
 				_yellow "默认端口$default_port被占用,端口跳跃为$docker_port"
-				sleep 2
+				sleep 1
 				break
 			else
 				docker_port=$default_port
 				_yellow "使用默认端口$docker_port"
-				sleep 2
+				sleep 1
 				break
 			fi
 		done
@@ -2797,9 +2798,11 @@ EOF
 						# 如果默认数据库端口被占用,使用check_available_port函数查找新的端口
 						docker_database_port=$(find_available_port 30000 50000)
 						_yellow "默认数据库端口$default_database_port被占用, 数据库端口跳跃为$docker_database_port"
+						sleep 1
 					else
 						docker_database_port=$default_database_port
 						_yellow "使用默认数据库端口$docker_database_port"
+						sleep 1
 					fi
 				else
 					docker_database_port=$(docker ps --filter "name=$docker_name" --format "{{.Ports}}" | grep -oP '(\d+)->3306/tcp' | grep -oP '^\d+')
