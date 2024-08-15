@@ -1,6 +1,10 @@
 #!/bin/bash
-# Author: honeok Fork kejilion
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2024 honeok
+# Forked from kejilion
+# Current Author: honeok
 # Blog: https://www.honeok.com
+# Original Author: kejilion
 
 yellow='\033[1;33m'       # 黄色
 red='\033[1;31m'          # 红色
