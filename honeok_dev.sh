@@ -2613,7 +2613,35 @@ linux_panel() {
 				docker_describe="如果您已经安装了其他面板工具或者LDNMP建站环境,建议先卸载,再安装npm!"
 				docker_port=81
 
-				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/npm-docker-compose.yml)
+				if ! docker inspect "$docker_name" >/dev/null 2>&1; then
+					while true;do
+						echo "------------------------"
+						echo "1. 完整安装npm,基于mariadb(默认)"
+						echo "2. 精简安装npm,基于SQLlite"
+						echo "------------------------"
+						echo "0. 返回上一级"
+						echo "------------------------"
+						echo -n -e "${yellow}请输入选项并按回车键确认(回车使用默认值:完整安装):${white}"
+						read choice
+
+						case $choice in
+							1|"")
+								docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/npm/docker-compose-latest.yml)
+								break
+								;;
+							2)
+								docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/npm-docker-compose.yml)
+								break
+								;;
+							0)
+								break
+								;;
+							*)
+								_red "无效选项,请重新输入"
+								;;
+						esac
+					done
+				fi
 
 				docker_url="官网介绍: https://nginxproxymanager.com/"
 				docker_use="echo \"初始用户名: admin@example.com\""
@@ -2705,7 +2733,7 @@ EOF
 							curl -L https://raw.githubusercontent.com/naiba/nezha/master/script/install.sh  -o nezha.sh && chmod +x nezha.sh
 							./nezha.sh
 							;;
-						2)
+						0)
 							break
 							;;
 						*)
