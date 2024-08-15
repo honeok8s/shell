@@ -28,10 +28,32 @@ _orange() { echo -e ${orange}$@${white}; }
 
 honeok_v="v1.0.0"
 
-# 脚本通过 <(wget ...)方式执行,不执行拷贝操作
-if [ -t 0 ]; then
-	cp ./honeok.sh /usr/local/bin/h > /dev/null 2>&1
+is_process_substitution() {
+	# 检查标准输入是否是管道
+	[ -p /dev/fd/0 ] && return 0
+
+	# 额外检查标准输入文件描述符是否是进程替换的一部分
+	if [ -e /proc/$$/fd/0 ]; then
+		local fd_path
+		fd_path=$(readlink -f /proc/$$/fd/0)
+		[[ "$fd_path" == /dev/fd/* ]] && return 0
+	fi
+
+	return 1
+}
+
+# 检查是否需要执行cp操作
+if is_process_substitution; then
+	# 如果是通过进程替换执行,不进行拷贝操作
+	:
+else
+	# 如果不是通过进程替换执行,进行拷贝操作
+	if [ -f "./honeok.sh" ] && [ ! -f "/usr/local/bin/h" ]; then
+		cp ./honeok.sh /usr/local/bin/h > /dev/null 2>&1
+		chmod a+x /usr/local/bin/h > /dev/null 2>&1
+	fi
 fi
+
 
 print_logo(){
 	local cyan=$(tput setaf 6)
@@ -3855,11 +3877,11 @@ cloudflare_ddns() {
 		echo "Cloudflare ddns解析"
 		echo "-------------------------"
 		if [ -f /usr/local/bin/cf-ddns.sh ] || [ -f ~/cf-v4-ddns.sh ];then
-			echo -e "${yellow}Cloudflare ddns: ${white}${green}已安装${white}"
+			echo -e "${white}Cloudflare ddns: ${green}已安装${white}"
 			crontab -l | grep "/usr/local/bin/cf-ddns.sh"
 		else
-			_yellow "Cloudflare ddns: 未安装"
-			_yellow "使用动态解析之前请解析一个域名,如ddns.honeok.com到你的当前公网IP"
+			echo -e "${white}Cloudflare ddns: ${yellow}未安装${white}"
+			echo "使用动态解析之前请解析一个域名,如ddns.honeok.com到你的当前公网IP"
 		fi
 		echo "公网IPV4地址: ${ipv4_address}"
 		echo "公网IPV6地址: ${ipv6_address}"
@@ -5096,25 +5118,32 @@ honeok_update() {
 	local new_version old_version
 
 	# 检测是否通过 <(wget ...) 执行
-	if [ -t 0 ]; then
-		# 标准输入是终端，说明脚本不是通过 <(wget ...) 执行的
-		new_version=$(curl -s https://raw.githubusercontent.com/honeok8s/shell/main/honeok.sh | sed -n '25p')
-		old_version=$(sed -n '25p' /usr/local/bin/h)
+	if is_process_substitution; then
+		_yellow "你是通过<(wget ...)运行此脚本,默认已是最新版本"
+		return 0
+	fi
 
+	# 标准输入是终端,说明脚本不是通过 <(wget ...) 执行的
+	new_version=$(curl -s https://raw.githubusercontent.com/honeok8s/shell/main/honeok.sh | sed -n '29p' | cut -d'=' -f2 | tr -d '"')
+
+	if [ -f "/usr/local/bin/h" ]; then
+		old_version=$(sed -n '29p' /usr/local/bin/h | cut -d'=' -f2 | tr -d '"')
 		if [[ "$new_version" > "$old_version" ]]; then
 			_yellow "检测到新版本,正在更新"
-
 			curl -fsSL -o ./honeok.sh https://raw.githubusercontent.com/honeok8s/shell/main/honeok.sh
 			chmod a+x ./honeok.sh
 			cp ./honeok.sh /usr/local/bin/h > /dev/null 2>&1
-
 			_green "脚本已更新至最新版本"
 		else
-			_yellow "脚本已经是最新版本, 无需更新"
+			_yellow "脚本已经是最新版本,无需更新"
 		fi
 	else
-		# 标准输入不是终端，说明脚本是通过<(wget ...)执行的
-		_yellow "你是通过<(wget ...)运行此脚本,默认已是最新版本"
+		# 如果文件不存在,直接安装
+		_yellow "文件/usr/local/bin/h不存在,正在安装"
+		curl -fsSL -o ./honeok.sh https://raw.githubusercontent.com/honeok8s/shell/main/honeok.sh
+		chmod a+x ./honeok.sh
+		cp ./honeok.sh /usr/local/bin/h > /dev/null 2>&1
+		_green "脚本已安装"
 	fi
 }
 
@@ -5232,6 +5261,8 @@ honeok(){
 						2)
 							if [ -f ~/palworld.sh ]; then
 								rm ~/palworld.sh
+							elif [ -f /usr/local/bin/p ];then
+								rm /usr/local/bin/p
 							else
 								_red "幻兽帕鲁开服脚本未安装"
 							fi
