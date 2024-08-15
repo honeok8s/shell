@@ -25,9 +25,9 @@ _orange() { echo -e ${orange}$@${white}; }
 honeok_v="v1.0.0"
 
 # 脚本通过 <(wget ...)方式执行,不执行拷贝操作
-if [ -t 0 ]; then
-	cp ./honeok.sh /usr/local/bin/h > /dev/null 2>&1
-fi
+#if [ -t 0 ]; then
+#	cp ./honeok.sh /usr/local/bin/h > /dev/null 2>&1
+#fi
 
 print_logo(){
 	local cyan=$(tput setaf 6)
@@ -4989,36 +4989,37 @@ linux_system_tools(){
 				server_reboot
 				;;
 			101)
-				until false;do
-					clear
-					echo "卸载honeok脚本"
-					echo "将彻底卸载honeok脚本,不影响你其他功能"
-					echo "------------------------"
-					echo "1. 卸载       2.取消卸载"
-					echo "------------------------"
+				echo "dev分支"
+				#until false;do
+				#	clear
+				#	echo "卸载honeok脚本"
+				#	echo "将彻底卸载honeok脚本,不影响你其他功能"
+				#	echo "------------------------"
+				#	echo "1. 卸载       2.取消卸载"
+				#	echo "------------------------"
 
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-					read choice
+				#	echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+				#	read choice
 
-					case "$choice" in
-						1)
-							clear
-							rm -f /usr/local/bin/h
-							rm ./honeok.sh
-							echo -e "\033[1;32m脚本已卸载,再见\033[0m"
-							end_of
-							clear
-							exit 0
-							;;
-						2)
-							_yellow "已取消"
-							break
-							;;
-						*)
-							_red "无效选项,请重新输入"
-							;;
-					esac	
-				done			
+				#	case "$choice" in
+				#		1)
+				#			clear
+				#			rm -f /usr/local/bin/h
+				#			rm ./honeok.sh
+				#			echo -e "\033[1;32m脚本已卸载,再见\033[0m"
+				#			end_of
+				#			clear
+				#			exit 0
+				#			;;
+				#		2)
+				#			_yellow "已取消"
+				#			break
+				#			;;
+				#		*)
+				#			_red "无效选项,请重新输入"
+				#			;;
+				#	esac	
+				#done			
 				;;
 			0)
 				honeok
@@ -5031,31 +5032,31 @@ linux_system_tools(){
 	done
 }
 
-honeok_update() {
-	local new_version old_version
-
-	# 检测是否通过 <(wget ...) 执行
-	if [ -t 0 ]; then
-		# 标准输入是终端，说明脚本不是通过 <(wget ...) 执行的
-		new_version=$(curl -s https://raw.githubusercontent.com/honeok8s/shell/main/honeok.sh | sed -n '25p')
-		old_version=$(sed -n '25p' /usr/local/bin/h)
-
-		if [[ "$new_version" > "$old_version" ]]; then
-			_yellow "检测到新版本,正在更新"
-
-			curl -fsSL -o ./honeok.sh https://raw.githubusercontent.com/honeok8s/shell/main/honeok.sh
-			chmod a+x ./honeok.sh
-			cp ./honeok.sh /usr/local/bin/h > /dev/null 2>&1
-
-			_green "脚本已更新至最新版本"
-		else
-			_yellow "脚本已经是最新版本, 无需更新"
-		fi
-	else
-		# 标准输入不是终端，说明脚本是通过<(wget ...)执行的
-		_yellow "你是通过<(wget ...)运行此脚本,默认已是最新版本"
-	fi
-}
+#honeok_update() {
+#	local new_version old_version
+#
+#	# 检测是否通过 <(wget ...) 执行
+#	if [ -t 0 ]; then
+#		# 标准输入是终端，说明脚本不是通过 <(wget ...) 执行的
+#		new_version=$(curl -s https://raw.githubusercontent.com/honeok8s/shell/main/honeok.sh | sed -n '25p')
+#		old_version=$(sed -n '25p' /usr/local/bin/h)
+#
+#		if [[ "$new_version" > "$old_version" ]]; then
+#			_yellow "检测到新版本,正在更新"
+#
+#			curl -fsSL -o ./honeok.sh https://raw.githubusercontent.com/honeok8s/shell/main/honeok.sh
+#			chmod a+x ./honeok.sh
+#			cp ./honeok.sh /usr/local/bin/h > /dev/null 2>&1
+#
+#			_green "脚本已更新至最新版本"
+#		else
+#			_yellow "脚本已经是最新版本, 无需更新"
+#		fi
+#	else
+#		# 标准输入不是终端，说明脚本是通过<(wget ...)执行的
+#		_yellow "你是通过<(wget ...)运行此脚本,默认已是最新版本"
+#	fi
+#}
 
 honeok(){
 	local choice
@@ -5192,7 +5193,8 @@ honeok(){
 				done
 				;;
 			00)
-				honeok_update
+				#honeok_update
+				echo "dev分支"
 				;;
 			0)
 				clear
