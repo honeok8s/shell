@@ -3187,6 +3187,37 @@ EOF
 				docker_passwd=""
 				docker_app
 				;;
+			25)
+				docker_name="nextcloud"
+				docker_workdir="/data/docker_data/nextcloud"
+				docker_describe="Nextcloud拥有超过400,000个部署,是您可以下载的最受欢迎的本地内容协作平台"
+				rootpasswd=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
+
+				default_port=80
+
+				# 检查端口,如冲突则使用动态端口
+				check_available_port
+
+							docker_compose_content=$(cat <<EOF
+services:
+  nextcloud:
+    image: nextcloud:latest
+    container_name: nextcloud
+    restart: unless-stopped
+    ports:
+      - "$docker_port:80"
+    environment:
+      - NEXTCLOUD_ADMIN_USER=nextcloud
+      - NEXTCLOUD_ADMIN_PASSWORD=$rootpasswd
+    volumes:
+      - ./nextcloud:/var/www/html
+EOF
+)
+				docker_url="官网介绍: https://nextcloud.com/"
+				docker_use="echo \"账号: nextcloud  密码: $rootpasswd\""
+				docker_passwd=""
+				docker_app
+				;;
 			31)
 				docker_name="s-pdf"
 				docker_workdir="/data/docker_data/s-pdf"
@@ -3269,6 +3300,36 @@ EOF
 				clear
 				install_docker
 				bash -c "$(curl --insecure -fsSL https://ddsrem.com/xiaoya_install.sh)"
+				;;
+			39)
+				docker_name="bililive"
+				docker_workdir="/data/docker_data/bililive"
+				if [ ! -d $docker_workdir ]; then
+					mkdir -p $docker_workdir > /dev/null 2>&1
+					wget -O $docker_workdir/config.yml https://raw.githubusercontent.com/hr3lxphr6j/bililive-go/master/config.yml > /dev/null 2>&1
+				fi
+				default_port=8080
+
+				# 检查端口,如冲突则使用动态端口
+				check_available_port
+
+							docker_compose_content=$(cat <<EOF
+services:
+  bililive:
+    image: chigusa/bililive-go:latest
+    container_name: bililive
+    ports:
+      - "$docker_port:8080"
+    volumes:
+      - ./config.yml:/etc/bililive-go/config.yml
+      - ./Videos:/srv/bililive
+    restart: unless-stopped
+EOF
+)
+				docker_url="官网介绍: https://github.com/hr3lxphr6j/bililive-go"
+				docker_use=""
+				docker_passwd=""
+				docker_app
 				;;
 			51)
 				clear
