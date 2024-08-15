@@ -2983,7 +2983,7 @@ EOF
 				;;
 			19)
 				has_ipv4_has_ipv6
-				docker_name=safeline-mgt
+				docker_name="safeline-mgt"
 				docker_port=9443
 				while true; do
 					check_docker_app
