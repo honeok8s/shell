@@ -2543,6 +2543,7 @@ linux_panel() {
 		echo "35. 极简朋友圈                         36. LobeChatAI聊天聚合网站"
 		echo "37. MyIP工具箱                         38. 小雅alist全家桶"
 		echo "39. Bililive直播录制工具"
+		echo "45. iperf网络性能测试"
 		echo "------------------------"
 		echo "51. PVE开小鸡面板"
 		echo "------------------------"
@@ -3617,6 +3618,33 @@ services:
     volumes:
       - ./config.yml:/etc/bililive-go/config.yml
       - ./Videos:/srv/bililive
+    restart: unless-stopped
+EOF
+)
+				docker_use=""
+				docker_passwd=""
+				docker_app
+				;;
+			45)
+				docker_name="iperf"
+				docker_workdir="/data/docker_data/$docker_name"
+				docker_describe="iperf是一款功能强大的网络性能检测程序"
+				docker_url="官网介绍: https://iperf.fr"
+				default_port=5201
+
+				# 检查端口,如冲突则使用动态端口
+				check_available_port
+
+							docker_compose_content=$(cat <<EOF
+services:
+  iperf3:
+    image: networkstatic/iperf3:latest
+    stdin_open: true
+    tty: true
+    container_name: iperf
+    ports:
+      - "$docker_port:5201"
+    command: -s
     restart: unless-stopped
 EOF
 )
