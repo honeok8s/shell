@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 # Docker Engine for Linux installation script.
 #
