@@ -576,7 +576,7 @@ EOF
 # 卸载Docker
 uninstall_docker() {
 	local os_name
-	local docker_files=("/var/lib/docker" "/var/lib/containerd" "/etc/docker" "/opt/containerd")
+	local docker_files=("/var/lib/docker" "/var/lib/containerd" "/etc/docker" "/opt/containerd" "/data/docker_data")
 	local repo_files=("/etc/yum.repos.d/docker*" "/etc/apt/sources.list.d/docker.*" "/etc/apt/keyrings/docker.*")
 
 	need_root
