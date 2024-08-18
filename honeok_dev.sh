@@ -614,7 +614,7 @@ uninstall_docker() {
 
 	case "$os_name" in
 		centos|ubuntu|debian)
-			remove docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras
+			remove docker-ce docker-ce-cli containerd.io docker-compose-plugin docker-ce-rootless-extras docker-buildx-plugin
 			;;
 		alpine)
 			remove docker docker-compose
