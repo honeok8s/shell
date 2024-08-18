@@ -574,6 +574,7 @@ uninstall_docker() {
 	local os_name
 	local docker_files=("/var/lib/docker" "/var/lib/containerd" "/etc/docker" "/opt/containerd" "/data/docker_data")
 	local repo_files=("/etc/yum.repos.d/docker*" "/etc/apt/sources.list.d/docker.*" "/etc/apt/keyrings/docker.*")
+	local binary_files=("/usr/bin/docker" "/usr/bin/docker-compose")  # 删除二进制文件路径
 
 	need_root
 
@@ -587,7 +588,7 @@ uninstall_docker() {
 
 	# 移除Docker文件和仓库文件
 	cleanup_files() {
-		for file in "${docker_files[@]}" "${repo_files[@]}"; do
+		for file in "${docker_files[@]}" "${repo_files[@]}" "${binary_files[@]}"; do
 			[ -e "$file" ] && rm -fr "$file" >/dev/null 2>&1
 		done
 	}
@@ -623,14 +624,17 @@ uninstall_docker() {
 
 	cleanup_files
 
+	# 清除命令缓存
+	hash -r
+
 	sleep 2
 
 	# 检查卸载是否成功
-	if command -v docker &> /dev/null; then
+	if command -v docker &> /dev/null || [ -e "/usr/bin/docker" ]; then
 		_red "Docker卸载失败,请手动检查"
 		return 1
 	else
-		_green "Docker和Docker Compose已卸载, 并清理文件夹和相关依赖"
+		_green "Docker和Docker Compose已卸载,并清理文件夹和相关依赖"
 	fi
 }
 #################### Docker END ####################
