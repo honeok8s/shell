@@ -2486,7 +2486,6 @@ display_docker_app_ip() {
 }
 
 get_docker_status() {
-	local check_docker
 	if docker inspect "$docker_name" &>/dev/null; then
 		check_docker="${green}已安装${white}"
 	else
