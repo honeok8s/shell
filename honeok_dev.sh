@@ -2474,15 +2474,13 @@ check_ip_addresses() {
 
 # 显示Docker应用IP地址
 display_docker_app_ip() {
-	local ip_info
-	ip_info=$(check_ip_addresses)
-	local has_ipv4=$(echo "$ip_info" | awk '{print $1}')
-	local has_ipv6=$(echo "$ip_info" | awk '{print $2}')
+	# 调用检查函数,更新全局变量
+	check_ip_addresses
 
 	echo "------------------------"
 	echo "访问地址:"
-	$has_ipv4 && echo "http://$ipv4_address:$docker_port"
-	$has_ipv6 && echo "http://[$ipv6_address]:$docker_port"
+	[ "$has_ipv4" = true ] && echo "http://$ipv4_address:$docker_port"
+	[ "$has_ipv6" = true ] && echo "http://[$ipv6_address]:$docker_port"
 }
 
 get_docker_status() {
