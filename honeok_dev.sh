@@ -287,6 +287,16 @@ daemon_reload() {
 	fi
 }
 
+disable() {
+	local service_name="$1"
+	if command -v apk &>/dev/null; then
+		# Alpine使用OpenRC
+		rc-update del "$service_name"
+	else
+		/bin/systemctl disable "$service_name"
+	fi
+}
+
 # 设置服务为开机自启
 enable() {
 	local service_name="$1"
@@ -567,7 +577,9 @@ EOF
 uninstall_docker() {
 	local os_name
 	local docker_files=("/var/lib/docker" "/var/lib/containerd" "/etc/docker" "/opt/containerd")
-	local repo_files=("/etc/yum.repos.d/docker.*" "/etc/apt/sources.list.d/docker.*" "/etc/apt/keyrings/docker.*")
+	local repo_files=("/etc/yum.repos.d/docker*" "/etc/apt/sources.list.d/docker.*" "/etc/apt/keyrings/docker.*")
+
+	need_root
 
 	# 获取操作系统信息
 	if [ -f /etc/os-release ]; then
@@ -577,113 +589,45 @@ uninstall_docker() {
 		return 1
 	fi
 
-	_yellow "准备卸载Docker"
-
 	# 检查Docker是否安装
 	if ! command -v docker &> /dev/null; then
 		_red "Docker未安装在系统上,无法继续卸载"
 		return 1
 	fi
 
+	# 停止并删除Docker服务和容器
 	stop_and_remove_docker() {
-		local running_containers
-
-		# 获取所有容器的 ID
-		running_containers=$(docker ps -aq)
-		# 检查是否有容器 ID
-		if [ -n "$running_containers" ]; then
-			sudo docker rm -f $running_containers >/dev/null 2>&1
-		fi
-
-		sudo systemctl stop docker >/dev/null 2>&1
-		sudo systemctl disable docker >/dev/null 2>&1
+		local running_containers=$(docker ps -aq)
+		[ -n "$running_containers" ] && docker rm -f $running_containers >/dev/null 2>&1
+		stop docker >/dev/null 2>&1
+		disable docker >/dev/null 2>&1
 	}
 
-	remove_docker_files() {
-		for file in "${docker_files[@]}"; do
-			if [ -e "$file" ]; then
-				sudo rm -fr "$file" >/dev/null 2>&1
-			fi
+	# 移除Docker文件和仓库文件
+	cleanup_files() {
+		for file in "${docker_files[@]}" "${repo_files[@]}"; do
+			[ -e "$file" ] && rm -fr "$file" >/dev/null 2>&1
 		done
 	}
 
-	remove_repo_files() {
-		for file in "${repo_files[@]}"; do
-			if [ -e "$file" ]; then
-				sudo rm -f "$file" >/dev/null 2>&1
-			fi
-		done
-	}
+	stop_and_remove_docker
 
-	if [[ "$os_name" == "centos" ]]; then
-		stop_and_remove_docker
+	case "$os_name" in
+		centos|ubuntu|debian)
+			remove docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras
+			;;
+		alpine)
+			remove docker docker-compose
+			;;
+		*)
+			_red "此脚本不支持您的 Linux 发行版"
+			return 1
+			;;
+	esac
 
-		commands=(
-			"sudo yum remove docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras -y >/dev/null 2>&1"
-		)
-		# 初始化步骤计数
-		step=0
-		total_steps=${#commands[@]}  # 总命令数
+	cleanup_files
 
-		# 执行命令并打印进度条
-		for command in "${commands[@]}"; do
-			eval $command
-			print_progress $((++step)) $total_steps
-		done
-
-		# 结束进度条
-		printf "\n"
-
-		remove_docker_files
-		remove_repo_files
-	elif [[ "$os_name" == "ubuntu" || "$os_name" == "debian" ]]; then
-		stop_and_remove_docker
-
-		commands=(
-			"sudo apt-get purge docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras -y >/dev/null 2>&1"
-		)
-		# 初始化步骤计数
-		step=0
-		total_steps=${#commands[@]}  # 总命令数
-
-		# 执行命令并打印进度条
-		for command in "${commands[@]}"; do
-			eval $command
-			print_progress $((++step)) $total_steps
-		done
-
-		# 结束进度条
-		printf "\n"
-
-		remove_docker_files
-		remove_repo_files
-	elif [[ "$os_name" == "alpine" ]]; then
-		stop_and_remove_docker
-
-		commands=(
-			"sudo apk del docker docker-compose >/dev/null 2>&1"
-		)
-		# 初始化步骤计数
-		step=0
-		total_steps=${#commands[@]}  # 总命令数
-
-		# 执行命令并打印进度条
-		for command in "${commands[@]}"; do
-			eval $command
-			print_progress $((++step)) $total_steps
-		done
-
-		# 结束进度条
-		printf "\n"
-
-		remove_docker_files
-		remove_repo_files
-	else
-		_red "抱歉, 此脚本不支持您的Linux发行版"
-		return 1
-	fi
-
-	sleep 3
+	sleep 2
 
 	# 检查卸载是否成功
 	if command -v docker &> /dev/null; then
