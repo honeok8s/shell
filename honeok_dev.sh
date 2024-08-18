@@ -492,7 +492,7 @@ docker_main_version() {
 		docker_compose_version=$(docker compose version --short)
 	fi
 
-	echo -e "${white}已安装Docker版本: ${green}v$docker_version${white}"
+	echo -e "${white}已安装Docker版本: ${yellow}v$docker_version${white}"
 	echo -e "${white}已安装Docker Compose版本: ${yellow}v$docker_compose_version${white}"
 }
 
