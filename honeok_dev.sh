@@ -427,38 +427,34 @@ install_add_docker() {
 
 	if [ -f /etc/os-release ] && grep -q "Fedora" /etc/os-release; then
 		install_docker_official
+		enable docker && start docker
 		generate_docker_config
+		docker_main_version
 	elif command -v dnf &>/dev/null; then
 		install yum-utils device-mapper-persistent-data lvm2
 		[ -f /etc/yum.repos.d/docker*.repo ] && rm -f /etc/yum.repos.d/docker*.repo > /dev/null
 
 		# 判断地区安装
 		if [[ "$(curl -s ipinfo.io/country)" == "CN" ]]; then
-			if [ "$(uname -m)" = "x86_64" ]; then
-				curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo | tee /etc/yum.repos.d/docker-ce.repo > /dev/null
-			elif [ "$(uname -m)" = "aarch64" ]; then
-				curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/centos/arm64/docker-ce.repo | tee /etc/yum.repos.d/docker-ce.repo > /dev/null
-			fi
+			curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo | tee /etc/yum.repos.d/docker-ce.repo > /dev/null
 		else
-			if [ "$(uname -m)" = "x86_64" ]; then
-				yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo > /dev/null
-			elif [ "$(uname -m)" = "aarch64" ]; then
-				yum-config-manager --add-repo https://download.docker.com/linux/centos/arm64/docker-ce.repo > /dev/null
-			fi
+			yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo > /dev/null
 		fi
 
 		install docker-ce docker-ce-cli containerd.io
+		enable docker && start docker
 		generate_docker_config
-		enable docker
-		start docker
+		docker_main_version
 	elif command -v apt &>/dev/null || command -v yum &>/dev/null; then
 		install_docker_official
+		enable docker && start docker
 		generate_docker_config
+		docker_main_version
 	else
 		install docker docker-compose
+		enable docker && start docker
 		generate_docker_config
-		enable docker
-		start docker
+		docker_main_version
 	fi
 
 	sleep 2
@@ -496,8 +492,8 @@ docker_main_version() {
 		docker_compose_version=$(docker compose version --short)
 	fi
 
-	_yellow "已安装Docker版本: v$docker_version"
-	_yellow "已安装Docker Compose版本: v$docker_compose_version"
+	echo -e "${white}已安装Docker版本: ${green}v$docker_version${white}"
+	echo -e "${white}已安装Docker Compose版本: ${yellow}v$docker_compose_version${white}"
 }
 
 generate_docker_config() {
