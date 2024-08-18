@@ -588,7 +588,13 @@ uninstall_docker() {
 
 	# 移除Docker文件和仓库文件
 	cleanup_files() {
-		for file in "${docker_files[@]}" "${repo_files[@]}" "${binary_files[@]}"; do
+		for pattern in "${repo_files[@]}"; do
+			for file in $pattern; do
+				[ -e "$file" ] && rm -fr "$file" >/dev/null 2>&1
+			done
+		done
+
+		for file in "${docker_files[@]}" "${binary_files[@]}"; do
 			[ -e "$file" ] && rm -fr "$file" >/dev/null 2>&1
 		done
 	}
