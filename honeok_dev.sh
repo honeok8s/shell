@@ -581,20 +581,6 @@ uninstall_docker() {
 
 	need_root
 
-	# 获取操作系统信息
-	if [ -f /etc/os-release ]; then
-		os_name=$(grep '^ID=' /etc/os-release | cut -d'=' -f2 | tr -d '"' | tr '[:upper:]' '[:lower:]')
-	else
-		_red "无法识别操作系统版本"
-		return 1
-	fi
-
-	# 检查Docker是否安装
-	if ! command -v docker &> /dev/null; then
-		_red "Docker未安装在系统上,无法继续卸载"
-		return 1
-	fi
-
 	# 停止并删除Docker服务和容器
 	stop_and_remove_docker() {
 		local running_containers=$(docker ps -aq)
@@ -609,6 +595,20 @@ uninstall_docker() {
 			[ -e "$file" ] && rm -fr "$file" >/dev/null 2>&1
 		done
 	}
+
+	# 获取操作系统信息
+	if [ -f /etc/os-release ]; then
+		os_name=$(grep '^ID=' /etc/os-release | cut -d'=' -f2 | tr -d '"' | tr '[:upper:]' '[:lower:]')
+	else
+		_red "无法识别操作系统版本"
+		return 1
+	fi
+
+	# 检查Docker是否安装
+	if ! command -v docker &> /dev/null; then
+		_red "Docker未安装在系统上,无法继续卸载"
+		return 1
+	fi
 
 	stop_and_remove_docker
 
