@@ -516,7 +516,7 @@ generate_docker_config() {
 	install python3
 
 	# 检查服务器是否在中国
-	if [ "$(curl -s https://ipinfo.io/country)" = 'CN' ]; then
+	if [[ "$(curl -s ipinfo.io/country)" == "CN" ]]; then
 		is_china_server='true'
 	fi
 
