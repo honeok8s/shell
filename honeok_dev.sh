@@ -2459,33 +2459,34 @@ linux_ldnmp() {
 		end_of
 	done
 }
-has_ipv4_has_ipv6() {
-	ip_address
-	if [ -z "$ipv4_address" ]; then
-		has_ipv4=false
-	else
-		has_ipv4=true
-	fi
 
-	if [ -z "$ipv6_address" ]; then
-		has_ipv6=false
-	else
-		has_ipv6=true
-	fi
+check_ip_addresses() {
+	ip_address
+	local has_ipv4=false
+	local has_ipv6=false
+
+	[ -n "$ipv4_address" ] && has_ipv4=true
+	[ -n "$ipv6_address" ] && has_ipv6=true
+
+	has_ipv4=$has_ipv4
+	has_ipv6=$has_ipv6
 }
 
-check_docker_app_ip() {
+# 显示Docker应用IP地址
+display_docker_app_ip() {
+	local ip_info
+	ip_info=$(check_ip_addresses)
+	local has_ipv4=$(echo "$ip_info" | awk '{print $1}')
+	local has_ipv6=$(echo "$ip_info" | awk '{print $2}')
+
 	echo "------------------------"
 	echo "访问地址:"
-	if $has_ipv4; then
-		echo "http://$ipv4_address:$docker_port"
-	fi
-	if $has_ipv6; then
-		echo "http://[$ipv6_address]:$docker_port"
-	fi
+	$has_ipv4 && echo "http://$ipv4_address:$docker_port"
+	$has_ipv6 && echo "http://[$ipv6_address]:$docker_port"
 }
 
-check_docker_app() {
+get_docker_status() {
+	local check_docker
 	if docker inspect "$docker_name" &>/dev/null; then
 		check_docker="${green}已安装${white}"
 	else
@@ -2562,17 +2563,17 @@ install_panel() {
 
 docker_app() {
 	local choice
-	has_ipv4_has_ipv6
+	check_ip_addresses
 	while true; do
 		clear
-		check_docker_app
+		get_docker_status
 		echo -e "$docker_name $check_docker"
 		echo "$docker_describe"
 		echo "$docker_url"
 
 		# 获取并显示当前端口
 		if docker inspect "$docker_name" &>/dev/null; then
-			check_docker_app_ip
+			display_docker_app_ip
 		fi
 		echo ""
 		echo "------------------------"
@@ -2601,7 +2602,7 @@ docker_app() {
 
 				clear
 				_green "${docker_name}安装完成"
-				check_docker_app_ip
+				display_docker_app_ip
 				echo ""
 				$docker_use
 				$docker_passwd
@@ -2617,7 +2618,7 @@ docker_app() {
 
 				clear
 				_green "$docker_name更新完成"
-				check_docker_app_ip
+				display_docker_app_ip
 				echo ""
 				$docker_use
 				$docker_passwd
@@ -3217,17 +3218,17 @@ EOF
 				docker_app
 				;;
 			19)
-				has_ipv4_has_ipv6
+				check_ip_addresses
 				docker_name="safeline-mgt"
 				docker_port=9443
 				while true; do
-					check_docker_app
+					get_docker_status
 					clear
 					echo -e "雷池服务 $check_docker"
 					echo "雷池是长亭科技开发的WAF站点防火墙程序面板,可以反代站点进行自动化防御"
 
 					if docker inspect "$docker_name" &>/dev/null; then
-						check_docker_app_ip
+						display_docker_app_ip
 					fi
 					echo ""
 
@@ -3246,7 +3247,7 @@ EOF
 							bash -c "$(curl -fsSLk https://waf-ce.chaitin.cn/release/latest/setup.sh)"
 							clear
 							_green "雷池WAF面板已经安装完成"
-							check_docker_app_ip
+							display_docker_app_ip
 							docker exec safeline-mgt resetadmin
 							;;
 						2)
@@ -3255,7 +3256,7 @@ EOF
 							echo ""
 							clear
 							_green "雷池WAF面板已经更新完成"
-							check_docker_app_ip
+							display_docker_app_ip
 							;;
 						3)
 							docker exec safeline-mgt resetadmin
