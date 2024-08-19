@@ -1220,28 +1220,18 @@ docker_manager(){
 
 has_ipv4_has_ipv6() {
 	ip_address
-	if [ -z "$ipv4_address" ]; then
-		has_ipv4=false
-	else
-		has_ipv4=true
-	fi
+	has_ipv4=false
+	has_ipv6=false
 
-	if [ -z "$ipv6_address" ]; then
-		has_ipv6=false
-	else
-		has_ipv6=true
-	fi
+	[ -n "$ipv4_address" ] && has_ipv4=true
+	[ -n "$ipv6_address" ] && has_ipv6=true
 }
 
 check_docker_app_ip() {
 	echo "------------------------"
 	echo "访问地址:"
-	if $has_ipv4; then
-		echo "http://$ipv4_address:$docker_port"
-	fi
-	if $has_ipv6; then
-		echo "http://[$ipv6_address]:$docker_port"
-	fi
+	$has_ipv4 && echo "http://$ipv4_address:$docker_port"
+	$has_ipv6 && echo "http://[$ipv6_address]:$docker_port"
 }
 
 check_docker_app() {
@@ -1420,24 +1410,51 @@ find_available_port() {
 }
 
 check_available_port() {
+	# 检查并设置docker_port_1
 	if docker inspect "$docker_name" >/dev/null 2>&1; then
 		# 如果容器已存在,获取当前映射的端口
-		docker_port=$(docker inspect "$docker_name" --format '{{ range $p, $conf := .NetworkSettings.Ports }}{{ range $conf }}{{ $p }}:{{ .HostPort }}{{ end }}{{ end }}' | grep -oP '(\d+)$')
+		docker_port_1=$(docker inspect "$docker_name" --format '{{ range $p, $conf := .NetworkSettings.Ports }}{{ range $conf }}{{ $p }}:{{ .HostPort }}{{ end }}{{ end }}' | grep -oP '(\d+)$')
 	else
 		while true; do
-			if ss -tuln | grep -q ":$default_port "; then
+			if ss -tuln | grep -q ":$default_port_1 "; then
 				# 查找可用的端口
-				docker_port=$(find_available_port 30000 50000)
-				_yellow "默认端口$default_port被占用,端口跳跃为$docker_port"
+				docker_port_1=$(find_available_port 30000 50000)
+				_yellow "默认端口$default_port_1被占用,端口跳跃为$docker_port_1"
 				sleep 1
 				break
 			else
-				docker_port=$default_port
-				_yellow "使用默认端口$docker_port"
+				docker_port_1=$default_port_1
+				_yellow "使用默认端口$docker_port_1"
 				sleep 1
 				break
 			fi
 		done
+	fi
+
+	# 检查并设置docker_port_2
+	if [ -n "$default_port_2" ]; then
+		if ss -tuln | grep -q ":$default_port_2 "; then
+			docker_port_2=$(find_available_port 31000 50000)
+			_yellow "默认端口$default_port_2被占用,端口跳跃为$docker_port_2"
+			sleep 1
+		else
+			docker_port_2=$default_port_2
+			_yellow "使用默认端口$docker_port_2"
+			sleep 1
+		fi
+	fi
+
+	# 检查并设置docker_port_3
+	if [ -n "$default_port_3" ]; then
+		if ss -tuln | grep -q ":$default_port_3 "; then
+			docker_port_3=$(find_available_port 32000 50000)
+			_yellow "默认端口$default_port_3被占用,端口跳跃为$docker_port_3"
+			sleep 1
+		else
+			docker_port_3=$default_port_3
+			_yellow "使用默认端口$docker_port_3"
+			sleep 1
+		fi
 	fi
 }
 
@@ -1718,35 +1735,20 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="禅道是通用的项目管理软件"
 				docker_url="官网介绍: https://www.zentao.net/"
-				default_port=8080
-				default_database_port=3306
+				default_port_1=8080
+				default_port_2=3306
 
-				# 检查HTTP端口,如冲突则使用动态端口
+				# 处理端口冲突
 				check_available_port
 
-				if ! docker inspect "$docker_name" >/dev/null 2>&1; then
-					# 检查数据库端口
-					if ss -tuln | grep -q ":$default_database_port "; then
-						# 如果默认数据库端口被占用,使用check_available_port函数查找新的端口
-						docker_database_port=$(find_available_port 30500 50000)
-						_yellow "默认端口$default_database_port被占用,端口跳跃为$docker_database_port"
-						sleep 1
-					else
-						docker_database_port=$default_database_port
-						_yellow "使用默认端口$docker_database_port"
-						sleep 1
-					fi
-				else
-					docker_database_port=$(docker ps --filter "name=$docker_name" --format "{{.Ports}}" | grep -oP '(\d+)->3306/tcp' | grep -oP '^\d+')
-				fi
 							docker_compose_content=$(cat <<EOF
 services:
   zentao-server:
     image: idoop/zentao:latest
     container_name: zentao-server
     ports:
-      - "$docker_port:80"
-      - "$docker_database_port:3306"
+      - "$docker_port_1:80"
+      - "$docker_port_2:3306"
     environment:
       - ADMINER_USER=root
       - ADMINER_PASSWD=123456
