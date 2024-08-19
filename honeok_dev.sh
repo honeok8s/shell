@@ -4079,15 +4079,14 @@ install_crontab() {
 		. /etc/os-release
 			case "$ID" in
 				ubuntu|debian)
-					apt update
-					apt install -y cron
-					systemctl enable cron
-					systemctl start cron
+					install cron
+					enable cron
+					start cron
 					;;
 				centos)
-					yum install -y cronie
-					systemctl enable crond
-					systemctl start crond
+					install cronie
+					enable crond
+					start crond
 					;;
 				alpine)
 					apk add --no-cache cronie
