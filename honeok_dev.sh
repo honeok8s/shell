@@ -1488,8 +1488,7 @@ linux_panel() {
 		echo "33. Sun-Panel导航面板                  34. Pingvin-Share文件分享平台"
 		echo "35. 极简朋友圈                         36. LobeChatAI聊天聚合网站"
 		echo "37. MyIP工具箱                         38. 小雅alist全家桶"
-		echo "39. Bililive直播录制工具"
-		echo "45. iperf网络性能测试"
+		echo "39. Bililive直播录制工具               40. It-tools工具箱(中文版)"
 		echo "------------------------"
 		echo "51. PVE开小鸡面板"
 		echo "------------------------"
@@ -1565,7 +1564,7 @@ linux_panel() {
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="如果您已经安装了其他面板工具或者LDNMP建站环境,建议先卸载,再安装npm!"
 				docker_url="官网介绍: https://nginxproxymanager.com/"
-				docker_port=81
+				default_port_1=81
 
 				if ! docker inspect "$docker_name" >/dev/null 2>&1; then
 					while true;do
@@ -1609,7 +1608,7 @@ linux_panel() {
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="一个支持多种存储,支持网页浏览和WebDAV的文件列表程序,由gin和Solidjs驱动"
 				docker_url="官网介绍: https://alist.nn.ci/zh/"
-				default_port=5244
+				default_port_1=5244
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -1622,7 +1621,7 @@ services:
     volumes:
       - ./config:/opt/alist/data
     ports:
-      - $docker_port:5244
+      - $docker_port_1:5244
     environment:
       - PUID=0
       - PGID=0
@@ -1640,7 +1639,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="webtop基于Ubuntu的容器,包含官方支持的完整桌面环境,可通过任何现代Web浏览器访问"
 				docker_url="官网介绍: https://docs.linuxserver.io/images/docker-webtop/"
-				default_port=3000
+				default_port_1=3000
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -1651,7 +1650,7 @@ services:
     image: lscr.io/linuxserver/webtop:ubuntu-kde
     container_name: webtop-ubuntu
     ports:
-      - $docker_port:3000
+      - $docker_port_1:3000
     environment:
       - PUID=1000
       - PGID=1000
@@ -1704,7 +1703,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="qbittorrent离线BT磁力下载服务"
 				docker_url="官网介绍: https://hub.docker.com/r/linuxserver/qbittorrent"
-				default_port=8081
+				default_port_1=8081
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -1715,7 +1714,7 @@ services:
     image: linuxserver/qbittorrent:latest
     container_name: qbittorrent
     ports:
-      - "$docker_port:8081"
+      - "$docker_port_1:8081"
       - "6881:6881"
       - "6881:6881/udp"
     environment:
@@ -1772,7 +1771,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="青龙面板是一个定时任务管理平台"
 				docker_url="官网介绍: https://github.com/whyour/qinglong"
-				default_port=5700
+				default_port_1=5700
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -1784,7 +1783,7 @@ services:
     container_name: qinglong
     hostname: qinglong
     ports:
-      - "$docker_port:5700"
+      - "$docker_port_1:5700"
     volumes:
       - ./data:/ql/data
     restart: unless-stopped
@@ -1799,7 +1798,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="简单图床是一个简单的图床程序"
 				docker_url="官网介绍: https://github.com/icret/EasyImages2.0"
-				default_port=8080
+				default_port_1=8080
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -1810,7 +1809,7 @@ services:
     image: ddsderek/easyimage:latest
     container_name: easyimage
     ports:
-      - "$docker_port:80"
+      - "$docker_port_1:80"
     environment:
       - TZ=Asia/Shanghai
       - PUID=1000
@@ -1830,32 +1829,20 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="emby是一个主从式架构的媒体服务器软件,可以用来整理服务器上的视频和音频,并将音频和视频流式传输到客户端设备"
 				docker_url="官网介绍: https://emby.media/"
-				default_port=8096 # 默认HTTP访问端口
-				default_https_port=8920 # 默认HTTPS访问端口
+				default_port_1=8096
+				default_port_2=8920
 
 				# 检查HTTP端口,如冲突则使用动态端口
 				check_available_port
 
-				if ! docker inspect "$docker_name" >/dev/null 2>&1; then
-					if ss -tuln | grep -q ":$default_https_port "; then
-						# 如果默认HTTPS端口被占用,使用check_available_port函数查找新的端口
-						docker_https_port=$(find_available_port 30500 50000)
-						_yellow "默认HTTPS端口$default_https_port被占用, HTTPS端口跳跃为$docker_https_port"
-					else
-						docker_https_port=$default_https_port
-						_yellow "使用默认HTTPS端口$docker_https_port"
-					fi
-				else
-					docker_https_port=$(docker ps --filter "name=$docker_name" --format "{{.Ports}}" | grep -oP '(\d+)->8920/tcp' | grep -oP '^\d+')
-				fi
 							docker_compose_content=$(cat <<EOF
 services:
   emby:
     image: linuxserver/emby:latest
     container_name: emby
     ports:
-      - "$docker_port:8096"
-      - "$docker_https_port:8920"
+      - "$docker_port_1:8096"
+      - "$docker_port_2:8920"
     environment:
       - UID=1000
       - GID=100
@@ -1877,27 +1864,41 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="Speedtest测速面板是一个VPS网速测试工具,多项测试功能,还可以实时监控VPS进出站流量"
 				docker_url="官网介绍: https://github.com/wikihost-opensource/als"
-				default_port=8080
-				default_iperf_port=30000
+				default_port_1=8080
+				default_port_2=30000
 
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
+				if docker inspect "$docker_name" >/dev/null 2>&1; then
+					# 如果容器已存在,获取当前映射的端口
+					docker_port_1=$(docker inspect "$docker_name" --format '{{ range $p, $conf := .NetworkSettings.Ports }}{{ range $conf }}{{ $p }}:{{ .HostPort }}{{ end }}{{ end }}' | grep -oP '(\d+)$')
+				else
+					while true; do
+						if ss -tuln | grep -q ":$default_port_1 "; then
+							# 查找可用的端口
+							docker_port_1=$(find_available_port 30000 50000)
+							_yellow "默认端口$default_port_1被占用,端口跳跃为$docker_port_1"
+							sleep 1
+							break
+						else
+							docker_port_1=$default_port_1
+							_yellow "使用默认端口$docker_port_1"
+							sleep 1
+							break
+						fi
+					done
+				fi
 
 				if ! docker inspect "$docker_name" >/dev/null 2>&1; then
-					# 检查iperf端口
-					if [[ "$docker_port" -eq "$default_iperf_port" ]];then
-						# 如果默认iperf端口被占用,重新分配
-						docker_iperf_port=$(find_available_port 30500 31000)
-						_yellow "默认端口$default_iperf_port被占用,端口跳跃为$docker_iperf_port"
+					if [[ "$docker_port_1" -eq "$default_port_2" ]];then
+						docker_port_2=$(find_available_port 30500 31000)
+						_yellow "默认端口$default_iperf_port被占用,端口跳跃为$docker_port_2"
 						sleep 1
 					else
-						docker_iperf_port=$default_iperf_port
-						_yellow "使用默认端口$docker_iperf_port"
+						docker_port_2=$default_port_2
+						_yellow "使用默认端口$docker_port_2"
 						sleep 1
 					fi
 				else
-					# 从docker ps中提取iperf端口,并排除80端口
-					docker_iperf_port=$(docker ps --filter "name=$docker_name" --format "{{.Ports}}" | grep -oP '(\d+)->\1/tcp' | grep -oP '^\d+' | grep -v '80')
+					docker_port_2=$(docker ps --filter "name=$docker_name" --format "{{.Ports}}" | grep -oP '(\d+)->\1/tcp' | grep -oP '^\d+' | grep -v '80')
 				fi
 
 							docker_compose_content=$(cat <<EOF
@@ -1906,8 +1907,8 @@ services:
     image: wikihostinc/looking-glass-server
     container_name: looking-glass
     ports:
-      - "$docker_port:80"
-      - "$docker_iperf_port:$docker_iperf_port"
+      - "$docker_port_1:80"
+      - "$docker_port_2:$docker_port_2"
     environment:
       - DISPLAY_TRAFFIC=true
       - ENABLE_SPEEDTEST=true
@@ -1915,8 +1916,8 @@ services:
       - UTILITIES_SPEEDTESTDOTNET=true
       - UTILITIES_FAKESHELL=true
       - UTILITIES_IPERF3=true
-      - UTILITIES_IPERF3_PORT_MIN=$docker_iperf_port
-      - UTILITIES_IPERF3_PORT_MAX=$docker_iperf_port
+      - UTILITIES_IPERF3_PORT_MIN=$docker_port_2
+      - UTILITIES_IPERF3_PORT_MAX=$docker_port_2
     restart: unless-stopped
 EOF
 )
@@ -1929,7 +1930,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="AdGuardHome是一款全网广告拦截与反跟踪软件,未来将不止是一个DNS服务器"
 				docker_url="官网介绍: https://hub.docker.com/r/adguard/adguardhome"
-				default_port=3000
+				default_port_1=3000
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -1942,7 +1943,7 @@ services:
     ports:
       - "53:53/tcp"
       - "53:53/udp"
-      - "$docker_port:3000/tcp"
+      - "$docker_port_1:3000/tcp"
     volumes:
       - ./work:/opt/adguardhome/work
       - ./conf:/opt/adguardhome/conf
@@ -1958,7 +1959,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="onlyoffice是一款开源的在线office工具,太强大了!"
 				docker_url="官网介绍: https://www.onlyoffice.com/"
-				default_port=8080
+				default_port_1=8080
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -1969,7 +1970,7 @@ services:
     image: onlyoffice/documentserver:latest
     container_name: onlyoffice
     ports:
-      - "$docker_port:80"
+      - "$docker_port_1:80"
     volumes:
       - ./logs:/var/log/onlyoffice
       - ./data:/var/www/onlyoffice/Data
@@ -1983,7 +1984,7 @@ EOF
 			19)
 				has_ipv4_has_ipv6
 				docker_name="safeline-mgt"
-				docker_port=9443
+				docker_port_1=9443
 				while true; do
 					check_docker_app
 					clear
@@ -2046,7 +2047,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="portainer是一个轻量级的docker容器管理面板"
 				docker_url="官网介绍: https://www.portainer.io/"
-				default_port=9000
+				default_port_1=9000
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -2057,7 +2058,7 @@ services:
     image: portainer/portainer
     container_name: portainer
     ports:
-      - "$docker_port:9000"
+      - "$docker_port_1:9000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./data:/data
@@ -2073,7 +2074,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="VScode是一款强大的在线代码编写工具"
 				docker_url="官网介绍: https://github.com/coder/code-server"
-				default_port=8080
+				default_port_1=8080
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -2084,7 +2085,7 @@ services:
     image: codercom/code-server:latest
     container_name: vscode-web
     ports:
-      - "$docker_port:8080"
+      - "$docker_port_1:8080"
     volumes:
       - ./vscode-web:/home/coder/.local/share/code-server
     restart: unless-stopped
@@ -2099,7 +2100,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="uptimekuma易于使用的自托管监控工具"
 				docker_url="官网介绍: https://github.com/louislam/uptime-kuma"
-				default_port=3001
+				default_port_1=3001
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -2108,12 +2109,12 @@ EOF
 services:
   uptimekuma:
     image: louislam/uptime-kuma:latest
-    restart: unless-stopped
     container_name: uptimekuma
     volumes:
       - ./uptimekuma:/app/data
     ports:
-      - $docker_port:3001
+      - "$docker_port_1:3001"
+    restart: unless-stopped
 EOF
 )
 				docker_use=""
@@ -2125,7 +2126,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="Memos是一款轻量级,自托管的备忘录中心"
 				docker_url="官网介绍: https://github.com/usememos/memos"
-				default_port=5230
+				default_port_1=5230
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -2137,7 +2138,7 @@ services:
     container_name: memeos
     hostname: memeos
     ports:
-      - "$docker_port:5230"
+      - "$docker_port_1:5230"
     volumes:
       - ./memos:/var/opt/memos
     restart: unless-stopped
@@ -2152,7 +2153,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="webtop基于Alpine,Ubuntu,Fedora和Arch的容器,包含官方支持的完整桌面环境,可通过任何现代Web浏览器访问"
 				docker_url="官网介绍: https://docs.linuxserver.io/images/docker-webtop/"
-				default_port=3000
+				default_port_1=3000
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -2174,7 +2175,7 @@ services:
       - DOCKER_MODS=linuxserver/mods:universal-package-install
       - INSTALL_PACKAGES=font-noto-cjk
     ports:
-      - "$docker_port:3000"
+      - "$docker_port_1:3000"
     volumes:
       - ./config:/config
       - /var/run/docker.sock:/var/run/docker.sock
@@ -2193,7 +2194,7 @@ EOF
 				docker_url="官网介绍: https://nextcloud.com/"
 				rootpasswd=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
 
-				default_port=8080
+				default_port_1=8080
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -2205,7 +2206,7 @@ services:
     container_name: nextcloud
     restart: unless-stopped
     ports:
-      - "$docker_port:80"
+      - "$docker_port_1:80"
     environment:
       - NEXTCLOUD_ADMIN_USER=nextcloud
       - NEXTCLOUD_ADMIN_PASSWORD=$rootpasswd
@@ -2222,7 +2223,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="QD-Today是一个HTTP请求定时任务自动执行框架"
 				docker_url="官网介绍: https://qd-today.github.io/qd/zh_CN/"
-				default_port=8080
+				default_port_1=8080
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -2233,7 +2234,7 @@ services:
     image: qdtoday/qd:latest
     container_name: qd
     ports:
-      - "$docker_port:80"
+      - "$docker_port_1:80"
     volumes:
       - ./config:/usr/src/app/config
     restart: unless-stopped
@@ -2248,7 +2249,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="dockge是一个可视化的docker-compose容器管理面板"
 				docker_url="官网介绍: https://github.com/louislam/dockge"
-				default_port=5001
+				default_port_1=5001
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -2259,7 +2260,7 @@ services:
     image: louislam/dockge:latest
     container_name: dockge
     ports:
-      - "$docker_port:5001"
+      - "$docker_port_1:5001"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./data:/app/data
@@ -2278,7 +2279,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="speedtest是用Javascript实现的轻量级速度测试工具,即开即用"
 				docker_url="官网介绍: https://github.com/librespeed/speedtest"
-				default_port=8080
+				default_port_1=8080
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -2291,7 +2292,7 @@ services:
     environment:
       - MODE=standalone
     ports:
-      - "$docker_port:80"
+      - "$docker_port_1:80"
     restart: unless-stopped
 EOF
 )
@@ -2304,7 +2305,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="searxng是一个私有且隐私的搜索引擎站点"
 				docker_url="官网介绍: https://hub.docker.com/r/alandoyle/searxng"
-				default_port=8080
+				default_port_1=8080
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -2320,7 +2321,7 @@ services:
       - ./templates:/usr/local/searxng/searx/templates/simple
       - ./theme:/usr/local/searxng/searx/static/themes/simple
     ports:
-      - "$docker_port:8080"
+      - "$docker_port_1:8080"
     restart: unless-stopped
 EOF
 )
@@ -2334,7 +2335,7 @@ EOF
 				docker_describe="photoprism非常强大的私有相册系统"
 				docker_url="官网介绍: https://www.photoprism.app/"
 				rootpasswd=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
-				default_port=2342
+				default_port_1=2342
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -2348,7 +2349,7 @@ services:
       - seccomp=unconfined
       - apparmor=unconfined
     ports:
-      - "$docker_port:2342"
+      - "$docker_port_1:2342"
     environment:
       - PHOTOPRISM_UPLOAD_NSFW=true
       - PHOTOPRISM_ADMIN_PASSWORD=${rootpasswd}
@@ -2367,7 +2368,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="这是一个强大的本地托管基于Web的PDF操作工具使用docker,允许您对PDF文件执行各种操作,例如拆分合并,转换,重新组织,添加图像,旋转,压缩等"
 				docker_url="官网介绍: https://github.com/Stirling-Tools/Stirling-PDF"
-				default_port=8080
+				default_port_1=8080
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -2379,7 +2380,7 @@ services:
     container_name: s-pdf
     restart: unless-stopped
     ports:
-      - "$docker_port:8080"
+      - "$docker_port_1:8080"
     volumes:
       - ./data:/usr/share/tesseract-ocr/5/tessdata
       - ./config:/configs
@@ -2397,7 +2398,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="这是一个强大图表绘制软件,思维导图,拓扑图,流程图,都能画"
 				docker_url="官网介绍: https://www.drawio.com/"
-				default_port=8080
+				default_port_1=8080
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -2408,7 +2409,7 @@ services:
     image: jgraph/drawio:latest
     container_name: drawio
     ports:
-      - "$docker_port:8080"
+      - "$docker_port_1:8080"
     volumes:
       - ./drawio:/var/lib/drawio
     restart: unless-stopped
@@ -2423,7 +2424,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="Sun-Panel服务器,NAS导航面板,Homepage,浏览器首页"
 				docker_url="官网介绍: https://doc.sun-panel.top/zh_cn/"
-				default_port=3002
+				default_port_1=3002
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -2434,7 +2435,7 @@ services:
     image: hslr/sun-panel:latest
     container_name: sun-panel
     ports:
-      - "$docker_port:3002"
+      - "$docker_port_1:3002"
     volumes:
       - ./conf:/app/conf
       - ./uploads:/app/uploads
@@ -2451,7 +2452,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="Pingvin Share是一个可自建的文件分享平台,是WeTransfer的一个替代品"
 				docker_url="官网介绍: https://github.com/stonith404/pingvin-share"
-				default_port=3000
+				default_port_1=3000
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -2462,7 +2463,7 @@ services:
     image: stonith404/pingvin-share
     container_name: pingvin-share
     ports:
-      - "$docker_port:3000"
+      - "$docker_port_1:3000"
     volumes:
       - ./data:/opt/app/backend/data
     restart: unless-stopped
@@ -2477,7 +2478,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="极简朋友圈,高仿微信朋友圈,记录你的美好生活"
 				docker_url="官网介绍: https://github.com/kingwrcy/moments?tab=readme-ov-file"
-				default_port=3000
+				default_port_1=3000
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -2488,7 +2489,7 @@ services:
     image: kingwrcy/moments:latest
     container_name: moments
     ports:
-      - "$docker_port:3000"
+      - "$docker_port_1:3000"
     volumes:
       - ./data:/app/data
       - /etc/localtime:/etc/localtime:ro
@@ -2505,7 +2506,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="LobeChat聚合市面上主流的AI大模型,ChatGPT/Claude/Gemini/Groq/Ollama"
 				docker_url="官网介绍: https://github.com/lobehub/lobe-chat"
-				default_port=3210
+				default_port_1=3210
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -2516,7 +2517,7 @@ services:
     image: lobehub/lobe-chat:latest
     container_name: lobe-chat
     ports:
-      - "$docker_port:3210"
+      - "$docker_port_1:3210"
     restart: unless-stopped
 EOF
 )
@@ -2529,7 +2530,7 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="是一个多功能IP工具箱,可以查看自己IP信息及连通性,用网页面板呈现"
 				docker_url="官网介绍: https://github.com/jason5ng32/MyIP/blob/main/README_ZH.md"
-				default_port=18966
+				default_port_1=18966
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -2540,7 +2541,7 @@ services:
     image: ghcr.io/jason5ng32/myip:latest
     container_name: myip
     ports:
-      - "$docker_port:18966"
+      - "$docker_port_1:18966"
     restart: unless-stopped
 EOF
 )
@@ -2562,7 +2563,7 @@ EOF
 					mkdir -p $docker_workdir > /dev/null 2>&1
 					wget -O $docker_workdir/config.yml https://raw.githubusercontent.com/hr3lxphr6j/bililive-go/master/config.yml > /dev/null 2>&1
 				fi
-				default_port=8080
+				default_port_1=8080
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
@@ -2573,10 +2574,10 @@ services:
     image: chigusa/bililive-go:latest
     container_name: bililive
     ports:
-      - "$docker_port:8080"
+      - "$docker_port_1:8080"
     volumes:
       - ./config.yml:/etc/bililive-go/config.yml
-      - ./Videos:/srv/bililive
+      - ./videos:/srv/bililive
     restart: unless-stopped
 EOF
 )
@@ -2584,26 +2585,23 @@ EOF
 				docker_passwd=""
 				docker_app
 				;;
-			45)
-				docker_name="iperf"
+			40)
+				docker_name="it-tools"
 				docker_workdir="/data/docker_data/$docker_name"
-				docker_describe="iperf是一款功能强大的网络性能检测程序"
-				docker_url="官网介绍: https://iperf.fr"
-				default_port=5201
+				docker_describe="为方便开发人员提供的在线工具"
+				docker_url="官网介绍: https://github.com/CorentinTh/it-tools"
+				default_port_1=8080
 
 				# 检查端口,如冲突则使用动态端口
 				check_available_port
 
 							docker_compose_content=$(cat <<EOF
 services:
-  iperf3:
-    image: networkstatic/iperf3:latest
-    stdin_open: true
-    tty: true
-    container_name: iperf
+  it-tools:
+    image: qingfeng2336/it-tools:latest
+    container_name: it-tools
     ports:
-      - "$docker_port:5201"
-    command: -s
+      - "$docker_port_1:80"
     restart: unless-stopped
 EOF
 )
