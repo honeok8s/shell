@@ -546,7 +546,7 @@ linux_tools() {
 		echo "-------------------------"
 		
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
+		read -r choice
 
 		case $choice in
 			1)
@@ -709,13 +709,13 @@ linux_tools() {
 			41)
 				clear
 				echo -n -e "${yellow}请输入安装的工具名(wget curl sudo htop):${white}"
-				read installname
+				read -r installname
 				install $installname
 				;;
 			42)
 				clear
 				echo -n -e "${yellow}请输入卸载的工具名(htop ufw tmux cmatrix):${white}"
-				read removename
+				read -r removename
 				remove $removename
 				;;
 			0)
@@ -755,7 +755,7 @@ linux_bbr() {
 			echo "-------------------------"
 
 			echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-			read choice
+			read -r choice
 
 			case $choice in
 				1)
@@ -1148,7 +1148,7 @@ docker_ps() {
 		echo "------------------------"
 
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
+		read -r choice
 		case $choice in
 			1)
 				echo -n "请输入创建命令:" dockername
@@ -1156,22 +1156,22 @@ docker_ps() {
 				;;
 			2)
 				echo -n "请输入容器名(多个容器名请用空格分隔):" dockername
-				read dockername
+				read -r dockername
 				docker start $dockername
 				;;
 			3)
 				echo -n "请输入容器名(多个容器名请用空格分隔):"
-				read dockername
+				read -r dockername
 				docker stop $dockername
 				;;
 			4)
 				echo -n "请输入容器名(多个容器名请用空格分隔):"
-				read dockername
+				read -r dockername
 				docker rm -f $dockername
 				;;
 			5)
 				echo -n "请输入容器名(多个容器名请用空格分隔):"
-				read dockername
+				read -r dockername
 				docker restart $dockername
 				;;
 			6)
@@ -1182,7 +1182,7 @@ docker_ps() {
 				;;
 			8)
 				echo -n -e "${yellow}确定删除所有容器吗?(y/n):${white}"
-				read choice
+				read -r choice
 
 				case "$choice" in
 					[Yy])
@@ -1200,13 +1200,13 @@ docker_ps() {
 				;;
 			11)
 				echo -n "请输入容器名:"
-				read dockername
+				read -r dockername
 				docker exec -it $dockername /bin/sh
 				end_of
 				;;
 			12)
 				echo -n "请输入容器名:"
-				read dockername
+				read -r dockername
 				docker logs $dockername
 				end_of
 				;;
@@ -1252,11 +1252,11 @@ docker_image() {
 		echo "------------------------"
 
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
+		read -r choice
 		case $choice in
 			1)
 				echo -n "请输入镜像名(多个镜像名请用空格分隔):"
-				read imagenames
+				read -r imagenames
 				for name in $imagenames; do
 					_yellow "正在获取镜像:" $name
 					docker pull $name
@@ -1264,7 +1264,7 @@ docker_image() {
 				;;
 			2)
 				echo -n "请输入镜像名(多个镜像名请用空格分隔):"
-				read imagenames
+				read -r imagenames
 				for name in $imagenames; do
 					_yellow "正在更新镜像:" $name
 					docker pull $name
@@ -1272,14 +1272,14 @@ docker_image() {
 				;;
 			3)
 				echo -n "请输入镜像名(多个镜像名请用空格分隔):"
-				read imagenames
+				read -r imagenames
 				for name in $imagenames; do
 					docker rmi -f $name
 				done
 				;;
 			4)
 				echo -n -e "${yellow}确定删除所有镜像吗?(y/n):${white}"
-				read choice
+				read -r choice
 
 				case "$choice" in
 					[Yy])
@@ -1332,7 +1332,7 @@ docker_manager(){
 		echo "------------------------"
 		
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
+		read -r choice
 
 		case $choice in
 			1)
@@ -1343,7 +1343,7 @@ docker_manager(){
 					docker_main_version
 					while true; do
 						echo -n -e "是否升级Docker环境?(y/n):"
-						read answer
+						read -r answer
 
 						case $answer in
 							[Y/y])
@@ -1425,19 +1425,19 @@ docker_manager(){
 					echo "------------------------"
 
 					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-					read choice
+					read -r choice
 
 					case $choice in
 						1)
 							echo -n "设置新网络名:"
-							read dockernetwork
+							read -r dockernetwork
 							docker network create $dockernetwork
 							;;
 						2)
 							echo -n "设置新网络名:"
-							read dockernetwork
+							read -r dockernetwork
 							echo -n "设置新网络名:"
-							read dockernames
+							read -r dockernames
 
 							for dockername in $dockernames; do
 								docker network connect $dockernetwork $dockername
@@ -1445,10 +1445,10 @@ docker_manager(){
 							;;
 						3)
 							echo -n "设置新网络名:"
-							read dockernetwork
+							read -r dockernetwork
 
 							echo -n "那些容器退出该网络(多个容器名请用空格分隔):"
-							read dockernames
+							read -r dockernames
                           
 							for dockername in $dockernames; do
 								docker network disconnect $dockernetwork $dockername
@@ -1456,7 +1456,7 @@ docker_manager(){
 							;;
 						4)
 							echo -n "请输入要删除的网络名:"
-							read dockernetwork
+							read -r dockernetwork
 							docker network rm $dockernetwork
 							;;
 						0)
@@ -1484,17 +1484,17 @@ docker_manager(){
 					echo "------------------------"
 
 					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-					read choice
+					read -r choice
 
 					case $choice in
 						1)
 							echo -n "设置新卷名:"
-							read dockerjuan
+							read -r dockerjuan
 							docker volume create $dockerjuan
 							;;
 						2)
 							echo -n "输入删除卷名(多个卷名请用空格分隔):"
-							read dockerjuans
+							read -r dockerjuans
 
 							for dockerjuan in $dockerjuans; do
 								docker volume rm $dockerjuan
@@ -1502,7 +1502,7 @@ docker_manager(){
 							;;
 						3)
 							echo -n "确定删除所有未使用的卷吗:"
-							read choice
+							read -r choice
 							case "$choice" in
 								[Yy])
 									docker volume prune -f
@@ -1526,7 +1526,7 @@ docker_manager(){
 			7)
 				clear
 				echo -n "将清理无用的镜像容器网络，包括停止的容器，确定清理吗?(y/n):"
-				read  choice
+				read -r choice
 
 				case "$choice" in
 					[Yy])
@@ -1562,7 +1562,7 @@ docker_manager(){
 			20)
 				clear
 				echo -n -e "${yellow}确定卸载docker环境吗?(y/n)${white}"
-				read choice
+				read -r choice
 
 				case "$choice" in
 					[Yy])
@@ -1635,7 +1635,7 @@ install_panel() {
 		echo "------------------------"
 
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
+		read -r choice
 
 		case $choice in
 			1)
@@ -1699,7 +1699,7 @@ docker_app() {
 		echo "------------------------"
 
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
+		read -r choice
 
 		case $choice in
 			1)
@@ -1881,7 +1881,7 @@ linux_panel() {
 		echo "------------------------"
 
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
+		read -r choice
 
 		case $choice in
 			1)
@@ -1963,7 +1963,7 @@ linux_panel() {
 
 						# 重置choice变量
 						choice=""
-						read choice
+						read -r choice
 
 						case $choice in
 							1|"")
@@ -2066,7 +2066,7 @@ EOF
 					echo "------------------------"
 					
 					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-					read choice
+					read -r choice
 
 					case $choice in
 						1)
@@ -2388,7 +2388,7 @@ EOF
 					echo "------------------------"
 
 					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-					read choice
+					read -r choice
 
 					case $choice in
 						1)
@@ -3097,7 +3097,7 @@ linux_ldnmp() {
 		echo "------------------------"
 
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
+		read -r choice
 		
 		case $choice in
 			35)
@@ -3122,7 +3122,7 @@ linux_ldnmp() {
 						echo "------------------------"
 						
 						echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-						read choice
+						read -r choice
 						
 						case $choice in
 							1)
@@ -3196,7 +3196,7 @@ linux_ldnmp() {
 								# 获取CFUSER
 								while true; do
 									echo -n "请输入你的Cloudflare管理员邮箱:"
-									read CFUSER
+									read -r CFUSER
 									if [[ "$CFUSER" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
 										break
 									else
@@ -3208,7 +3208,7 @@ linux_ldnmp() {
 									echo "cloudflare后台右上角我的个人资料,选择左侧API令牌,获取Global API Key"
 									echo "https://dash.cloudflare.com/login"
 									echo -n "请输入你的Global API Key:"
-									read CFKEY
+									read -r CFKEY
 									if [[ -n "$CFKEY" ]]; then
 										break
 									else
@@ -3237,7 +3237,7 @@ linux_ldnmp() {
 								# 获取CFUSER
 								while true; do
 									echo -n "请输入你的Cloudflare管理员邮箱:"
-									read CFUSER
+									read -r CFUSER
 									if [[ "$CFUSER" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
 										break
 									else
@@ -3249,7 +3249,7 @@ linux_ldnmp() {
 									echo "cloudflare后台右上角我的个人资料,选择左侧API令牌,获取Global API Key"
 									echo "https://dash.cloudflare.com/login"
 									echo -n "请输入你的Global API Key:"
-									read CFKEY
+									read -r CFKEY
 									if [[ -n "$CFKEY" ]]; then
 										break
 									else
@@ -3260,7 +3260,7 @@ linux_ldnmp() {
 								while true;do
 									echo "Cloudflare后台域名概要页面右下方获取区域ID"
 									echo -n "请输入你的ZoneID:"
-									read CFZoneID
+									read -r CFZoneID
 									if [[ -n "$CFZoneID" ]]; then
 										break
 									else
@@ -3300,7 +3300,7 @@ linux_ldnmp() {
 					clear
 					echo "卸载旧版Fail2ban"
 					echo -n "确定继续吗?(y/n):"
-					read choice
+					read -r choice
 
 					case "$choice" in
 						[Yy])
@@ -3553,7 +3553,7 @@ reinstall_system(){
 		echo "-------------------------"
 
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
+		read -r choice
 
 		case "$choice" in
 			1)
@@ -3822,7 +3822,7 @@ set_default_qdisc(){
 		echo "-------------------------"
 
 		echo -n -e "${yellow}请输入选项并按回车键确认(回车使用默认值:fq):${white}"
-		read choice
+		read -r choice
 
 		case "$choice" in
 			1|"")
@@ -3901,7 +3901,7 @@ xanmod_bbr3(){
 			echo "-------------------------"
 
 			echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-			read choice
+			read -r choice
 
 			case $choice in
 				1)
@@ -3948,7 +3948,7 @@ xanmod_bbr3(){
 		echo "------------------------------------------------"
 
 		echo -n -e "${yellow}确定继续吗?(y/n)${white}"
-		read choice
+		read -r choice
 
 		case "$choice" in
 			[Yy])
@@ -4022,7 +4022,7 @@ linux_mirror(){
 		echo "-------------------------"
 	
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
+		read -r choice
 	
 		case $choice in
 			1)
@@ -4106,24 +4106,24 @@ cron_manager(){
 		echo "-------------------------"
 
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
+		read -r choice
 
 		case $choice in
 			1)
 				echo -n -e "${yellow}请输入新任务的执行命令:${white}"
-				read newquest
+				read -r newquest
 				echo "-------------------------"
 				echo "1. 每月任务                 2. 每周任务"
 				echo "3. 每天任务                 4. 每小时任务"
 				echo "-------------------------"
 
 				echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-				read dingshi
+				read -r dingshi
 
 				case $dingshi in
 					1)
 						echo -n -e "${yellow}选择每月的几号执行任务?(1-30):${white}"
-						read day
+						read -r day
 						if [[ ! $day =~ ^[1-9]$|^[12][0-9]$|^30$ ]]; then
 							_red "无效的日期输入"
 							continue
@@ -4134,7 +4134,7 @@ cron_manager(){
 						;;
 					2)
 						echo -n -e "${yellow}选择周几执行任务?(0-6,0代表星期日):${white}"
-						read weekday
+						read -r weekday
 						if [[ ! $weekday =~ ^[0-6]$ ]]; then
 							_red "无效的星期输入"
 							continue
@@ -4145,7 +4145,7 @@ cron_manager(){
 						;;
 					3)
 						echo -n -e "${yellow}选择每天几点执行任务?(小时,0-23):${white}"
-						read hour
+						read -r hour
 						if [[ ! $hour =~ ^[0-9]$|^[1][0-9]$|^[2][0-3]$ ]]; then
 							_red "无效的小时输入"
 							continue
@@ -4156,7 +4156,7 @@ cron_manager(){
 						;;
 					4)
 						echo -n -e "${yellow}输入每小时的第几分钟执行任务?(分钟,0-60):${white}"
-						read minute
+						read -r minute
 						if [[ ! $minute =~ ^[0-5][0-9]$ ]]; then
 							_red "无效的分钟输入"
 							continue
@@ -4172,7 +4172,7 @@ cron_manager(){
 				;;
 			2)
 				echo -n -e "${yellow}请输入需要删除任务的关键字:${white}"
-				read kquest
+				read -r kquest
 				if crontab -l | grep -v "$kquest" | crontab -; then
 					_green "$kquest 定时任务已删除"
 				else
@@ -4213,7 +4213,7 @@ telegram_bot(){
 	echo "----------------------------"
 				
 	echo -n -e "${yellow}确定继续吗?(y/n):${white}"
-	read choice
+	read -r choice
 
 	case "$choice" in
 		[Yy])
@@ -4312,7 +4312,7 @@ cloudflare_ddns() {
 		echo "-------------------------"
 
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
+		read -r choice
 
 		case $choice in
 			1)
@@ -4321,7 +4321,7 @@ cloudflare_ddns() {
 					echo "cloudflare后台右上角我的个人资料,选择左侧API令牌,获取Global API Key"
 					echo "https://dash.cloudflare.com/login"
 					echo -n "请输入你的Global API Key:"
-					read CFKEY
+					read -r CFKEY
 					if [[ -n "$CFKEY" ]]; then
 						break
 					else
@@ -4332,7 +4332,7 @@ cloudflare_ddns() {
 				# 获取CFUSER
 				while true; do
 					echo -n "请输入你的Cloudflare管理员邮箱:"
-					read CFUSER
+					read -r CFUSER
 					if [[ "$CFUSER" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
 						break
 					else
@@ -4343,7 +4343,7 @@ cloudflare_ddns() {
 				# 获取CFZONE_NAME
 				while true; do
 					echo -n "请输入你的顶级域名(如honeok.com):"
-					read CFZONE_NAME
+					read -r CFZONE_NAME
 					if [[ "$CFZONE_NAME" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
 						break
 					else
@@ -4354,7 +4354,7 @@ cloudflare_ddns() {
 				# 获取CFRECORD_NAME
 				while true; do
 					echo -n "请输入你的主机名(如ddns.honeok.com):"
-					read CFRECORD_NAME
+					read -r CFRECORD_NAME
 					if [[ -n "$CFRECORD_NAME" ]]; then
 						break
 					else
@@ -4364,12 +4364,12 @@ cloudflare_ddns() {
 
 				# 获取CFRECORD_TYPE
 				echo -n "请输入记录类型(A记录或AAAA记录,默认IPV4 A记录,回车使用默认值):"
-				read CFRECORD_TYPE
+				read -r CFRECORD_TYPE
 				CFRECORD_TYPE=${CFRECORD_TYPE:-A}
 
 				# 获取CFTTL
 				echo -n "请输入TTL时间(120~86400秒,默认60秒,回车使用默认值):"
-				read CFTTL
+				read -r CFTTL
 				CFTTL=${CFTTL:-60}
 
 				curl -fsSL -o ~/cf-v4-ddns.sh https://raw.githubusercontent.com/honeok8s/shell/main/callscript/cf-v4-ddns.sh
@@ -4445,7 +4445,7 @@ cloudflare_ddns() {
 server_reboot(){
 	local choice
 	echo -n -e "${yellow}现在重启服务器吗?(y/n):${white}"
-	read choice
+	read -r choice
 
 	case "$choice" in
 		[Yy])
@@ -4484,7 +4484,7 @@ linux_system_tools(){
 		echo "------------------------"
 
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
+		read -r choice
 
 		case $choice in
 			3)
@@ -4514,7 +4514,7 @@ linux_system_tools(){
 					echo "------------------------"
 
 					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-					read choice
+					read -r choice
 
 					case "$choice" in
 						1)
@@ -4553,7 +4553,7 @@ linux_system_tools(){
 					echo "------------------------"
 					
 					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-					read choice
+					read -r choice
 
 					case "$choice" in
 						1)
@@ -4568,7 +4568,7 @@ linux_system_tools(){
 							;;
 						3)
 							echo -n -e "${yellow}请输入虚拟内存大小MB:${white}" new_swap
-							read new_swap
+							read -r new_swap
 							if [[ "$new_swap" =~ ^[0-9]+$ ]] && [ "$new_swap" -gt 0 ]; then
 								add_swap $new_swap
 								_green "已设置自定义虚拟内存为 ${new_swap}MB"
@@ -4626,7 +4626,7 @@ linux_system_tools(){
 
 					# 提示用户输入选项
 					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-					read choice
+					read -r choice
 
 					case $choice in
 						1) set_timedate Asia/Shanghai ;;
@@ -4735,7 +4735,7 @@ servertest_script(){
 		echo "-------------------------"
 
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
+		read -r choice
 
 		case "$choice" in
 			1)
@@ -4796,7 +4796,7 @@ servertest_script(){
 				echo "-------------------------"
 
 				echo -n -e "${yellow}输入一个指定IP:${white}"
-				read testip
+				read -r testip
 				curl nxtrace.org/nt | bash
 				nexttrace $testip
 				;;
@@ -4874,7 +4874,7 @@ node_create(){
 		echo "-------------------------------"
 
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
+		read -r choice
 
 		case $choice in
 
@@ -4973,14 +4973,14 @@ oracle_script() {
 		echo "------------------------"
 
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
+		read -r choice
 
 		case $choice in
 			1)
 				clear
 				_yellow "活跃脚本: CPU占用10-20% 内存占用20%"
 				echo -n -e "${yellow}确定安装吗?(y/n/):${white}"
-				read ins
+				read -r ins
 				
 				case "$ins" in
 					[Yy])
@@ -4993,19 +4993,19 @@ oracle_script() {
 
 						# 提示用户输入CPU核心数和占用百分比,如果回车则使用默认值
 						echo -n -e "${yellow}请输入CPU核心数[默认:$DEFAULT_CPU_CORE]:${white}"
-						read cpu_core
+						read -r cpu_core
 						cpu_core=${cpu_core:-$DEFAULT_CPU_CORE}
 
 						echo -n -e "${yellow}请输入CPU占用百分比范围(例如10-20)[默认:$DEFAULT_CPU_UTIL]:${white}"
-						read cpu_util
+						read -r cpu_util
 						cpu_util=${cpu_util:-$DEFAULT_CPU_UTIL}
 
 						echo -n -e "${yellow}请输入内存占用百分比[默认:$DEFAULT_MEM_UTIL]:${white}"
-						read mem_util
+						read -r mem_util
 						mem_util=${mem_util:-$DEFAULT_MEM_UTIL}
 
 						echo -n -e "${yellow}请输入Speedtest间隔时间(秒)[默认:$DEFAULT_SPEEDTEST_INTERVAL]:${white}"
-						read speedtest_interval
+						read -r speedtest_interval
 						speedtest_interval=${speedtest_interval:-$DEFAULT_SPEEDTEST_INTERVAL}
 
 						# 运行Docker容器
@@ -5038,13 +5038,13 @@ oracle_script() {
 				_yellow "注意:重装有风险失联,不放心者慎用,重装预计花费15分钟,请提前备份数据"
 				
 				echo -n -e "${yellow}确定继续吗?(y/n):${white}"
-				read choice
+				read -r choice
 
 				case "$choice" in
 					[Yy])
 						while true; do
 							echo -n -e "${yellow}请选择要重装的系统:  1. Debian12 | 2. Ubuntu20.04${white}"
-							read sys_choice
+							read -r sys_choice
 
 							case "$sys_choice" in
 								1)
@@ -5062,7 +5062,7 @@ oracle_script() {
 						done
 
 						echo -n -e "${yellow}请输入你重装后的密码:${white}"
-						read vpspasswd
+						read -r vpspasswd
 				
 						install wget
 						bash <(wget --no-check-certificate -qO- 'https://raw.githubusercontent.com/MoeClub/Note/master/InstallNET.sh') $xitong -v 64 -p $vpspasswd -port 22
@@ -5117,7 +5117,7 @@ palworld_script(){
 		echo "-------------------------"
 
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
+		read -r choice
 
 		case $choice in
 			1)
@@ -5213,7 +5213,7 @@ honeok(){
 		echo ""
 
 		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
+		read -r choice
 
 		case "$choice" in
 			1)
