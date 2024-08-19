@@ -3391,11 +3391,11 @@ node_create(){
 }
 
 add_sshpasswd() {
-	_yellow "设置你的ROOT密码"
+	_yellow "设置你的root密码"
 	passwd
 	sed -i 's/^\s*#\?\s*PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config;
 	sed -i 's/^\s*#\?\s*PasswordAuthentication.*/PasswordAuthentication yes/g' /etc/ssh/sshd_config;
-	rm -rf /etc/ssh/sshd_config.d/* /etc/ssh/ssh_config.d/*
+	rm -fr /etc/ssh/sshd_config.d/* /etc/ssh/ssh_config.d/*
 	restart_ssh
 
 	_green "ROOT登录设置完毕"
@@ -4856,7 +4856,7 @@ linux_system_tools(){
 		clear
 		echo "▶ 系统工具"
 		echo "------------------------"
-		echo "3. ROOT密码登录模式"
+		echo "3. root密码登录模式"
 		echo "7. 优化DNS地址                         8. 一键重装系统"
 		echo "------------------------"
 		echo "12. 修改虚拟内存大小"
