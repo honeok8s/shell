@@ -436,7 +436,7 @@ install_add_docker() {
 
 		# 判断地区安装
 		if [[ "$(curl -s ipinfo.io/country)" == "CN" ]]; then
-			curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo | tee /etc/yum.repos.d/docker-ce.repo > /dev/null
+			yum-config-manager --add-repo https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo > /dev/null
 		else
 			yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo > /dev/null
 		fi
