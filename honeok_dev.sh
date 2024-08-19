@@ -3035,19 +3035,19 @@ ldnmp_install_status_2() {
 }
 
 check_ldnmp_port() {
-    docker rm -f nginx >/dev/null 2>&1
+	docker rm -f nginx >/dev/null 2>&1
 
-    # 定义要检测的端口
-    ports=("80" "443")
+	# 定义要检测的端口
+	ports=("80" "443")
 
-    # 检查端口占用情况
+	# 检查端口占用情况
 	for port in "${ports[@]}"; do
 		result=$(netstat -tulpn | grep ":$port ")
 
 		if [ -n "$result" ]; then
 			clear
 			_red "端口$port已被占用,无法安装环境,卸载以下程序后重试"
-			echo "$result"
+			_yellow "$result"
 			end_of
 			linux_ldnmp
 			return 1
