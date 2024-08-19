@@ -422,6 +422,20 @@ install_docker() {
 	fi
 }
 
+install_docker_official() {
+	if [[ "$(curl -s ipinfo.io/country)" == "CN" ]]; then
+		cd ~
+		curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/docker/get-docker-official.sh && chmod a+x get-docker-official.sh
+		bash get-docker-official.sh --mirror Aliyun
+		[ -f ~/get-docker-official.sh ] && rm -f get-docker-official.sh
+	else
+		curl -fsSL https://get.docker.com | sh
+	fi
+
+	enable docker
+	start docker
+}
+
 install_add_docker() {
     _yellow "正在安装docker环境"
 
@@ -461,20 +475,6 @@ install_add_docker() {
 	fi
 
 	sleep 2
-}
-
-install_docker_official() {
-	if [[ "$(curl -s ipinfo.io/country)" == "CN" ]]; then
-		cd ~
-		curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/docker/get-docker-official.sh && chmod +x ./get-docker-official.sh
-		bash get-docker-official.sh --mirror Aliyun
-		[ -f ~/get-docker-official.sh ] && rm -f get-docker-official.sh
-	else
-		curl -fsSL https://get.docker.com | sh
-	fi
-
-	enable docker
-	start docker
 }
 
 docker_main_version() {
