@@ -1322,7 +1322,6 @@ docker_app() {
 		if docker inspect "$docker_name" &>/dev/null; then
 			check_docker_app_ip
 		fi
-		echo ""
 		echo "------------------------"
 		echo "1. 安装            2. 更新"
 		echo "3. 编辑            4. 卸载"
