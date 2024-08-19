@@ -3034,6 +3034,64 @@ ldnmp_install_status_2() {
 	fi
 }
 
+ldnmp_install_status() {
+	if docker inspect "php" &>/dev/null; then
+		_yellow "LDNMP环境已安装,开始部署$WEB_NAME"
+	else
+		_yellow "LDNMP环境未安装,请先安装LDNMP环境,再部署网站"
+		end_of
+		linux_ldnmp
+	fi
+}
+
+repeat_add_domain() {
+	domain_regex="^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$"
+	if [[ $domain =~ $domain_regex ]]; then
+		:
+	else
+		_red "域名格式不正确,请重新输入"
+		end_of
+		linux_ldnmp
+	fi
+
+	if [ -e /data/docker_data/web/nginx/conf.d/$domain.conf ]; then
+		_red "当前域名${domain}已被使用,请前往31站点管理,删除站点,再部署${WEB_NAME}"
+		end_of
+		linux_ldnmp
+	fi
+}
+
+add_domain() {
+	ip_address
+
+	echo -e "先将域名解析到本机IP: ${yellow}$ipv4_address  $ipv6_address${white}"
+	echo -n "请输入你解析的域名:" domain
+	read -r domain
+
+	repeat_add_domain
+}
+
+add_database() {
+	DB_NAME=$(echo "$domain" | sed -e 's/[^A-Za-z0-9]/_/g')
+	DB_NAME="${DB_NAME}"
+
+	DBROOT_PASSWD=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
+	DB_USER=$(grep -oP 'MYSQL_USER:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
+	DB_USER_PASSWD=$(grep -oP 'MYSQL_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
+
+	docker exec mysql mysql -u root -p"$DBROOT_PASSWD" -e "CREATE DATABASE $DB_NAME; GRANT ALL PRIVILEGES ON $DB_NAME.* TO \"$DB_USER\"@\"%\";"
+}
+
+restart_ldnmp() {
+	docker exec nginx chmod -R 777 /var/www/html
+	docker exec php chmod -R 777 /var/www/html
+	docker exec php74 chmod -R 777 /var/www/html
+
+	docker restart nginx >/dev/null 2>&1
+	docker restart php >/dev/null 2>&1
+	docker restart php74 >/dev/null 2>&1
+}
+
 check_ldnmp_port() {
 	docker rm -f nginx >/dev/null 2>&1
 
@@ -3058,6 +3116,14 @@ check_ldnmp_port() {
 install_dependency() {
 	clear
 	install wget socat unzip tar
+}
+
+ldnmp_web_on() {
+	clear
+	echo "您的$WEB_NAME搭建好了!"
+	echo "https://$domain"
+	echo "------------------------"
+	echo "$WEB_NAME安装信息如下:"
 }
 
 install_certbot() {
@@ -3085,6 +3151,43 @@ install_certbot() {
 	if [ -z "$existing_cron" ]; then
 		(crontab -l 2>/dev/null; echo "$cron_job") | crontab -
 		_green "续签任务已添加"
+	fi
+}
+
+install_ssltls() {
+	docker stop nginx > /dev/null 2>&1
+
+	iptables_open > /dev/null 2>&1
+	cd ~
+
+	yes | certbot delete --cert-name $domain > /dev/null 2>&1
+
+	certbot_version=$(certbot --version 2>&1 | grep -oP "\d+\.\d+\.\d+")
+
+	version_ge() {
+		[ "$(printf '%s\n' "$1" "$2" | sort -V | head -n1)" != "$1" ]
+	}
+
+	if version_ge "$certbot_version" "1.17.0"; then
+		certbot certonly --standalone -d $domain --email your@email.com --agree-tos --no-eff-email --force-renewal --key-type ecdsa
+	else
+		certbot certonly --standalone -d $domain --email your@email.com --agree-tos --no-eff-email --force-renewal
+	fi
+
+	cp /etc/letsencrypt/live/$domain/fullchain.pem /data/docker_data/web/nginx/certs/${domain}_cert.pem > /dev/null 2>&1
+	cp /etc/letsencrypt/live/$domain/privkey.pem /data/docker_data/web/nginx/certs/${domain}_key.pem > /dev/null 2>&1
+
+	docker start nginx > /dev/null 2>&1
+}
+
+certs_status() {
+	sleep 1
+	file_path="/etc/letsencrypt/live/$domain/fullchain.pem"
+
+	if [ ! -f "$file_path" ]; then
+		_red "域名证书申请失败,请检测域名是否正确解析或更换域名重新尝试!"
+		end_of
+		linux_ldnmp
 	fi
 }
 
@@ -3152,9 +3255,6 @@ install_ldnmp() {
 	commands=(
 		"docker exec nginx chmod -R 777 /var/www/html"
 		"docker restart nginx > /dev/null 2>&1"
-
-		# "docker exec php sed -i "s/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g" /etc/apk/repositories > /dev/null 2>&1"
-		# "docker exec php74 sed -i "s/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g" /etc/apk/repositories > /dev/null 2>&1"
 
 		"docker exec php apk update > /dev/null 2>&1"
 		"docker exec php74 apk update > /dev/null 2>&1"
@@ -3384,6 +3484,159 @@ linux_ldnmp() {
 				sed -i "s#HONEOK_PASSWD#$DB_USER_PASSWD#g" /data/docker_data/web/docker-compose.yml
 
 				install_ldnmp
+				;;
+			2)
+				clear
+				WEB_NAME="WordPress"
+
+				ldnmp_install_status
+				add_domain
+				install_ssltls
+				certs_status
+				add_database
+
+				wget -qO /data/docker_data/web/nginx/conf.d/$domain.conf https://raw.githubusercontent.com/kejilion/nginx/main/wordpress.com.conf
+				sed -i "s/yuming.com/$domain/g" /data/docker_data/web/nginx/conf.d/$domain.conf
+				sed -i "s/my_cache/fst_cache/g" /data/docker_data/web/nginx/conf.d/$domain.conf
+
+				cd /data/docker_data/web/nginx/html
+				mkdir $domain
+				cd $domain
+				wget -qO latest.zip https://cn.wordpress.org/latest-zh_CN.zip && unzip latest.zip && rm latest.zip
+
+				echo "define('FS_METHOD', 'direct'); define('WP_REDIS_HOST', 'redis'); define('WP_REDIS_PORT', '6379');" >> /data/docker_data/web/nginx/html/$yuming/wordpress/wp-config-sample.php
+
+				restart_ldnmp
+
+				ldnmp_web_on
+				echo "数据库名:$DB_NAME"
+				echo "用户名:$DB_USER"
+				echo "密码:$DB_USER_PASSWD"
+				echo "数据库地址:mysql"
+				echo "表前缀:wp_"
+				;;
+			31)
+				need_root
+				while true; do
+					clear
+					echo "LDNMP环境"
+					echo "------------------------"
+					ldnmp_version
+
+					echo "站点信息                      证书到期时间"
+					echo "------------------------"
+					for cert_file in /data/docker_data/web/nginx/certs/*_cert.pem; do
+						domain=$(basename "$cert_file" | sed 's/_cert.pem//')
+						if [ -n "$domain" ]; then
+							expire_date=$(openssl x509 -noout -enddate -in "$cert_file" | awk -F'=' '{print $2}')
+							formatted_date=$(date -d "$expire_date" '+%Y-%m-%d')
+							printf "%-30s%s\n" "$domain" "$formatted_date"
+						fi
+					done
+
+					echo "------------------------"
+					echo ""
+					echo "数据库信息"
+					echo "------------------------"
+					DBROOT_PASSWD=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
+					docker exec mysql mysql -u root -p"$DBROOT_PASSWD" -e "SHOW DATABASES;" 2> /dev/null | grep -Evi "Database|information_schema|mysql|performance_schema|sys"
+					echo "------------------------"
+					echo ""
+					echo "站点目录"
+					echo "------------------------"
+					echo "数据目录: /data/docker_data/web/nginx/html    证书目录: /data/docker_data/web/nginx/certs     配置文件目录: /data/docker_data/web/nginx/conf.d"
+					echo "------------------------"
+					echo ""
+					echo "操作"
+					echo "------------------------"
+					echo "1. 申请/更新域名证书"
+					echo "3. 清理站点缓存                    4. 查看站点分析报告"
+					echo "5. 编辑全局配置                    6. 编辑站点配置"
+					echo "------------------------"
+					echo "7. 删除指定站点                    8. 删除指定数据库"
+					echo "------------------------"
+					echo "0. 返回上一级选单"
+					echo "------------------------"
+
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					read -r choice
+
+					case $choice in
+						1)
+							echo -n "请输入你的域名: " domain
+							read -r domain
+							install_certbot
+							install_ssltls
+							certs_status
+							;;
+						2)
+							echo -n "请输入旧域名: " old_domain
+							read -r old_domain
+							echo -n "请输入新域名: " new_domain
+							read -r new_domain
+							install_certbot
+							install_ssltls
+							certs_status
+							mv /data/docker_data/web/nginx/conf.d/$old_domain.conf /data/docker_data/web/nginx/conf.d/$new_domain.conf
+							sed -i "s/$old_domain/$new_domain/g" /data/docker_data/web/nginx/conf.d/$new_domain.conf
+							mv /data/docker_data/web/nginx/html/$old_domain /data/docker_data/web/nginx/html/$new_domain
+
+							rm /data/docker_data/web/nginx/certs/${old_domain}_key.pem
+							rm /data/docker_data/web/nginx/certs/${old_domain}_cert.pem
+
+							docker restart nginx >/dev/null 2>&1
+							;;
+						3)
+							docker restart nginx
+							docker exec php php -r 'opcache_reset();'
+							docker restart php
+							docker exec php74 php -r 'opcache_reset();'
+							docker restart php74
+							docker restart redis
+							docker exec redis redis-cli FLUSHALL
+							docker exec -it redis redis-cli CONFIG SET maxmemory 512mb
+							docker exec -it redis redis-cli CONFIG SET maxmemory-policy allkeys-lru
+							;;
+						4)
+							install goaccess
+							goaccess --log-format=COMBINED /data/docker_data/web/nginx/log/access.log
+							;;
+						5)
+							vim /data/docker_data/web/nginx/nginx.conf
+
+							docker restart nginx >/dev/null 2>&1
+							;;
+						6)
+							echo -n "编辑站点配置,请输入你要编辑的域名: " edit_domain
+							read -r edit_domain
+							vim /data/docker_data/web/nginx/conf.d/$edit_domain.conf
+
+							docker restart nginx >/dev/null 2>&1
+							;;
+						7)
+							echo -n "删除站点数据目录,请输入你的域名: " del_domain
+							read -r del_domain
+							rm -r /data/docker_data/web/nginx/html/$del_domain
+							rm /data/docker_data/web/nginx/conf.d/$del_domain.conf
+							rm /data/docker_data/web/nginx/certs/${del_domain}_key.pem
+							rm /data/docker_data/web/nginx/certs/${del_domain}_cert.pem
+
+							docker restart nginx >/dev/null 2>&1
+							;;
+						8)
+							echo -n "删除站点数据库,请输入数据库名: " del_database
+							read -r del_database
+							DBROOT_PASSWD=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
+							docker exec mysql mysql -u root -p"$DBROOT_PASSWD" -e "DROP DATABASE $del_database;" >/dev/null 2>&1
+							;;
+						0)
+							break
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac
+				done
 				;;
 			35)
 				if docker inspect fail2ban &>/dev/null ; then
