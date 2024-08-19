@@ -1324,7 +1324,8 @@ docker_app() {
 		fi
 		echo ""
 		echo "------------------------"
-		echo "1. 安装            2. 更新            3. 卸载"
+		echo "1. 安装            2. 更新"
+		echo "3. 编辑            4. 卸载"
 		echo "------------------------"
 		echo "0. 返回上一级"
 		echo "------------------------"
@@ -1336,7 +1337,7 @@ docker_app() {
 			1)
 				install_docker
 				[ ! -d $docker_workdir ] && mkdir -p $docker_workdir
-				cd $docker_workdir || return 1
+				cd $docker_workdir || { _red "无法进入目录$docker_workdir"; return 1; }
 
 				# 生成compose文件
 				echo "$docker_compose_content" > docker-compose.yml
@@ -1355,7 +1356,7 @@ docker_app() {
 				$docker_passwd
 				;;
 			2)
-				cd $docker_workdir || return 1
+				cd $docker_workdir || { _red "无法进入目录$docker_workdir"; return 1; }
 
 				if docker compose version >/dev/null 2>&1; then
 					docker compose pull && docker compose up -d
@@ -1371,15 +1372,31 @@ docker_app() {
 				$docker_passwd
 				;;
 			3)
-				cd $docker_workdir || return 1
+				cd $docker_workdir || { _red "无法进入目录$docker_workdir"; return 1; }
+				vim docker-compose.yml
 
-				if command -v docker compose >/dev/null 2>&1; then
+				if docker compose version >/dev/null 2>&1; then
+					docker compose restart
+				elif command -v docker-compose >/dev/null 2>&1; then
+					docker-compose restart
+				fi
+
+				if [ $? -eq 0 ]; then
+					_green "$docker_name重启成功"
+				else
+					_red "$docker_name重启失败"
+				fi
+				;;
+			4)
+				cd $docker_workdir || { _red "无法进入目录$docker_workdir"; return 1; }
+
+				if docker compose version >/dev/null 2>&1; then
 					docker compose down --rmi all --volumes
 				elif command -v docker-compose >/dev/null 2>&1; then
 					docker-compose down --rmi all --volumes
 				fi
 
-				rm -fr "${docker_workdir}"
+				[ -d $docker_workdir ] && rm -fr "${docker_workdir}"
 				_green "${docker_name}应用已卸载"
 				break
 				;;
@@ -2027,8 +2044,11 @@ EOF
 							;;
 						4)
 							cd /data/safeline
-							docker compose down
-							docker compose down --rmi all
+							if docker compose version >/dev/null 2>&1; then
+								docker compose down --rmi all --volumes
+							elif command -v docker-compose >/dev/null 2>&1; then
+								docker-compose down --rmi all --volumes
+							fi
 							echo "如果你是默认安装目录那现在项目已经卸载,如果你是自定义安装目录你需要到安装目录下自行执行:"
 							echo "docker compose down --rmi all --volumes"
 							;;
