@@ -4078,13 +4078,13 @@ install_crontab() {
 	if [ -f /etc/os-release ]; then
 		. /etc/os-release
 			case "$ID" in
-				ubuntu|debian|kali)
+				ubuntu|debian)
 					apt update
 					apt install -y cron
 					systemctl enable cron
 					systemctl start cron
 					;;
-				centos|rhel|almalinux|rocky|fedora)
+				centos)
 					yum install -y cronie
 					systemctl enable crond
 					systemctl start crond
@@ -4094,24 +4094,14 @@ install_crontab() {
 					rc-update add crond
 					rc-service crond start
 					;;
-				arch|manjaro)
-					pacman -S --noconfirm cronie
-					systemctl enable cronie
-					systemctl start cronie
-					;;
-				opensuse|suse|opensuse-tumbleweed)
-					zypper install -y cron
-					systemctl enable cron
-					systemctl start cron
-					;;
 				*)
 					_red "不支持的发行版:$ID"
-					exit 1
+					return 1
 					;;
 			esac
 	else
-		_red "无法确定操作系统。"
-		exit 1
+		_red "无法确定操作系统"
+		return 1
 	fi
 
 	_yellow "Crontab已安装且Cron服务正在运行"
