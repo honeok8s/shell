@@ -1230,8 +1230,8 @@ has_ipv4_has_ipv6() {
 check_docker_app_ip() {
 	echo "------------------------"
 	echo "访问地址:"
-	$has_ipv4 && echo "http://$ipv4_address:$docker_port"
-	$has_ipv6 && echo "http://[$ipv6_address]:$docker_port"
+	$has_ipv4 && echo "http://$ipv4_address:$docker_port_1"
+	$has_ipv6 && echo "http://[$ipv6_address]:$docker_port_1"
 }
 
 check_docker_app() {
