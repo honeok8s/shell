@@ -3065,7 +3065,7 @@ add_domain() {
 	ip_address
 
 	echo -e "先将域名解析到本机IP: ${yellow}$ipv4_address  $ipv6_address${white}"
-	echo -n "请输入你解析的域名:" domain
+	echo -n "请输入你解析的域名:"
 	read -r domain
 
 	repeat_add_domain
