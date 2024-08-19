@@ -1561,7 +1561,7 @@ docker_manager(){
 				;;
 			20)
 				clear
-				echo -n -e "${yellow}确定卸载docker环境吗?(y/n)${white}"
+				echo -n "确定卸载docker环境吗?(y/n)"
 				read -r choice
 
 				case "$choice" in
