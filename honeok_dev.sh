@@ -3121,15 +3121,15 @@ ldnmp_version() {
 	# 获取mysql版本
 	DBROOT_PASSWD=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
 	mysql_version=$(docker exec mysql mysql -u root -p"$DBROOT_PASSWD" -e "SELECT VERSION();" 2>/dev/null | tail -n 1)
-	echo -n -e "mysql: ${yellow}v$mysql_version${white}"
+	echo -n -e "          mysql: ${yellow}v$mysql_version${white}"
 
 	# 获取php版本
 	php_version=$(docker exec php php -v 2>/dev/null | grep -oP "PHP \K[0-9]+\.[0-9]+\.[0-9]+")
-	echo -n -e "php: ${yellow}v$php_version${white}"
+	echo -n -e "          php: ${yellow}v$php_version${white}"
 
 	# 获取redis版本
 	redis_version=$(docker exec redis redis-server -v 2>&1 | grep -oP "v=+\K[0-9]+\.[0-9]+")
-	echo -e "redis: ${yellow}v$redis_version${white}"
+	echo -e "          redis: ${yellow}v$redis_version${white}"
 
 	echo "------------------------"
 	echo ""
@@ -3287,7 +3287,7 @@ fail2ban_sshd() {
 
 fail2ban_install_sshd() {
 	[ ! -d /data/docker_data/fail2ban ] && mkdir -p /data/docker_data/fail2ban
-	wget -O /data/docker_data/fail2ban/docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/docker-compose.yml
+	wget -qO /data/docker_data/fail2ban/docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/fail2ban-docker-compose.yml
 	cd /data/docker_data/fail2ban
 
 	if docker compose version >/dev/null 2>&1; then
@@ -3463,10 +3463,17 @@ linux_ldnmp() {
 								timeout 5 tail -f /data/docker_data/fail2ban/config/log/fail2ban/fail2ban.log
 								;;
 							9)
-								docker rm -f fail2ban
-								rm -fr /data/docker_data/fail2ban
+								cd /data/docker_data/fail2ban || { _red "无法进入目录/data/docker_data/fail2ban"; return 1; }
+
+								if docker compose version >/dev/null 2>&1; then
+									docker compose down --rmi all --volumes
+								elif command -v docker-compose >/dev/null 2>&1; then
+									docker-compose down --rmi all --volumes
+								fi
+
+								[ -d /data/docker_data/fail2ban ] && rm -fr /data/docker_data/fail2ban
 								crontab -l | grep -v "CF-Under-Attack.sh" | crontab - 2>/dev/null
-								_yellow "Fail2Ban防御程序已卸载"
+								_green "Fail2Ban防御程序已卸载"
 								break
 								;;
 							11)
@@ -3500,10 +3507,10 @@ linux_ldnmp() {
 										_red "CFKEY不能为空,请重新输入"
 									fi
 								done
-								
-								wget -O /data/docker_data/nginx/conf.d/default.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default11.conf
-								docker restart nginx
-								
+
+								wget -qO /data/docker_data/web/nginx/conf.d/default.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default11.conf
+								docker restart nginx >/dev/null 2>&1
+
 								cd /data/docker_data/fail2ban/config/fail2ban/jail.d
 								curl -sS -O https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/nginx-docker-cc.conf
 								
@@ -3553,23 +3560,26 @@ linux_ldnmp() {
 									fi
 								done
 
-								cd ~
 								install jq bc
 								check_crontab_installed
-								curl -sS -O https://raw.githubusercontent.com/honeok8s/shell/main/callscript/CF-Under-Attack.sh
-								chmod +x CF-Under-Attack.sh
-								sed -i "s/AAAA/$CFUSER/g" ~/CF-Under-Attack.sh
-								sed -i "s/BBBB/$CFKEY/g" ~/CF-Under-Attack.sh
-								sed -i "s/CCCC/$CFZoneID/g" ~/CF-Under-Attack.sh
 
-								cron_job="*/5 * * * * ~/CF-Under-Attack.sh"
+								[ ! -d /data/script ] && mkdir -p /data/script
+								cd /data/script || { _red "进入目录/data/script失败"; return 1; }
+
+								curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/CF-Under-Attack.sh
+								chmod +x CF-Under-Attack.sh
+								sed -i "s/AAAA/$CFUSER/g" /data/script/CF-Under-Attack.sh
+								sed -i "s/BBBB/$CFKEY/g" /data/script/CF-Under-Attack.sh
+								sed -i "s/CCCC/$CFZoneID/g" /data/script/CF-Under-Attack.sh
+
+								cron_job="*/5 * * * * /data/script/CF-Under-Attack.sh >/dev/null 2>&1"
 								existing_cron=$(crontab -l 2>/dev/null | grep -F "$cron_job")
 								
 								if [ -z "$existing_cron" ]; then
 									(crontab -l 2>/dev/null; echo "$cron_job") | crontab -
-									echo "高负载自动开盾脚本已添加"
+									_green "高负载自动开盾脚本已添加"
 								else
-									echo "自动开盾脚本已存在,无需添加"
+									_yellow "自动开盾脚本已存在,无需添加"
 								fi
 								;;
 							0)
@@ -3591,10 +3601,11 @@ linux_ldnmp() {
 						[Yy])
 							remove fail2ban
 							rm -fr /etc/fail2ban
-							echo "Fail2Ban防御程序已卸载"
+							_green "Fail2Ban防御程序已卸载"
 							;;
 						[Nn])
-							echo "已取消"
+							:
+							_yellow "已取消"
 							;;
 						*)
 							_red "无效选项,请重新输入"
@@ -3606,10 +3617,10 @@ linux_ldnmp() {
 
 					docker rm -f nginx
 					
-					[ ! -d /data/docker_data/nginx ] && mkdir -p /data/docker_data/nginx
-					cd /data/docker_data/nginx
+					[ ! -d /data/docker_data/web/nginx ] && mkdir -p /data/docker_data/web/nginx
+					cd /data/docker_data/web/nginx || { _red "进入目录/data/docker_data/web/nginx失败"; return 1; }
 
-					wget -O nginx.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/nginx-2C2G.conf
+					wget -qO nginx.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/nginx-2C2G.conf
 
 					for dir in ./conf.d ./certs; do
 						[ ! -d "$dir" ] && mkdir -p "$dir"
