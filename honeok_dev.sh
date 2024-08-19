@@ -995,7 +995,7 @@ docker_manager(){
 				clear
 				echo "Docker版本"
 				docker -v
-				if command -v docker compose >/dev/null 2>&1; then
+				if docker compose version >/dev/null 2>&1; then
 					docker compose version
 				elif command -v docker-compose >/dev/null 2>&1; then
 					docker-compose version
