@@ -1434,7 +1434,7 @@ check_available_port() {
 	# 检查并设置docker_port_2
 	if [ -n "$default_port_2" ]; then
 		if ss -tuln | grep -q ":$default_port_2 "; then
-			docker_port_2=$(find_available_port 31000 50000)
+			docker_port_2=$(find_available_port 35000 50000)
 			_yellow "默认端口$default_port_2被占用,端口跳跃为$docker_port_2"
 			sleep 1
 		else
@@ -1447,7 +1447,7 @@ check_available_port() {
 	# 检查并设置docker_port_3
 	if [ -n "$default_port_3" ]; then
 		if ss -tuln | grep -q ":$default_port_3 "; then
-			docker_port_3=$(find_available_port 32000 50000)
+			docker_port_3=$(find_available_port 40000 50000)
 			_yellow "默认端口$default_port_3被占用,端口跳跃为$docker_port_3"
 			sleep 1
 		else
