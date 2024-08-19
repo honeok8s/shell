@@ -442,17 +442,20 @@ install_add_docker() {
 		fi
 
 		install docker-ce docker-ce-cli containerd.io
-		enable docker && start docker
+		enable docker
+		start docker
 		generate_docker_config
 		docker_main_version
 	elif command -v apt &>/dev/null || command -v yum &>/dev/null; then
 		install_docker_official
-		enable docker && start docker
+		enable docker
+		start docker
 		generate_docker_config
 		docker_main_version
 	else
 		install docker docker-compose
-		enable docker && start docker
+		enable docker
+		start docker
 		generate_docker_config
 		docker_main_version
 	fi
