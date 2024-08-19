@@ -531,7 +531,6 @@ import sys
 
 registry_mirrors = [
 	"https://registry.honeok.com",
-	"https://registry2.honeok.com",
 	"https://docker.ima.cm",
 	"https://hub.littlediary.cn",
 	"https://h.ysicing.net"
