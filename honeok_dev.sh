@@ -499,6 +499,7 @@ docker_main_version() {
 	echo -e "${white}已安装Docker Compose版本: ${yellow}v$docker_compose_version${white}"
 }
 
+# Docker调优
 generate_docker_config() {
 	local config_file="/etc/docker/daemon.json"
 	local is_china_server='false'
@@ -570,6 +571,117 @@ EOF
 	daemon_reload
 	restart docker
 	_yellow "Docker配置文件已根据服务器IP归属做相关优化,如需调整自行修改$config_file"
+}
+
+docker_ipv6_on() {
+	need_root
+	install python3
+
+	local CONFIG_FILE="/etc/docker/daemon.json"
+	local REQUIRED_IPV6_CONFIG='{
+		"ipv6": true,
+		"fixed-cidr-v6": "2001:db8:1::/64"
+	}'
+
+	# 检查配置文件是否存在,如果不存在则创建文件并写入默认设置
+	if [ ! -f "$CONFIG_FILE" ]; then
+		echo "$REQUIRED_IPV6_CONFIG" > "$CONFIG_FILE"
+		restart docker
+	else
+		# Python代码用于处理配置文件的更新
+		local PYTHON_CODE=$(cat <<EOF
+import json
+import sys
+
+config_file = sys.argv[1]
+
+required_config = {
+    "ipv6": True,
+    "fixed-cidr-v6": "2001:db8:1::/64"
+}
+
+try:
+    with open(config_file, 'r') as f:
+        config = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    config = {}
+
+original_config = dict(config)
+
+config.update(required_config)
+
+final_config = dict(config)
+
+if original_config == final_config:
+    print("NO_CHANGE")
+else:
+    with open(config_file, 'w') as f:
+        json.dump(final_config, f, indent=4, sort_keys=False)
+    print("RELOAD")
+EOF
+		)
+		# 执行Python脚本并获取结果
+		local RESULT=$(python3 -c "$PYTHON_CODE" "$CONFIG_FILE")
+
+		# 根据Python脚本的输出结果进行相应操作
+		if [[ "$RESULT" == *"RELOAD"* ]]; then
+			restart docker
+		elif [[ "$RESULT" == *"NO_CHANGE"* ]]; then
+			_yellow "当前已开启IPV6访问"
+		else
+			_red "处理配置时发生错误"
+		fi
+	fi
+}
+
+docker_ipv6_off() {
+	need_root
+	install python3
+
+	local CONFIG_FILE="/etc/docker/daemon.json"
+	local PYTHON_CODE=$(cat <<EOF
+import json
+import sys
+
+config_file = sys.argv[1]
+
+# 期望的配置
+required_config = {
+    "ipv6": False,
+}
+
+try:
+    with open(config_file, 'r') as f:
+        config = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    config = {}
+
+original_config = dict(config)
+
+# 更新配置项,确保ipv6关闭,且移除fixed-cidr-v6
+config['ipv6'] = False
+config.pop('fixed-cidr-v6', None)
+
+final_config = dict(config)
+
+if original_config == final_config:
+    print("NO_CHANGE")
+else:
+    with open(config_file, 'w') as f:
+        json.dump(final_config, f, indent=4, sort_keys=False)
+    print("RELOAD")
+EOF
+	)
+
+	local RESULT=$(python3 -c "$PYTHON_CODE" "$CONFIG_FILE")
+
+	if [[ "$RESULT" == *"RELOAD"* ]]; then
+		restart docker
+	elif [[ "$RESULT" == *"NO_CHANGE"* ]]; then
+		_yellow "当前已关闭IPV6访问"
+	else
+		_red "处理配置时发生错误"
+	fi
 }
 
 # 卸载Docker
@@ -646,8 +758,466 @@ uninstall_docker() {
 		_green "Docker和Docker Compose已卸载,并清理文件夹和相关依赖"
 	fi
 }
-#################### Docker END ####################
 
+docker_ps() {
+	while true; do
+		clear
+		echo "Docker容器列表"
+		docker ps -a
+		echo ""
+		echo "容器操作"
+		echo "------------------------"
+		echo "1. 创建新的容器"
+		echo "------------------------"
+		echo "2. 启动指定容器             6. 启动所有容器"
+		echo "3. 停止指定容器             7. 停止所有容器"
+		echo "4. 删除指定容器             8. 删除所有容器"
+		echo "5. 重启指定容器             9. 重启所有容器"
+		echo "------------------------"
+		echo "11. 进入指定容器           12. 查看容器日志           13. 查看容器网络"
+		echo "------------------------"
+		echo "0. 返回上一级选单"
+		echo "------------------------"
+
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read choice
+		case $choice in
+			1)
+				echo -n "请输入创建命令:" dockername
+				$dockername
+				;;
+			2)
+				echo -n "请输入容器名(多个容器名请用空格分隔):" dockername
+				read dockername
+				docker start $dockername
+				;;
+			3)
+				echo -n "请输入容器名(多个容器名请用空格分隔):"
+				read dockername
+				docker stop $dockername
+				;;
+			4)
+				echo -n "请输入容器名(多个容器名请用空格分隔):"
+				read dockername
+				docker rm -f $dockername
+				;;
+			5)
+				echo -n "请输入容器名(多个容器名请用空格分隔):"
+				read dockername
+				docker restart $dockername
+				;;
+			6)
+				docker start $(docker ps -a -q)
+				;;
+			7)
+				docker stop $(docker ps -q)
+				;;
+			8)
+				echo -n -e "${yellow}确定删除所有容器吗?(y/n):${white}"
+				read choice
+
+				case "$choice" in
+					[Yy])
+						docker rm -f $(docker ps -a -q)
+						;;
+					[Nn])
+						;;
+					*)
+						_red "无效选项,请重新输入"
+						;;
+				esac
+				;;
+			9)
+				docker restart $(docker ps -q)
+				;;
+			11)
+				echo -n "请输入容器名:"
+				read dockername
+				docker exec -it $dockername /bin/sh
+				end_of
+				;;
+			12)
+				echo -n "请输入容器名:"
+				read dockername
+				docker logs $dockername
+				end_of
+				;;
+			13)
+				echo ""
+				container_ids=$(docker ps -q)
+				echo "------------------------------------------------------------"
+				printf "%-25s %-25s %-25s\n" "容器名称" "网络名称" "IP地址"
+				for container_id in $container_ids; do
+					container_info=$(docker inspect --format '{{ .Name }}{{ range $network, $config := .NetworkSettings.Networks }} {{ $network }} {{ $config.IPAddress }}{{ end }}' "$container_id")
+					container_name=$(echo "$container_info" | awk '{print $1}')
+					network_info=$(echo "$container_info" | cut -d' ' -f2-)
+					while IFS= read -r line; do
+						network_name=$(echo "$line" | awk '{print $1}')
+						ip_address=$(echo "$line" | awk '{print $2}')
+						printf "%-20s %-20s %-15s\n" "$container_name" "$network_name" "$ip_address"
+					done <<< "$network_info"
+				done
+				end_of
+				;;
+			0)
+				break
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+	done
+}
+
+docker_image() {
+	while true; do
+		clear
+		echo "Docker镜像列表"
+		docker image ls
+		echo ""
+		echo "镜像操作"
+		echo "------------------------"
+		echo "1. 获取指定镜像             3. 删除指定镜像"
+		echo "2. 更新指定镜像             4. 删除所有镜像"
+		echo "------------------------"
+		echo "0. 返回上一级选单"
+		echo "------------------------"
+
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read choice
+		case $choice in
+			1)
+				echo -n "请输入镜像名(多个镜像名请用空格分隔):"
+				read imagenames
+				for name in $imagenames; do
+					_yellow "正在获取镜像:" $name
+					docker pull $name
+				done
+				;;
+			2)
+				echo -n "请输入镜像名(多个镜像名请用空格分隔):"
+				read imagenames
+				for name in $imagenames; do
+					_yellow "正在更新镜像:" $name
+					docker pull $name
+				done
+				;;
+			3)
+				echo -n "请输入镜像名(多个镜像名请用空格分隔):"
+				read imagenames
+				for name in $imagenames; do
+					docker rmi -f $name
+				done
+				;;
+			4)
+				echo -n -e "${yellow}确定删除所有镜像吗?(y/n):${white}"
+				read choice
+
+				case "$choice" in
+					[Yy])
+						docker rmi -f $(docker images -q)
+						;;
+					[Nn])
+						;;
+					*)
+						_red "无效选项,请重新输入"
+						;;
+				esac
+				;;
+			0)
+				break
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+	done
+}
+
+# Docker管理主面板菜单
+docker_manager(){
+	while true; do
+		clear
+		echo "▶ Docker管理"
+		echo "-------------------------"
+		echo "1. 安装更新Docker环境"
+		echo "-------------------------"
+		echo "2. 查看Docker全局状态"
+		echo "-------------------------"
+		echo "3. Docker容器管理 ▶"
+		echo "4. Docker镜像管理 ▶"
+		echo "5. Docker网络管理 ▶"
+		echo "6. Docker卷管理 ▶"
+		echo "-------------------------"
+		echo "7. 清理无用的docker容器和镜像网络数据卷"
+		echo "------------------------"
+		echo "8. 更换Docker源"
+		echo "9. 编辑Docker配置文件"
+		echo "10. Docker配置文件一键优化(CN提供镜像加速)"
+		echo "------------------------"
+		echo "11. 开启Docker-ipv6访问"
+		echo "12. 关闭Docker-ipv6访问"
+		echo "------------------------"
+		echo "20. 卸载Docker环境"
+		echo "------------------------"
+		echo "0. 返回主菜单"
+		echo "------------------------"
+		
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read choice
+
+		case $choice in
+			1)
+				clear
+				if ! command -v docker >/dev/null 2>&1; then
+					install_add_docker
+				else
+					docker_main_version
+					while true; do
+						echo -n -e "是否升级Docker环境?(y/n):"
+						read answer
+
+						case $answer in
+							[Y/y])
+								install_add_docker
+								break
+								;;
+							[N/n])
+								break
+								;;
+							*)
+								_red "无效选项,请重新输入"
+								;;
+						esac
+					done
+				fi
+				;;
+			2)
+				clear
+				echo "Docker版本"
+				docker -v
+				if command -v docker compose >/dev/null 2>&1; then
+					docker compose version
+				elif command -v docker-compose >/dev/null 2>&1; then
+					docker-compose version
+				fi
+				echo ""
+				echo "Docker镜像列表"
+				docker image ls
+				echo ""
+				echo "Docker容器列表"
+				docker ps -a
+				echo ""
+				echo "Docker卷列表"
+				docker volume ls
+				echo ""
+				echo "Docker网络列表"
+				docker network ls
+				echo ""
+				;;
+			3)
+				docker_ps
+				;;
+			4)
+				docker_image
+				;;
+			5)
+				while true; do
+					clear
+					echo "Docker网络列表"
+					echo "------------------------------------------------------------"
+					docker network ls
+					echo ""
+					echo "------------------------------------------------------------"
+					container_ids=$(docker ps -q)
+					printf "%-25s %-25s %-25s\n" "容器名称" "网络名称" "IP地址"
+
+					for container_id in $container_ids; do
+						container_info=$(docker inspect --format '{{ .Name }}{{ range $network, $config := .NetworkSettings.Networks }} {{ $network }} {{ $config.IPAddress }}{{ end }}' "$container_id")
+						container_name=$(echo "$container_info" | awk '{print $1}')
+						network_info=$(echo "$container_info" | cut -d' ' -f2-)
+
+						while IFS= read -r line; do
+							network_name=$(echo "$line" | awk '{print $1}')
+							ip_address=$(echo "$line" | awk '{print $2}')
+
+							printf "%-20s %-20s %-15s\n" "$container_name" "$network_name" "$ip_address"
+						done <<< "$network_info"
+					done
+
+					echo ""
+					echo "网络操作"
+					echo "------------------------"
+					echo "1. 创建网络"
+					echo "2. 加入网络"
+					echo "3. 退出网络"
+					echo "4. 删除网络"
+					echo "------------------------"
+					echo "0. 返回上一级选单"
+					echo "------------------------"
+
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					read choice
+
+					case $choice in
+						1)
+							echo -n "设置新网络名:"
+							read dockernetwork
+							docker network create $dockernetwork
+							;;
+						2)
+							echo -n "设置新网络名:"
+							read dockernetwork
+							echo -n "设置新网络名:"
+							read dockernames
+
+							for dockername in $dockernames; do
+								docker network connect $dockernetwork $dockername
+							done                  
+							;;
+						3)
+							echo -n "设置新网络名:"
+							read dockernetwork
+
+							echo -n "那些容器退出该网络(多个容器名请用空格分隔):"
+							read dockernames
+                          
+							for dockername in $dockernames; do
+								docker network disconnect $dockernetwork $dockername
+							done
+							;;
+						4)
+							echo -n "请输入要删除的网络名:"
+							read dockernetwork
+							docker network rm $dockernetwork
+							;;
+						0)
+							break  # 跳出循环，退出菜单
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac
+				done
+				;;
+			6)
+				while true; do
+					clear
+					echo "Docker卷列表"
+					docker volume ls
+					echo ""
+					echo "卷操作"
+					echo "------------------------"
+					echo "1. 创建新卷"
+					echo "2. 删除指定卷"
+					echo "3. 删除所有卷"
+					echo "------------------------"
+					echo "0. 返回上一级选单"
+					echo "------------------------"
+
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					read choice
+
+					case $choice in
+						1)
+							echo -n "设置新卷名:"
+							read dockerjuan
+							docker volume create $dockerjuan
+							;;
+						2)
+							echo -n "输入删除卷名(多个卷名请用空格分隔):"
+							read dockerjuans
+
+							for dockerjuan in $dockerjuans; do
+								docker volume rm $dockerjuan
+							done
+							;;
+						3)
+							echo -n "确定删除所有未使用的卷吗:"
+							read choice
+							case "$choice" in
+								[Yy])
+									docker volume prune -f
+									;;
+								[Nn])
+									;;
+								*)
+									_red "无效选项,请重新输入"
+									;;
+							esac
+							;;
+						0)
+							break  # 跳出循环,退出菜单
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac
+				done
+				;;
+			7)
+				clear
+				echo -n "将清理无用的镜像容器网络，包括停止的容器，确定清理吗?(y/n):"
+				read  choice
+
+				case "$choice" in
+					[Yy])
+						docker system prune -af --volumes
+						;;
+					[Nn])
+						;;
+					*)
+						_red "无效选项,请重新输入"
+						;;
+				esac
+				;;
+			8)
+				clear
+				bash <(curl -sSL https://linuxmirrors.cn/docker.sh)
+				;;
+			9)
+				clear
+				mkdir /etc/docker -p && vim /etc/docker/daemon.json
+				restart docker
+				;;
+			10)
+				generate_docker_config
+				;;
+			11)
+				clear
+				docker_ipv6_on
+				;;
+			12)
+				clear
+				docker_ipv6_off
+				;;
+			20)
+				clear
+				echo -n -e "${yellow}确定卸载docker环境吗?(y/n)${white}"
+				read choice
+
+				case "$choice" in
+					[Yy])
+						uninstall_docker
+						;;
+					[Nn])
+						;;
+					*)
+						_red "无效选项,请重新输入"
+						;;
+				esac
+				;;
+			0)
+				honeok
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+		end_of
+	done
+}
+#################### Docker END ####################
 
 # 用于检查并设置net.core.default_qdisc参数
 set_default_qdisc(){
@@ -1067,292 +1637,6 @@ linux_bbr() {
 	fi
 }
 
-docker_ps() {
-	while true; do
-		clear
-		echo "Docker容器列表"
-		docker ps -a
-		echo ""
-		echo "容器操作"
-		echo "------------------------"
-		echo "1. 创建新的容器"
-		echo "------------------------"
-		echo "2. 启动指定容器             6. 启动所有容器"
-		echo "3. 停止指定容器             7. 停止所有容器"
-		echo "4. 删除指定容器             8. 删除所有容器"
-		echo "5. 重启指定容器             9. 重启所有容器"
-		echo "------------------------"
-		echo "11. 进入指定容器           12. 查看容器日志           13. 查看容器网络"
-		echo "------------------------"
-		echo "0. 返回上一级选单"
-		echo "------------------------"
-
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
-		case $choice in
-			1)
-				echo -n "请输入创建命令:" dockername
-				$dockername
-				;;
-			2)
-				echo -n "请输入容器名(多个容器名请用空格分隔):" dockername
-				read dockername
-				docker start $dockername
-				;;
-			3)
-				echo -n "请输入容器名(多个容器名请用空格分隔):"
-				read dockername
-				docker stop $dockername
-				;;
-			4)
-				echo -n "请输入容器名(多个容器名请用空格分隔):"
-				read dockername
-				docker rm -f $dockername
-				;;
-			5)
-				echo -n "请输入容器名(多个容器名请用空格分隔):"
-				read dockername
-				docker restart $dockername
-				;;
-			6)
-				docker start $(docker ps -a -q)
-				;;
-			7)
-				docker stop $(docker ps -q)
-				;;
-			8)
-				echo -n -e "${yellow}确定删除所有容器吗?(y/n):${white}"
-				read choice
-
-				case "$choice" in
-					[Yy])
-						docker rm -f $(docker ps -a -q)
-						;;
-					[Nn])
-						;;
-					*)
-						_red "无效选项,请重新输入"
-						;;
-				esac
-				;;
-			9)
-				docker restart $(docker ps -q)
-				;;
-			11)
-				echo -n "请输入容器名:"
-				read dockername
-				docker exec -it $dockername /bin/sh
-				end_of
-				;;
-			12)
-				echo -n "请输入容器名:"
-				read dockername
-				docker logs $dockername
-				end_of
-				;;
-			13)
-				echo ""
-				container_ids=$(docker ps -q)
-				echo "------------------------------------------------------------"
-				printf "%-25s %-25s %-25s\n" "容器名称" "网络名称" "IP地址"
-				for container_id in $container_ids; do
-					container_info=$(docker inspect --format '{{ .Name }}{{ range $network, $config := .NetworkSettings.Networks }} {{ $network }} {{ $config.IPAddress }}{{ end }}' "$container_id")
-					container_name=$(echo "$container_info" | awk '{print $1}')
-					network_info=$(echo "$container_info" | cut -d' ' -f2-)
-					while IFS= read -r line; do
-						network_name=$(echo "$line" | awk '{print $1}')
-						ip_address=$(echo "$line" | awk '{print $2}')
-						printf "%-20s %-20s %-15s\n" "$container_name" "$network_name" "$ip_address"
-					done <<< "$network_info"
-				done
-				end_of
-				;;
-			0)
-				break
-				;;
-			*)
-				_red "无效选项,请重新输入"
-				;;
-		esac
-	done
-}
-
-docker_image() {
-	while true; do
-		clear
-		echo "Docker镜像列表"
-		docker image ls
-		echo ""
-		echo "镜像操作"
-		echo "------------------------"
-		echo "1. 获取指定镜像             3. 删除指定镜像"
-		echo "2. 更新指定镜像             4. 删除所有镜像"
-		echo "------------------------"
-		echo "0. 返回上一级选单"
-		echo "------------------------"
-
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
-		case $choice in
-			1)
-				echo -n "请输入镜像名(多个镜像名请用空格分隔):"
-				read imagenames
-				for name in $imagenames; do
-					_yellow "正在获取镜像:" $name
-					docker pull $name
-				done
-				;;
-			2)
-				echo -n "请输入镜像名(多个镜像名请用空格分隔):"
-				read imagenames
-				for name in $imagenames; do
-					_yellow "正在更新镜像:" $name
-					docker pull $name
-				done
-				;;
-			3)
-				echo -n "请输入镜像名(多个镜像名请用空格分隔):"
-				read imagenames
-				for name in $imagenames; do
-					docker rmi -f $name
-				done
-				;;
-			4)
-				echo -n -e "${yellow}确定删除所有镜像吗?(y/n):${white}"
-				read choice
-
-				case "$choice" in
-					[Yy])
-						docker rmi -f $(docker images -q)
-						;;
-					[Nn])
-						;;
-					*)
-						_red "无效选项,请重新输入"
-						;;
-				esac
-				;;
-			0)
-				break
-				;;
-			*)
-				_red "无效选项,请重新输入"
-				;;
-		esac
-	done
-}
-
-docker_ipv6_on() {
-	need_root
-	install python3 >/dev/null 2>&1
-
-	local CONFIG_FILE="/etc/docker/daemon.json"
-	local REQUIRED_IPV6_CONFIG='{
-		"ipv6": true,
-		"fixed-cidr-v6": "2001:db8:1::/64"
-	}'
-
-	# 检查配置文件是否存在,如果不存在则创建文件并写入默认设置
-	if [ ! -f "$CONFIG_FILE" ]; then
-		echo "$REQUIRED_IPV6_CONFIG" > "$CONFIG_FILE"
-		restart docker
-	else
-		# Python代码用于处理配置文件的更新
-		local PYTHON_CODE=$(cat <<EOF
-import json
-import sys
-
-config_file = sys.argv[1]
-
-required_config = {
-    "ipv6": True,
-    "fixed-cidr-v6": "2001:db8:1::/64"
-}
-
-try:
-    with open(config_file, 'r') as f:
-        config = json.load(f)
-except (FileNotFoundError, json.JSONDecodeError):
-    config = {}
-
-original_config = dict(config)
-
-config.update(required_config)
-
-final_config = dict(config)
-
-if original_config == final_config:
-    print("NO_CHANGE")
-else:
-    with open(config_file, 'w') as f:
-        json.dump(final_config, f, indent=4, sort_keys=False)
-    print("RELOAD")
-EOF
-		)
-		# 执行Python脚本并获取结果
-		local RESULT=$(python3 -c "$PYTHON_CODE" "$CONFIG_FILE")
-
-		# 根据Python脚本的输出结果进行相应操作
-		if [[ "$RESULT" == *"RELOAD"* ]]; then
-			restart docker
-		elif [[ "$RESULT" == *"NO_CHANGE"* ]]; then
-			_yellow "当前已开启IPV6访问"
-		else
-			_red "处理配置时发生错误"
-		fi
-	fi
-}
-
-docker_ipv6_off() {
-	need_root
-	install python3 >/dev/null 2>&1
-
-	local CONFIG_FILE="/etc/docker/daemon.json"
-	local PYTHON_CODE=$(cat <<EOF
-import json
-import sys
-
-config_file = sys.argv[1]
-
-# 期望的配置
-required_config = {
-    "ipv6": False,
-}
-
-try:
-    with open(config_file, 'r') as f:
-        config = json.load(f)
-except (FileNotFoundError, json.JSONDecodeError):
-    config = {}
-
-original_config = dict(config)
-
-# 更新配置项,确保ipv6关闭,且移除fixed-cidr-v6
-config['ipv6'] = False
-config.pop('fixed-cidr-v6', None)
-
-final_config = dict(config)
-
-if original_config == final_config:
-    print("NO_CHANGE")
-else:
-    with open(config_file, 'w') as f:
-        json.dump(final_config, f, indent=4, sort_keys=False)
-    print("RELOAD")
-EOF
-	)
-
-	local RESULT=$(python3 -c "$PYTHON_CODE" "$CONFIG_FILE")
-
-	if [[ "$RESULT" == *"RELOAD"* ]]; then
-		restart docker
-	elif [[ "$RESULT" == *"NO_CHANGE"* ]]; then
-		_yellow "当前已关闭IPV6访问"
-	else
-		_red "处理配置时发生错误"
-	fi
-}
-
 iptables_open(){
 	iptables -P INPUT ACCEPT
 	iptables -P FORWARD ACCEPT
@@ -1363,289 +1647,6 @@ iptables_open(){
 	ip6tables -P FORWARD ACCEPT
 	ip6tables -P OUTPUT ACCEPT
 	ip6tables -F
-}
-
-docker_manager(){
-	while true; do
-		clear
-		echo "▶ Docker管理"
-		echo "-------------------------"
-		echo "1. 安装更新Docker环境"
-		echo "-------------------------"
-		echo "2. 查看Docker全局状态"
-		echo "-------------------------"
-		echo "3. Docker容器管理 ▶"
-		echo "4. Docker镜像管理 ▶"
-		echo "5. Docker网络管理 ▶"
-		echo "6. Docker卷管理 ▶"
-		echo "-------------------------"
-		echo "7. 清理无用的docker容器和镜像网络数据卷"
-		echo "------------------------"
-		echo "8. 更换Docker源"
-		echo "9. 编辑Docker配置文件"
-		echo "10. Docker配置文件一键优化(CN提供镜像加速)"
-		echo "------------------------"
-		echo "11. 开启Docker-ipv6访问"
-		echo "12. 关闭Docker-ipv6访问"
-		echo "------------------------"
-		echo "20. 卸载Docker环境"
-		echo "------------------------"
-		echo "0. 返回主菜单"
-		echo "------------------------"
-		
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
-
-		case $choice in
-			1)
-				clear
-				if ! command -v docker >/dev/null 2>&1; then
-					install_add_docker
-				else
-					docker_main_version
-					while true; do
-						echo -n -e "是否升级Docker环境?(y/n):"
-						read answer
-
-						case $answer in
-							[Y/y])
-								install_add_docker
-								break
-								;;
-							[N/n])
-								break
-								;;
-							*)
-								_red "无效选项,请重新输入"
-								;;
-						esac
-					done
-				fi
-				;;
-			2)
-				clear
-				echo "Docker版本"
-				docker -v
-				if command -v docker compose >/dev/null 2>&1; then
-					docker compose version
-				elif command -v docker-compose >/dev/null 2>&1; then
-					docker-compose version
-				fi
-				echo ""
-				echo "Docker镜像列表"
-				docker image ls
-				echo ""
-				echo "Docker容器列表"
-				docker ps -a
-				echo ""
-				echo "Docker卷列表"
-				docker volume ls
-				echo ""
-				echo "Docker网络列表"
-				docker network ls
-				echo ""
-				;;
-			3)
-				docker_ps
-				;;
-			4)
-				docker_image
-				;;
-			5)
-				while true; do
-					clear
-					echo "Docker网络列表"
-					echo "------------------------------------------------------------"
-					docker network ls
-					echo ""
-					echo "------------------------------------------------------------"
-					container_ids=$(docker ps -q)
-					printf "%-25s %-25s %-25s\n" "容器名称" "网络名称" "IP地址"
-
-					for container_id in $container_ids; do
-						container_info=$(docker inspect --format '{{ .Name }}{{ range $network, $config := .NetworkSettings.Networks }} {{ $network }} {{ $config.IPAddress }}{{ end }}' "$container_id")
-						container_name=$(echo "$container_info" | awk '{print $1}')
-						network_info=$(echo "$container_info" | cut -d' ' -f2-)
-
-						while IFS= read -r line; do
-							network_name=$(echo "$line" | awk '{print $1}')
-							ip_address=$(echo "$line" | awk '{print $2}')
-
-							printf "%-20s %-20s %-15s\n" "$container_name" "$network_name" "$ip_address"
-						done <<< "$network_info"
-					done
-
-					echo ""
-					echo "网络操作"
-					echo "------------------------"
-					echo "1. 创建网络"
-					echo "2. 加入网络"
-					echo "3. 退出网络"
-					echo "4. 删除网络"
-					echo "------------------------"
-					echo "0. 返回上一级选单"
-					echo "------------------------"
-
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-					read choice
-
-					case $choice in
-						1)
-							echo -n "设置新网络名:"
-							read dockernetwork
-							docker network create $dockernetwork
-							;;
-						2)
-							echo -n "设置新网络名:"
-							read dockernetwork
-							echo -n "设置新网络名:"
-							read dockernames
-
-							for dockername in $dockernames; do
-								docker network connect $dockernetwork $dockername
-							done                  
-							;;
-						3)
-							echo -n "设置新网络名:"
-							read dockernetwork
-
-							echo -n "那些容器退出该网络(多个容器名请用空格分隔):"
-							read dockernames
-                          
-							for dockername in $dockernames; do
-								docker network disconnect $dockernetwork $dockername
-							done
-							;;
-						4)
-							echo -n "请输入要删除的网络名:"
-							read dockernetwork
-							docker network rm $dockernetwork
-							;;
-						0)
-							break  # 跳出循环，退出菜单
-							;;
-						*)
-							_red "无效选项,请重新输入"
-							;;
-					esac
-				done
-				;;
-			6)
-				while true; do
-					clear
-					echo "Docker卷列表"
-					docker volume ls
-					echo ""
-					echo "卷操作"
-					echo "------------------------"
-					echo "1. 创建新卷"
-					echo "2. 删除指定卷"
-					echo "3. 删除所有卷"
-					echo "------------------------"
-					echo "0. 返回上一级选单"
-					echo "------------------------"
-
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-					read choice
-
-					case $choice in
-						1)
-							echo -n "设置新卷名:"
-							read dockerjuan
-							docker volume create $dockerjuan
-							;;
-						2)
-							echo -n "输入删除卷名(多个卷名请用空格分隔):"
-							read dockerjuans
-
-							for dockerjuan in $dockerjuans; do
-								docker volume rm $dockerjuan
-							done
-							;;
-						3)
-							echo -n "确定删除所有未使用的卷吗:"
-							read choice
-							case "$choice" in
-								[Yy])
-									docker volume prune -f
-									;;
-								[Nn])
-									;;
-								*)
-									_red "无效选项,请重新输入"
-									;;
-							esac
-							;;
-						0)
-							break  # 跳出循环,退出菜单
-							;;
-						*)
-							_red "无效选项,请重新输入"
-							;;
-					esac
-				done
-				;;
-			7)
-				clear
-				echo -n "将清理无用的镜像容器网络，包括停止的容器，确定清理吗?(y/n):"
-				read  choice
-
-				case "$choice" in
-					[Yy])
-						docker system prune -af --volumes
-						;;
-					[Nn])
-						;;
-					*)
-						_red "无效选项,请重新输入"
-						;;
-				esac
-				;;
-			8)
-				clear
-				bash <(curl -sSL https://linuxmirrors.cn/docker.sh)
-				;;
-			9)
-				clear
-				mkdir /etc/docker -p && vim /etc/docker/daemon.json
-				restart docker
-				;;
-			10)
-				generate_docker_config
-				;;
-			11)
-				clear
-				docker_ipv6_on
-				;;
-			12)
-				clear
-				docker_ipv6_off
-				;;
-			20)
-				clear
-				echo -n -e "${yellow}确定卸载docker环境吗?(y/n)${white}"
-				read choice
-
-				case "$choice" in
-					[Yy])
-						uninstall_docker
-						;;
-					[Nn])
-						;;
-					*)
-						_red "无效选项,请重新输入"
-						;;
-				esac
-				;;
-			0)
-				honeok
-				;;
-			*)
-				_red "无效选项,请重新输入"
-				;;
-		esac
-		end_of
-	done
 }
 
 default_server_ssl() {
