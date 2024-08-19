@@ -3254,13 +3254,13 @@ install_ldnmp() {
 				progressBar+="."
 			done
 			progressBar+="]"
-			echo -ne "\r[${green}$percentage%${white}] $progressBar"
+			echo -ne "\r[${orange}$percentage%${white}] $progressBar"
 	done
 
-	echo  # 打印换行，以便输出不被覆盖
+	echo # 打印换行,以便输出不被覆盖
 
 	clear
-	echo "LDNMP环境安装完毕"
+	_green "LDNMP环境安装完毕"
 	echo "------------------------"
 	ldnmp_version
 }
