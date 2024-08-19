@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 定义证书存储目录
-certs_directory="/data/auto_certs/certs/"
+certs_directory="/etc/letsencrypt/live/"
 
 days_before_expiry=5  # 设置在证书到期前几天触发续签
 
