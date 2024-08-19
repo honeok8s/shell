@@ -64,8 +64,8 @@ for cert_dir in $certs_directory*; do
 			certbot certonly --standalone -d $domain --email your@email.com --agree-tos --no-eff-email --force-renewal
 		fi
 
-		cp /data/auto_certs/certs/$domain/fullchain.pem /data/docker_data/web/nginx/certs/${domain}_cert.pem > /dev/null 2>&1
-		cp /data/auto_certs/certs/$domain/privkey.pem /data/docker_data/web/nginx/certs/${domain}_key.pem > /dev/null 2>&1
+		cp /etc/letsencrypt/live/$domain/fullchain.pem /data/docker_data/web/nginx/certs/${domain}_cert.pem > /dev/null 2>&1
+		cp /etc/letsencrypt/live/$domain/privkey.pem /data/docker_data/web/nginx/certs/${domain}_key.pem > /dev/null 2>&1
 
 		docker start nginx > /dev/null 2>&1
 
