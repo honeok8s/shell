@@ -1352,7 +1352,7 @@ docker_app() {
 				# 生成compose文件
 				echo "$docker_compose_content" > docker-compose.yml
 
-				if command -v docker compose >/dev/null 2>&1; then
+				if docker compose version >/dev/null 2>&1; then
 					docker compose up -d
 				elif command -v docker-compose >/dev/null 2>&1; then
 					docker-compose up -d
@@ -1368,7 +1368,7 @@ docker_app() {
 			2)
 				cd $docker_workdir || return 1
 
-				if command -v docker compose >/dev/null 2>&1; then
+				if docker compose version >/dev/null 2>&1; then
 					docker compose pull && docker compose up -d
 				elif command -v docker-compose >/dev/null 2>&1; then
 					docker-compose pull && docker-compose up -d
@@ -3567,7 +3567,12 @@ fail2ban_install_sshd() {
 	[ ! -d /data/docker_data/fail2ban ] && mkdir -p /data/docker_data/fail2ban
 	wget -O /data/docker_data/fail2ban/docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/docker-compose.yml
 	cd /data/docker_data/fail2ban
-	docker compose up -d
+
+	if docker compose version >/dev/null 2>&1; then
+		docker compose up -d
+	elif command -v docker-compose >/dev/null 2>&1; then
+		docker-compose up -d
+	fi
 
 	sleep 3
 	if grep -q 'Alpine' /etc/issue; then
@@ -3835,7 +3840,7 @@ linux_ldnmp() {
 
 					wget -O docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/nginx/docker-compose.yml
 					
-					if command -v docker compose >/dev/null 2>&1; then
+					if docker compose version >/dev/null 2>&1; then
 						docker compose up -d
 					elif command -v docker-compose >/dev/null 2>&1; then
 						docker-compose up -d
