@@ -4153,7 +4153,7 @@ cron_manager(){
 						fi
 						;;
 					2)
-						echo -n -e "${yellow}选择周几执行任务?(0-6，0代表星期日):${white}"
+						echo -n -e "${yellow}选择周几执行任务?(0-6,0代表星期日):${white}"
 						read weekday
 						if [[ ! $weekday =~ ^[0-6]$ ]]; then
 							_red "无效的星期输入"
