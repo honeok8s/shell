@@ -1217,1252 +1217,6 @@ docker_manager(){
 		end_of
 	done
 }
-#################### Docker END ####################
-
-# 用于检查并设置net.core.default_qdisc参数
-set_default_qdisc(){
-	local qdisc_control="net.core.default_qdisc"
-	local default_qdisc="fq"
-	local config_file="/etc/sysctl.conf"
-	local current_value
-	local choice
-	local chosen_qdisc
-
-	# 使用grep查找现有配置,忽略等号周围的空格,排除注释行
-	if grep -q "^[^#]*${qdisc_control}\s*=" "${config_file}"; then
-		# 存在该设置项,检查其值
-		current_value=$(grep "^[^#]*${qdisc_control}\s*=" "${config_file}" | sed -E "s/^[^#]*${qdisc_control}\s*=\s*(.*)/\1/")
-		_yellow "当前队列规则为:$current_value"
-	else
-		# 没有找到该设置项
-		current_value=""
-	fi
-
-	# 提供用户选择菜单
-	while true; do
-		echo "请选择要设置的队列规则"
-		echo "-------------------------"
-		echo "1. fq (默认)"
-		echo "2 .fq_pie"
-		echo "-------------------------"
-
-		echo -n -e "${yellow}请输入选项并按回车键确认(回车使用默认值:fq):${white}"
-		read choice
-
-		case "$choice" in
-			1|"")
-				chosen_qdisc="fq"
-				break
-				;;
-			2)
-				chosen_qdisc="fq_pie"
-				break
-				;;
-			*)
-				_red "无效选项,请重新输入"
-				;;
-		esac
-	done
-
-	# 如果当前值不等于选择的值,进行更新
-	if [ "$current_value" != "$chosen_qdisc" ]; then
-		if [ -z "$current_value" ]; then
-			# 如果没有设置项,则新增
-			echo "${qdisc_control}=${chosen_qdisc}" >> "${config_file}"
-		else
-			# 如果设置项存在但值不匹配,进行替换
-			sed -i -E "s|^[^#]*${qdisc_control}\s*=\s*.*|${qdisc_control}=${chosen_qdisc}|" "${config_file}"
-		fi
-		sysctl -p
-		_green "队列规则已设置为:$chosen_qdisc"
-	else
-		_yellow "队列规则已经是$current_value,无需更改。"
-	fi
-}
-
-bbr_on(){
-	local congestion_control="net.ipv4.tcp_congestion_control"
-	local congestion_bbr="bbr"
-	local config_file="/etc/sysctl.conf"
-	local current_value
-
-	# 使用grep查找现有配置,忽略等号周围的空格,排除注释行
-	if grep -q "^[^#]*${congestion_control}\s*=" "${config_file}"; then
-		# 存在该设置项,检查其值
-		current_value=$(grep "^[^#]*${congestion_control}\s*=" "${config_file}" | sed -E "s/^[^#]*${congestion_control}\s*=\s*(.*)/\1/")
-		if [ "$current_value" = "$congestion_bbr" ]; then
-			# 如果当前值已经是bbr,则跳过
-			return
-		else
-			# 如果当前值不是bbr,则替换为bbr
-			sed -i -E "s|^[^#]*${congestion_control}\s*=\s*.*|${congestion_control}=${congestion_bbr}|" "${config_file}"
-			sysctl -p
-		fi
-	else
-		# 如果没有找到该设置项,则新增
-		echo "${congestion_control}=${congestion_bbr}" >> "${config_file}"
-		sysctl -p
-	fi
-}
-
-# 查看当前服务器时区
-current_timezone(){
-	if grep -q 'Alpine' /etc/issue; then
-		date +"%Z %z"
-	else
-		timedatectl | grep "Time zone" | awk '{print $3}'
-	fi
-}
-
-# 设置时区
-set_timedate(){
-	local timezone="$1"
-	if grep -q 'Alpine' /etc/issue; then
-		install tzdata
-		cp /usr/share/zoneinfo/${timezone} /etc/localtime
-		hwclock --systohc
-	else
-		timedatectl set-timezone ${timezone}
-	fi
-}
-
-set_dns(){
-	local cloudflare_ipv4="1.1.1.1"
-	local google_ipv4="8.8.8.8"
-	local cloudflare_ipv6="2606:4700:4700::1111"
-	local google_ipv6="2001:4860:4860::8888"
-
-	local ali_ipv4="223.5.5.5"
-	local tencent_ipv4="183.60.83.19"
-	local ali_ipv6="2400:3200::1"
-	local tencent_ipv6="2400:da00::6666"
-
-	local ipv6_addresses
-
-	if [[ "$(curl -s ipinfo.io/country)" == "CN" ]]; then
-		{
-			echo "nameserver $ali_ipv4"
-			echo "nameserver $tencent_ipv4"
-			if [[ $(ip -6 addr | grep -c "inet6") -gt 0 ]]; then
-				echo "nameserver $ali_ipv6"
-				echo "nameserver $tencent_ipv6"
-			fi
-		} | tee /etc/resolv.conf > /dev/null
-	else
-		{
-			echo "nameserver $cloudflare_ipv4"
-			echo "nameserver $google_ipv4"
-			if [[ $(ip -6 addr | grep -c "inet6") -gt 0 ]]; then
-				echo "nameserver $cloudflare_ipv6"
-				echo "nameserver $google_ipv6"
-			fi
-		} | tee /etc/resolv.conf > /dev/null
-	fi
-}
-
-# 备份DNS配置文件
-bak_dns() {
-	# 定义源文件和备份文件的位置
-	local dns_config="/etc/resolv.conf"
-	local backupdns_config="/etc/resolv.conf.bak"
-
-	# 检查源文件是否存在
-	if [[ -f "$dns_config" ]]; then
-		# 备份文件
-		cp "$dns_config" "$backupdns_config"
-
-		# 检查备份是否成功
-		if [[ $? -ne 0 ]]; then
-			_red "备份DNS配置文件失败"
-		fi
-	else
-		_red "DNS配置文件不存在"
-	fi
-}
-
-# 回滚到备份的DNS配置文件
-rollbak_dns() {
-	# 定义源文件和备份文件的位置
-	local dns_config="/etc/resolv.conf"
-	local backupdns_config="/etc/resolv.conf.bak"
-	
-	# 查找备份文件
-	if [[ -f "$backupdns_config" ]]; then
-		# 恢复备份文件
-		cp "$backupdns_config" "$dns_config"
-		
-		if [[ $? -ne 0 ]]; then
-			_red "恢复DNS配置文件失败"
-		else
-			# 删除备份文件
-			rm "$backupdns_config"
-			if [[ $? -ne 0 ]]; then
-				_red "删除备份文件失败"
-			fi
-		fi
-	else
-		_red "未找到DNS配置文件备份"
-	fi
-}
-
-server_reboot(){
-	local choice
-	echo -n -e "${yellow}现在重启服务器吗?(y/n):${white}"
-	read choice
-
-	case "$choice" in
-		[Yy])
-			_green "已执行"
-			reboot
-			;;
-		*)
-			_yellow "已取消"
-			;;
-	esac
-}
-
-update_system(){
-	wait_for_lock(){
-		local timeout=300  # 设置超时时间为300秒(5分钟)
-		local waited=0
-
-		while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
-			_yellow "等待dpkg锁释放"
-			sleep 1
-			waited=$((waited + 1))
-			if [ $waited -ge $timeout ]; then
-				_red "等待dpkg锁超时"
-				break # 等待dpkg锁超时后退出循环
-			fi
-		done
-	}
-
-	# 修复dpkg中断问题
-	fix_dpkg(){
-		DEBIAN_FRONTEND=noninteractive dpkg --configure -a
-	}
-
-	_yellow "系统正在更新"
-	if command -v dnf &>/dev/null; then
-		dnf -y update
-	elif command -v yum &>/dev/null; then
-		yum -y update
-	elif command -v apt &>/dev/null; then
-		wait_for_lock
-		fix_dpkg
-		DEBIAN_FRONTEND=noninteractive apt update -y
-		DEBIAN_FRONTEND=noninteractive apt full-upgrade -y
-	elif command -v apk &>/dev/null; then
-		apk update && apk upgrade
-	else
-		_red "未知的包管理器!"
-		return 1
-	fi
-
-	return 0
-}
-
-linux_clean() {
-	_yellow "正在系统清理"
-
-	wait_for_lock(){
-		local timeout=300  # 设置超时时间为300秒(5分钟)
-		local waited=0
-
-		while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
-			_yellow "等待dpkg锁释放"
-			sleep 1
-			waited=$((waited + 1))
-			if [ $waited -ge $timeout ]; then
-				_red "等待dpkg锁超时"
-				break # 等待dpkg锁超时后退出循环
-			fi
-		done
-	}
-
-	# 修复dpkg中断问题
-	fix_dpkg(){
-		DEBIAN_FRONTEND=noninteractive dpkg --configure -a
-	}
-
-	if command -v dnf &>/dev/null; then
-		dnf autoremove -y
-		dnf clean all
-		dnf makecache
-		journalctl --rotate
-		journalctl --vacuum-time=7d # 删除所有早于7天前的日志
-		journalctl --vacuum-size=500M
-	elif command -v yum &>/dev/null; then
-		yum autoremove -y
-		yum clean all
-		yum makecache
-		journalctl --rotate
-		journalctl --vacuum-time=7d # 删除所有早于7天前的日志
-		journalctl --vacuum-size=500M
-	elif command -v apt &>/dev/null; then
-		wait_for_lock
-		fix_dpkg
-		apt autoremove --purge -y
-		apt clean -y
-		apt autoclean -y
-		journalctl --rotate
-		journalctl --vacuum-time=7d # 删除所有早于7天前的日志
-		journalctl --vacuum-size=500M
-	elif command -v apk &>/dev/null; then
-		apk cache clean
-		rm -fr /var/log/*
-		rm -fr /var/cache/apk/*
-		rm -fr /tmp/*
-	else
-		_red "未知的包管理器!"
-		return 1
-	fi
-
-	return 0
-}
-
-add_swap() {
-	local new_swap=$1
-
-	# 获取当前系统中所有的swap分区
-	local swap_partitions
-	swap_partitions=$(grep -E '^/dev/' /proc/swaps | awk '{print $1}')
-
-	# 遍历并删除所有的swap分区
-	for partition in $swap_partitions; do
-		swapoff "$partition"
-		wipefs -a "$partition"  # 清除文件系统标识符
-		mkswap -f "$partition"
-	done
-
-	# 确保/swapfile不再被使用
-	swapoff /swapfile 2>/dev/null
-
-	# 删除旧的/swapfile
-	if [ -f /swapfile ]; then
-		rm -f /swapfile
-	fi
-
-	# 创建新的swap文件
-	dd if=/dev/zero of=/swapfile bs=1M count=$new_swap status=progress
-	chmod 600 /swapfile
-	mkswap /swapfile
-	swapon /swapfile
-
-	# 更新fstab
-	if ! grep -q '/swapfile' /etc/fstab; then
-		echo "/swapfile swap swap defaults 0 0" | tee -a /etc/fstab
-	fi
-
-	# 针对Alpine Linux的额外设置
-	if [ -f /etc/alpine-release ]; then
-		echo "nohup swapon /swapfile" > /etc/local.d/swap.start
-		chmod +x /etc/local.d/swap.start
-		rc-update add local
-	fi
-
-	_green "虚拟内存大小已调整为 ${new_swap}MB"
-}
-
-check_swap() {
-	# 获取当前总交换空间大小(以MB为单位)
-	local swap_total
-	swap_total=$(free -m | awk 'NR==3{print $2}')
-
-	# 获取当前物理内存大小(以MB为单位)
-	local mem_total
-	mem_total=$(free -m | awk 'NR==2{print $2}')
-
-	# 判断是否需要创建虚拟内存
-	if [ "$swap_total" -le 0 ]; then
-		if [ "$mem_total" -le 900 ]; then
-			# 系统没有交换空间且物理内存小于等于900MB,设置默认的1024MB交换空间
-			local new_swap=1024
-			add_swap $new_swap
-		else
-			_green "物理内存大于900MB,不需要添加交换空间"
-		fi
-	else
-		_green "系统已经有交换空间,总大小为 ${swap_total}MB"
-	fi
-}
-
-linux_bbr() {
-	clear
-	if [ -f "/etc/alpine-release" ]; then
-		while true; do
-			clear
-			# 使用局部变量
-			local congestion_algorithm
-			local queue_algorithm
-			local choice
-
-			congestion_algorithm=$(sysctl -n net.ipv4.tcp_congestion_control)
-			queue_algorithm=$(sysctl -n net.core.default_qdisc)
-
-			_yellow "当前TCP阻塞算法:$congestion_algorithm $queue_algorithm"
-
-			echo ""
-			echo "BBR管理"
-			echo "-------------------------"
-			echo "1. 开启BBRv3              2. 关闭BBRv3（会重启）"
-			echo "-------------------------"
-			echo "0. 返回上一级选单"
-			echo "-------------------------"
-
-			echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-			read choice
-
-			case $choice in
-				1)
-					bbr_on
-					;;
-				2)
-					sed -i '/net.ipv4.tcp_congestion_control=bbr/d' /etc/sysctl.conf
-					sysctl -p
-					server_reboot
-					;;
-				0)
-					break  # 跳出循环,退出菜单
-					;;
-				*)
-					break  # 跳出循环,退出菜单
-					;;
-			esac
-		done
-	else
-		install wget
-		wget --no-check-certificate -O tcpx.sh https://raw.githubusercontent.com/ylx2016/Linux-NetSpeed/master/tcpx.sh && chmod +x tcpx.sh && ./tcpx.sh
-		rm tcpx.sh
-	fi
-}
-
-iptables_open(){
-	iptables -P INPUT ACCEPT
-	iptables -P FORWARD ACCEPT
-	iptables -P OUTPUT ACCEPT
-	iptables -F
-
-	ip6tables -P INPUT ACCEPT
-	ip6tables -P FORWARD ACCEPT
-	ip6tables -P OUTPUT ACCEPT
-	ip6tables -F
-}
-
-default_server_ssl() {
-
-	install openssl
-
-	if command -v dnf &>/dev/null || command -v yum &>/dev/null; then
-		openssl req -x509 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -keyout /data/docker_data/nginx/certs/default_server.key -out /data/docker_data/nginx/certs/default_server.crt -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
-	else
-		openssl genpkey -algorithm Ed25519 -out /data/docker_data/nginx/certs/default_server.key
-		openssl req -x509 -key /data/docker_data/nginx/certs/default_server.key -out /data/docker_data/nginx/certs/default_server.crt -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
-	fi
-}
-
-linux_tools() {
-	while true; do
-		clear
-		echo "▶ 常用工具"
-		echo "-------------------------"
-		echo "1. curl 下载工具                      2. wget下载工具"
-		echo "3. sudo 超级管理权限工具              4. socat 通信连接工具"
-		echo "5. htop 系统监控工具                  6. iftop 网络流量监控工具"
-		echo "7. unzip ZIP压缩解压工具              8. tar GZ压缩解压工具"
-		echo "9. tmux 多路后台运行工具              10. ffmpeg 视频编码直播推流工具"
-		echo "-------------------------"
-		echo "11. btop 现代化监控工具               12. ranger 文件管理工具"
-		echo "13. Gdu 磁盘占用查看工具              14. fzf 全局搜索工具"
-		echo "15. Vim文本编辑器                     16. nano文本编辑器"
-		echo "-------------------------"
-		echo "21. 黑客帝国屏保                      22. 跑火车屏保"
-		echo "26. 俄罗斯方块小游戏                  27. 贪吃蛇小游戏"
-		echo "28. 太空入侵者小游戏"
-		echo "-------------------------"
-		echo "31. 全部安装                          32. 全部安装(不含屏保和游戏)"
-		echo "33. 全部卸载"
-		echo "-------------------------"
-		echo "41. 安装指定工具                      42. 卸载指定工具"
-		echo "-------------------------"
-		echo "0. 返回主菜单"
-		echo "-------------------------"
-		
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
-
-		case $choice in
-			1)
-				clear
-				install curl
-				clear
-				_yellow "工具已安装,使用方法如下:"
-				curl --help
-				;;
-			2)
-				clear
-				install wget
-				clear
-				_yellow "工具已安装,使用方法如下:"
-				wget --help
-				;;
-			3)
-				clear
-				install sudo
-				clear
-				_yellow "工具已安装,使用方法如下:"
-				sudo --help
-				;;
-			4)
-				clear
-				install socat
-				clear
-				_yellow "工具已安装,使用方法如下："
-				socat -h
-				;;
-			5)
-				clear
-				install htop
-				clear
-				htop
-				;;
-			6)
-				clear
-				install iftop
-				clear
-				iftop
-				;;
-			7)
-				clear
-				install unzip
-				clear
-				_yellow "工具已安装,使用方法如下："
-				unzip
-				;;
-			8)
-				clear
-				install tar
-				clear
-				_yellow "工具已安装,使用方法如下："
-				tar --help
-				;;
-			9)
-				clear
-				install tmux
-				clear
-				_yellow "工具已安装,使用方法如下："
-				tmux --help
-				;;
-			10)
-				clear
-				install ffmpeg
-				clear
-				_yellow "工具已安装,使用方法如下："
-				ffmpeg --help
-				send_stats "安装ffmpeg"
-				;;
-			11)
-				clear
-				install btop
-				clear
-				btop
-				;;
-			12)
-				clear
-				install ranger
-				cd /
-				clear
-				ranger
-				cd ~
-				;;
-			13)
-				clear
-				install gdu
-				cd /
-				clear
-				gdu
-				cd ~
-				;;
-			14)
-				clear
-				install fzf
-				cd /
-				clear
-				fzf
-				cd ~
-				;;
-			15)
-				clear
-				install vim
-				cd /
-				clear
-				vim -h
-				cd ~
-				;;
-			16)
-				clear
-				install nano
-				cd /
-				clear
-				nano -h
-				cd ~
-				;;
-			21)
-				clear
-				install cmatrix
-				clear
-				cmatrix
-				;;
-			22)
-				clear
-				install sl
-				clear
-				sl
-				;;
-			26)
-				clear
-				install bastet
-				clear
-				bastet
-				;;
-			27)
-				clear
-				install nsnake
-				clear
-				nsnake
-				;;
-			28)
-				clear
-				install ninvaders
-				clear
-				ninvaders
-				;;
-			31)
-				clear
-				install curl wget sudo socat htop iftop unzip tar tmux ffmpeg btop ranger gdu fzf cmatrix sl bastet nsnake ninvaders vim nano
-				;;
-			32)
-				clear
-				install curl wget sudo socat htop iftop unzip tar tmux ffmpeg btop ranger gdu fzf vim nano
-				;;
-			33)
-				clear
-				remove htop iftop unzip tmux ffmpeg btop ranger gdu fzf cmatrix sl bastet nsnake ninvaders vim nano
-				;;
-			41)
-				clear
-				echo -n -e "${yellow}请输入安装的工具名(wget curl sudo htop):${white}"
-				read installname
-				install $installname
-				;;
-			42)
-				clear
-				echo -n -e "${yellow}请输入卸载的工具名(htop ufw tmux cmatrix):${white}"
-				read removename
-				remove $removename
-				;;
-			0)
-				honeok
-				;;
-			*)
-				_red "无效选项,请重新输入"
-				;;
-		esac
-		end_of
-	done
-}
-
-node_create(){
-	if [[ "$(curl -s ipinfo.io/country)" == "CN" ]]; then
-		clear
-		_red "请遵守你当地的法律法规"
-		sleep 1
-		honeok # 返回主菜单
-	fi
-
-	local choice
-	while true; do
-		clear
-		echo "▶ 节点搭建脚本合集"
-		echo "-------------------------------"
-		echo "  Sing-box多合一/Argo-tunnel"
-		echo "-------------------------------"
-		echo "1. Fscarmen Sing-box一键脚本"
-		echo "2. Fscarmen ArgoX一键脚本"
-		echo "5. 233boy Sing-box一键脚本"
-		echo "7. WL一键Argo哪吒脚本"
-		echo "-------------------------------"
-		echo "     单协议/XRAY面板及其他"
-		echo "-------------------------------"
-		echo "22. Brutal-Reality一键脚本"
-		echo "23. Vaxilu X-UI面板一键脚本"
-		echo "24. FranzKafkaYu X-UI面板一键脚本"
-		echo "25. Alireza0 X-UI面板一键脚本"
-		echo "31. MHSanaei 3X-UI面板一键脚本"
-		echo "-------------------------------"
-		echo "35. OpenVPN一键安装脚本"
-		echo "36. 一键搭建TG代理"
-		echo "-------------------------------"
-		echo "0. 返回主菜单"
-		echo "-------------------------------"
-
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
-
-		case $choice in
-
-			1)
-				clear
-				install wget
-				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/sing-box/main/sing-box.sh)
-				;;
-			2)
-				clear
-				install wget
-				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/argox/main/argox.sh)
-				;;
-			5)
-				clear
-				install wget
-				bash <(wget -qO- -o- https://github.com/233boy/sing-box/raw/main/install.sh)
-				;;          
-			7)
-				clear
-				bash <(curl -sL https://raw.githubusercontent.com/dsadsadsss/vps-argo/main/install.sh)
-				;;
-			22)
-				clear
-				_yellow "安装Tcp-Brutal-Reality需要内核高于5.8,不符合请手动升级5.8内核以上再安装"
-				
-				current_kernel_version=$(uname -r | cut -d'-' -f1 | awk -F'.' '{print $1 * 100 + $2}')
-				target_kernel_version=508
-				
-				# 比较内核版本
-				if [ "$current_kernel_version" -lt "$target_kernel_version" ]; then
-					_red "当前系统内核版本小于 $target_kernel_version,请手动升级内核后重试,正在退出"
-					sleep 2
-					honeok
-				else
-					_yellow "当前系统内核版本 $current_kernel_version,符合安装要求"
-					sleep 1
-					bash <(curl -fsSL https://github.com/vveg26/sing-box-reality-hysteria2/raw/main/tcp-brutal-reality.sh)
-					sleep 1
-				fi
-				;;
-			23)
-				clear
-				bash <(curl -Ls https://raw.githubusercontent.com/vaxilu/x-ui/master/install.sh)
-				;;
-			24)
-				clear
-				bash <(curl -Ls https://raw.githubusercontent.com/FranzKafkaYu/x-ui/master/install.sh)
-				;;
-			25)
-				clear
-				bash <(curl -Ls https://raw.githubusercontent.com/alireza0/x-ui/master/install.sh)
-				;;
-			31)
-				clear
-				bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh)
-				;;
-			35)
-				clear
-				install wget
-				wget https://git.io/vpn -O openvpn-install.sh && bash openvpn-install.sh
-				;;
-			36)
-				clear
-				rm -rf /home/mtproxy && mkdir /home/mtproxy && cd /home/mtproxy
-				curl -fsSL -o mtproxy.sh https://github.com/ellermister/mtproxy/raw/master/mtproxy.sh && chmod +x mtproxy.sh && bash mtproxy.sh
-				sleep 1
-				;;
-			0)
-				honeok # 返回主菜单
-				;;
-			*)
-				_red "无效选项,请重新输入"
-				;;
-		esac
-		end_of
-	done
-}
-
-add_sshpasswd() {
-	_yellow "设置你的ROOT密码"
-	passwd
-	sed -i 's/^\s*#\?\s*PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config;
-	sed -i 's/^\s*#\?\s*PasswordAuthentication.*/PasswordAuthentication yes/g' /etc/ssh/sshd_config;
-	rm -rf /etc/ssh/sshd_config.d/* /etc/ssh/ssh_config.d/*
-	restart_ssh
-
-	_green "ROOT登录设置完毕"
-}
-
-restart_ssh() {
-	restart sshd ssh > /dev/null 2>&1
-}
-
-oracle_script() {
-	while true; do
-		clear
-		echo "▶ 甲骨文云脚本合集"
-		echo "-------------------------"
-		echo "1. 安装闲置机器活跃脚本"
-		echo "2. 卸载闲置机器活跃脚本"
-		echo "-------------------------"
-		echo "3. DD重装系统脚本"
-		echo "4. R探长开机脚本"
-		echo "-------------------------"
-		echo "5. 开启ROOT密码登录模式"
-		echo "-------------------------"
-		echo "0. 返回主菜单"
-		echo "------------------------"
-
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
-
-		case $choice in
-			1)
-				clear
-				_yellow "活跃脚本: CPU占用10-20% 内存占用20%"
-				echo -n -e "${yellow}确定安装吗?(y/n/):${white}"
-				read ins
-				
-				case "$ins" in
-					[Yy])
-						install_docker
-						# 设置默认值
-						DEFAULT_CPU_CORE=1
-						DEFAULT_CPU_UTIL="10-20"
-						DEFAULT_MEM_UTIL=20
-						DEFAULT_SPEEDTEST_INTERVAL=120
-
-						# 提示用户输入CPU核心数和占用百分比,如果回车则使用默认值
-						echo -n -e "${yellow}请输入CPU核心数[默认:$DEFAULT_CPU_CORE]:${white}"
-						read cpu_core
-						cpu_core=${cpu_core:-$DEFAULT_CPU_CORE}
-
-						echo -n -e "${yellow}请输入CPU占用百分比范围(例如10-20)[默认:$DEFAULT_CPU_UTIL]:${white}"
-						read cpu_util
-						cpu_util=${cpu_util:-$DEFAULT_CPU_UTIL}
-
-						echo -n -e "${yellow}请输入内存占用百分比[默认:$DEFAULT_MEM_UTIL]:${white}"
-						read mem_util
-						mem_util=${mem_util:-$DEFAULT_MEM_UTIL}
-
-						echo -n -e "${yellow}请输入Speedtest间隔时间(秒)[默认:$DEFAULT_SPEEDTEST_INTERVAL]:${white}"
-						read speedtest_interval
-						speedtest_interval=${speedtest_interval:-$DEFAULT_SPEEDTEST_INTERVAL}
-
-						# 运行Docker容器
-						docker run -itd --name=lookbusy --restart=always \
-							-e TZ=Asia/Shanghai \
-							-e CPU_UTIL="$cpu_util" \
-							-e CPU_CORE="$cpu_core" \
-							-e MEM_UTIL="$mem_util" \
-							-e SPEEDTEST_INTERVAL="$speedtest_interval" \
-							fogforest/lookbusy
-						;;
-					[Nn])
-						echo ""
-						;;
-					*)
-						_red "无效选项,请输入Y或N"
-						;;
-				esac
-				;;
-			2)
-				clear
-				docker rm -f lookbusy
-				docker rmi fogforest/lookbusy
-				_green "成功卸载甲骨文活跃脚本"
-				;;
-			3)
-				clear
-				_yellow "重装系统"
-				echo "-------------------------"
-				_yellow "注意:重装有风险失联,不放心者慎用,重装预计花费15分钟,请提前备份数据"
-				
-				echo -n -e "${yellow}确定继续吗?(y/n):${white}"
-				read choice
-
-				case "$choice" in
-					[Yy])
-						while true; do
-							echo -n -e "${yellow}请选择要重装的系统:  1. Debian12 | 2. Ubuntu20.04${white}"
-							read sys_choice
-
-							case "$sys_choice" in
-								1)
-									xitong="-d 12"
-									break  # 结束循环
-									;;
-								2)
-									xitong="-u 20.04"
-									break  # 结束循环
-									;;
-								*)
-									_red "无效选项,请重新输入"
-									;;
-							esac
-						done
-
-						echo -n -e "${yellow}请输入你重装后的密码:${white}"
-						read vpspasswd
-				
-						install wget
-						bash <(wget --no-check-certificate -qO- 'https://raw.githubusercontent.com/MoeClub/Note/master/InstallNET.sh') $xitong -v 64 -p $vpspasswd -port 22
-						;;
-					[Nn])
-						_yellow "已取消"
-						;;
-					*)
-						_red "无效选项,请输入Y或N"
-						;;
-				esac
-				;;
-			4)
-				clear
-				_yellow "该功能处于开发阶段,敬请期待!"
-				;;
-			5)
-				clear
-				add_sshpasswd
-				;;
-			0)
-				honeok
-				;;
-			*)
-				_red "无效选项,请重新输入"
-				;;
-		esac
-		end_of
-    done
-}
-
-fail2ban_status() {
-	docker restart fail2ban
-	sleep 5
-	docker exec -it fail2ban fail2ban-client status
-}
-
-fail2ban_status_jail() {
-	docker exec -it fail2ban fail2ban-client status $jail_name
-}
-
-fail2ban_sshd() {
-	if grep -q 'Alpine' /etc/issue; then
-		jail_name=alpine-sshd
-		fail2ban_status_jail
-	else
-		jail_name=linux-sshd
-		fail2ban_status_jail
-	fi
-}
-
-fail2ban_install_sshd() {
-	[ ! -d /data/docker_data/fail2ban ] && mkdir -p /data/docker_data/fail2ban
-	wget -O /data/docker_data/fail2ban/docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/docker-compose.yml
-	cd /data/docker_data/fail2ban
-	docker compose up -d
-
-	sleep 3
-	if grep -q 'Alpine' /etc/issue; then
-		cd /data/docker_data/fail2ban/config/fail2ban/filter.d
-		curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-sshd.conf
-		curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-sshd-ddos.conf
-		cd /data/docker_data/fail2ban/config/fail2ban/jail.d/
-		curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-ssh.conf
-	else
-		install rsyslog
-		systemctl start rsyslog
-		systemctl enable rsyslog
-		cd /data/docker_data/fail2ban/config/fail2ban/jail.d/
-		curl -sS -O https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/linux-ssh.conf
-	fi
-}
-
-linux_ldnmp() {
-	local choice
-	while true; do
-		clear
-		echo "▶ LDNMP建站"
-		echo "------------------------"
-		echo "35. 站点防御程序"
-		echo "------------------------"
-		echo "0. 返回主菜单"
-		echo "------------------------"
-
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read choice
-		
-		case $choice in
-			35)
-				if docker inspect fail2ban &>/dev/null ; then
-					while true; do
-						clear
-						echo "服务器防御程序已启动"
-						echo "------------------------"
-						echo "1. 开启SSH防暴力破解              2. 关闭SSH防暴力破解"
-						echo "3. 开启网站保护                   4. 关闭网站保护"
-						echo "------------------------"
-						echo "5. 查看SSH拦截记录                6. 查看网站拦截记录"
-						echo "7. 查看防御规则列表               8. 查看日志实时监控"
-						echo "------------------------"
-						echo "11. 配置拦截参数"
-						echo "------------------------"
-						echo "21. cloudflare模式                22. 高负载开启5秒盾"
-						echo "------------------------"
-						echo "9. 卸载防御程序"
-						echo "------------------------"
-						echo "0. 退出"
-						echo "------------------------"
-						
-						echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-						read choice
-						
-						case $choice in
-							1)
-								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/alpine-ssh.conf ] && sed -i 's/false/true/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/alpine-ssh.conf
-								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/linux-ssh.conf ] && sed -i 's/false/true/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/linux-ssh.conf
-								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/centos-ssh.conf ] && sed -i 's/false/true/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/centos-ssh.conf
-								fail2ban_status
-								;;
-							2)
-								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/alpine-ssh.conf ] && sed -i 's/true/false/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/alpine-ssh.conf
-								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/linux-ssh.conf ] && sed -i 's/true/false/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/linux-ssh.conf
-								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/centos-ssh.conf ] && sed -i 's/true/false/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/centos-ssh.conf
-								fail2ban_status
-								;;
-							3)
-								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf ] && sed -i 's/false/true/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
-								fail2ban_status
-								;;
-							4)
-								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf ] && sed -i 's/true/false/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
-								fail2ban_status
-								;;
-							5)
-								echo "------------------------"
-								fail2ban_sshd
-								echo "------------------------"
-								;;
-							6)
-								echo "------------------------"
-								jail_name=fail2ban-nginx-cc
-								fail2ban_status_jail
-								echo "------------------------"
-								jail_name=docker-nginx-bad-request
-								fail2ban_status_jail
-								echo "------------------------"
-								jail_name=docker-nginx-botsearch
-								fail2ban_status_jail
-								echo "------------------------"
-								jail_name=docker-nginx-http-auth
-								fail2ban_status_jail
-								echo "------------------------"
-								jail_name=docker-nginx-limit-req
-								fail2ban_status_jail
-								echo "------------------------"
-								jail_name=docker-php-url-fopen
-								fail2ban_status_jail
-								echo "------------------------"
-								;;
-							7)
-								docker exec -it fail2ban fail2ban-client status
-								;;
-							8)
-								timeout 5 tail -f /data/docker_data/fail2ban/config/log/fail2ban/fail2ban.log
-								;;
-							9)
-								docker rm -f fail2ban
-								rm -fr /data/docker_data/fail2ban
-								crontab -l | grep -v "CF-Under-Attack.sh" | crontab - 2>/dev/null
-								_yellow "Fail2Ban防御程序已卸载"
-								break
-								;;
-							11)
-								vim /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
-								fail2ban_status
-								break
-								;;
-							21)
-								echo "Cloudflare后台右上角我的个人资料,选择左侧API令牌,获取Global API Key"
-								echo "https://dash.cloudflare.com/login"
-								
-								# 获取CFUSER
-								while true; do
-									echo -n "请输入你的Cloudflare管理员邮箱:"
-									read CFUSER
-									if [[ "$CFUSER" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
-										break
-									else
-										_red "无效的邮箱格式,请重新输入"
-									fi
-								done
-								# 获取CFKEY
-								while true; do
-									echo "cloudflare后台右上角我的个人资料,选择左侧API令牌,获取Global API Key"
-									echo "https://dash.cloudflare.com/login"
-									echo -n "请输入你的Global API Key:"
-									read CFKEY
-									if [[ -n "$CFKEY" ]]; then
-										break
-									else
-										_red "CFKEY不能为空,请重新输入"
-									fi
-								done
-								
-								wget -O /data/docker_data/nginx/conf.d/default.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default11.conf
-								docker restart nginx
-								
-								cd /data/docker_data/fail2ban/config/fail2ban/jail.d
-								curl -sS -O https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/nginx-docker-cc.conf
-								
-								cd /data/docker_data/fail2ban/config/fail2ban/action.d
-								curl -sS -O https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/cloudflare-docker.conf
-								
-								sed -i "s/kejilion@outlook.com/$CFUSER/g" /data/docker_data/fail2ban/config/fail2ban/action.d/cloudflare-docker.conf
-								sed -i "s/APIKEY00000/$CFKEY/g" /data/docker_data/fail2ban/config/fail2ban/action.d/cloudflare-docker.conf
-								fail2ban_status
-								_green "已配置Cloudflare模式,可在Cloudflare后台站点-安全性-事件中查看拦截记录"
-								;;
-							22)
-								echo "网站每5分钟自动检测,当达检测到高负载会自动开盾,低负载也会自动关闭5秒盾"
-								echo "------------------------"
-
-								# 获取CFUSER
-								while true; do
-									echo -n "请输入你的Cloudflare管理员邮箱:"
-									read CFUSER
-									if [[ "$CFUSER" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
-										break
-									else
-										_red "无效的邮箱格式,请重新输入"
-									fi
-								done
-								# 获取CFKEY
-								while true; do
-									echo "cloudflare后台右上角我的个人资料,选择左侧API令牌,获取Global API Key"
-									echo "https://dash.cloudflare.com/login"
-									echo -n "请输入你的Global API Key:"
-									read CFKEY
-									if [[ -n "$CFKEY" ]]; then
-										break
-									else
-										_red "CFKEY不能为空,请重新输入"
-									fi
-								done
-								# 获取ZoneID
-								while true;do
-									echo "Cloudflare后台域名概要页面右下方获取区域ID"
-									echo -n "请输入你的ZoneID:"
-									read CFZoneID
-									if [[ -n "$CFZoneID" ]]; then
-										break
-									else
-										_red "CFZoneID不能为空,请重新输入"
-									fi
-								done
-
-								cd ~
-								install jq bc
-								check_crontab_installed
-								curl -sS -O https://raw.githubusercontent.com/honeok8s/shell/main/callscript/CF-Under-Attack.sh
-								chmod +x CF-Under-Attack.sh
-								sed -i "s/AAAA/$CFUSER/g" ~/CF-Under-Attack.sh
-								sed -i "s/BBBB/$CFKEY/g" ~/CF-Under-Attack.sh
-								sed -i "s/CCCC/$CFZoneID/g" ~/CF-Under-Attack.sh
-
-								cron_job="*/5 * * * * ~/CF-Under-Attack.sh"
-								existing_cron=$(crontab -l 2>/dev/null | grep -F "$cron_job")
-								
-								if [ -z "$existing_cron" ]; then
-									(crontab -l 2>/dev/null; echo "$cron_job") | crontab -
-									echo "高负载自动开盾脚本已添加"
-								else
-									echo "自动开盾脚本已存在,无需添加"
-								fi
-								;;
-							0)
-								break
-								;;
-							*)
-								_red "无效选项,请重新输入"
-								;;
-						esac
-						end_of
-					done
-				elif [ -x "$(command -v fail2ban-client)" ] ; then
-					clear
-					echo "卸载旧版Fail2ban"
-					echo -n "确定继续吗?(y/n):"
-					read choice
-
-					case "$choice" in
-						[Yy])
-							remove fail2ban
-							rm -fr /etc/fail2ban
-							echo "Fail2Ban防御程序已卸载"
-							;;
-						[Nn])
-							echo "已取消"
-							;;
-						*)
-							_red "无效选项,请重新输入"
-							;;
-					esac
-				else
-					clear
-					install_docker
-
-					docker rm -f nginx
-					
-					[ ! -d /data/docker_data/nginx ] && mkdir -p /data/docker_data/nginx
-					cd /data/docker_data/nginx
-
-					wget -O nginx.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/nginx-2C2G.conf
-
-					for dir in ./conf.d ./certs; do
-						[ ! -d "$dir" ] && mkdir -p "$dir"
-					done
-					wget -O ./conf.d/default.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default11.conf
-
-					default_server_ssl
-
-					wget -O docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/nginx/docker-compose.yml
-					
-					if command -v docker compose >/dev/null 2>&1; then
-						docker compose up -d
-					elif command -v docker-compose >/dev/null 2>&1; then
-						docker-compose up -d
-					fi
-
-					docker exec -it nginx chmod -R 777 /var/www/html
-
-					fail2ban_install_sshd
-					cd /data/docker_data/fail2ban/config/fail2ban/filter.d
-					curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/fail2ban-nginx-cc.conf
-					cd /data/docker_data/fail2ban/config/fail2ban/jail.d
-					curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/nginx-docker-cc.conf
-
-					sed -i "/cloudflare/d" /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
-
-					cd ~
-					fail2ban_status
-					_green "防御程序已开启"
-				fi
-				;;
-			0)
-				honeok
-				;;
-			*)
-				_red "无效选项,请重新输入"
-				;;
-		esac
-		end_of
-	done
-}
 
 has_ipv4_has_ipv6() {
 	ip_address
@@ -3865,6 +2619,1252 @@ EOF
 		esac
 		end_of
 	done	
+}
+#################### Docker END ####################
+
+# 用于检查并设置net.core.default_qdisc参数
+set_default_qdisc(){
+	local qdisc_control="net.core.default_qdisc"
+	local default_qdisc="fq"
+	local config_file="/etc/sysctl.conf"
+	local current_value
+	local choice
+	local chosen_qdisc
+
+	# 使用grep查找现有配置,忽略等号周围的空格,排除注释行
+	if grep -q "^[^#]*${qdisc_control}\s*=" "${config_file}"; then
+		# 存在该设置项,检查其值
+		current_value=$(grep "^[^#]*${qdisc_control}\s*=" "${config_file}" | sed -E "s/^[^#]*${qdisc_control}\s*=\s*(.*)/\1/")
+		_yellow "当前队列规则为:$current_value"
+	else
+		# 没有找到该设置项
+		current_value=""
+	fi
+
+	# 提供用户选择菜单
+	while true; do
+		echo "请选择要设置的队列规则"
+		echo "-------------------------"
+		echo "1. fq (默认)"
+		echo "2 .fq_pie"
+		echo "-------------------------"
+
+		echo -n -e "${yellow}请输入选项并按回车键确认(回车使用默认值:fq):${white}"
+		read choice
+
+		case "$choice" in
+			1|"")
+				chosen_qdisc="fq"
+				break
+				;;
+			2)
+				chosen_qdisc="fq_pie"
+				break
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+	done
+
+	# 如果当前值不等于选择的值,进行更新
+	if [ "$current_value" != "$chosen_qdisc" ]; then
+		if [ -z "$current_value" ]; then
+			# 如果没有设置项,则新增
+			echo "${qdisc_control}=${chosen_qdisc}" >> "${config_file}"
+		else
+			# 如果设置项存在但值不匹配,进行替换
+			sed -i -E "s|^[^#]*${qdisc_control}\s*=\s*.*|${qdisc_control}=${chosen_qdisc}|" "${config_file}"
+		fi
+		sysctl -p
+		_green "队列规则已设置为:$chosen_qdisc"
+	else
+		_yellow "队列规则已经是$current_value,无需更改。"
+	fi
+}
+
+bbr_on(){
+	local congestion_control="net.ipv4.tcp_congestion_control"
+	local congestion_bbr="bbr"
+	local config_file="/etc/sysctl.conf"
+	local current_value
+
+	# 使用grep查找现有配置,忽略等号周围的空格,排除注释行
+	if grep -q "^[^#]*${congestion_control}\s*=" "${config_file}"; then
+		# 存在该设置项,检查其值
+		current_value=$(grep "^[^#]*${congestion_control}\s*=" "${config_file}" | sed -E "s/^[^#]*${congestion_control}\s*=\s*(.*)/\1/")
+		if [ "$current_value" = "$congestion_bbr" ]; then
+			# 如果当前值已经是bbr,则跳过
+			return
+		else
+			# 如果当前值不是bbr,则替换为bbr
+			sed -i -E "s|^[^#]*${congestion_control}\s*=\s*.*|${congestion_control}=${congestion_bbr}|" "${config_file}"
+			sysctl -p
+		fi
+	else
+		# 如果没有找到该设置项,则新增
+		echo "${congestion_control}=${congestion_bbr}" >> "${config_file}"
+		sysctl -p
+	fi
+}
+
+# 查看当前服务器时区
+current_timezone(){
+	if grep -q 'Alpine' /etc/issue; then
+		date +"%Z %z"
+	else
+		timedatectl | grep "Time zone" | awk '{print $3}'
+	fi
+}
+
+# 设置时区
+set_timedate(){
+	local timezone="$1"
+	if grep -q 'Alpine' /etc/issue; then
+		install tzdata
+		cp /usr/share/zoneinfo/${timezone} /etc/localtime
+		hwclock --systohc
+	else
+		timedatectl set-timezone ${timezone}
+	fi
+}
+
+set_dns(){
+	local cloudflare_ipv4="1.1.1.1"
+	local google_ipv4="8.8.8.8"
+	local cloudflare_ipv6="2606:4700:4700::1111"
+	local google_ipv6="2001:4860:4860::8888"
+
+	local ali_ipv4="223.5.5.5"
+	local tencent_ipv4="183.60.83.19"
+	local ali_ipv6="2400:3200::1"
+	local tencent_ipv6="2400:da00::6666"
+
+	local ipv6_addresses
+
+	if [[ "$(curl -s ipinfo.io/country)" == "CN" ]]; then
+		{
+			echo "nameserver $ali_ipv4"
+			echo "nameserver $tencent_ipv4"
+			if [[ $(ip -6 addr | grep -c "inet6") -gt 0 ]]; then
+				echo "nameserver $ali_ipv6"
+				echo "nameserver $tencent_ipv6"
+			fi
+		} | tee /etc/resolv.conf > /dev/null
+	else
+		{
+			echo "nameserver $cloudflare_ipv4"
+			echo "nameserver $google_ipv4"
+			if [[ $(ip -6 addr | grep -c "inet6") -gt 0 ]]; then
+				echo "nameserver $cloudflare_ipv6"
+				echo "nameserver $google_ipv6"
+			fi
+		} | tee /etc/resolv.conf > /dev/null
+	fi
+}
+
+# 备份DNS配置文件
+bak_dns() {
+	# 定义源文件和备份文件的位置
+	local dns_config="/etc/resolv.conf"
+	local backupdns_config="/etc/resolv.conf.bak"
+
+	# 检查源文件是否存在
+	if [[ -f "$dns_config" ]]; then
+		# 备份文件
+		cp "$dns_config" "$backupdns_config"
+
+		# 检查备份是否成功
+		if [[ $? -ne 0 ]]; then
+			_red "备份DNS配置文件失败"
+		fi
+	else
+		_red "DNS配置文件不存在"
+	fi
+}
+
+# 回滚到备份的DNS配置文件
+rollbak_dns() {
+	# 定义源文件和备份文件的位置
+	local dns_config="/etc/resolv.conf"
+	local backupdns_config="/etc/resolv.conf.bak"
+	
+	# 查找备份文件
+	if [[ -f "$backupdns_config" ]]; then
+		# 恢复备份文件
+		cp "$backupdns_config" "$dns_config"
+		
+		if [[ $? -ne 0 ]]; then
+			_red "恢复DNS配置文件失败"
+		else
+			# 删除备份文件
+			rm "$backupdns_config"
+			if [[ $? -ne 0 ]]; then
+				_red "删除备份文件失败"
+			fi
+		fi
+	else
+		_red "未找到DNS配置文件备份"
+	fi
+}
+
+server_reboot(){
+	local choice
+	echo -n -e "${yellow}现在重启服务器吗?(y/n):${white}"
+	read choice
+
+	case "$choice" in
+		[Yy])
+			_green "已执行"
+			reboot
+			;;
+		*)
+			_yellow "已取消"
+			;;
+	esac
+}
+
+update_system(){
+	wait_for_lock(){
+		local timeout=300  # 设置超时时间为300秒(5分钟)
+		local waited=0
+
+		while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+			_yellow "等待dpkg锁释放"
+			sleep 1
+			waited=$((waited + 1))
+			if [ $waited -ge $timeout ]; then
+				_red "等待dpkg锁超时"
+				break # 等待dpkg锁超时后退出循环
+			fi
+		done
+	}
+
+	# 修复dpkg中断问题
+	fix_dpkg(){
+		DEBIAN_FRONTEND=noninteractive dpkg --configure -a
+	}
+
+	_yellow "系统正在更新"
+	if command -v dnf &>/dev/null; then
+		dnf -y update
+	elif command -v yum &>/dev/null; then
+		yum -y update
+	elif command -v apt &>/dev/null; then
+		wait_for_lock
+		fix_dpkg
+		DEBIAN_FRONTEND=noninteractive apt update -y
+		DEBIAN_FRONTEND=noninteractive apt full-upgrade -y
+	elif command -v apk &>/dev/null; then
+		apk update && apk upgrade
+	else
+		_red "未知的包管理器!"
+		return 1
+	fi
+
+	return 0
+}
+
+linux_clean() {
+	_yellow "正在系统清理"
+
+	wait_for_lock(){
+		local timeout=300  # 设置超时时间为300秒(5分钟)
+		local waited=0
+
+		while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+			_yellow "等待dpkg锁释放"
+			sleep 1
+			waited=$((waited + 1))
+			if [ $waited -ge $timeout ]; then
+				_red "等待dpkg锁超时"
+				break # 等待dpkg锁超时后退出循环
+			fi
+		done
+	}
+
+	# 修复dpkg中断问题
+	fix_dpkg(){
+		DEBIAN_FRONTEND=noninteractive dpkg --configure -a
+	}
+
+	if command -v dnf &>/dev/null; then
+		dnf autoremove -y
+		dnf clean all
+		dnf makecache
+		journalctl --rotate
+		journalctl --vacuum-time=7d # 删除所有早于7天前的日志
+		journalctl --vacuum-size=500M
+	elif command -v yum &>/dev/null; then
+		yum autoremove -y
+		yum clean all
+		yum makecache
+		journalctl --rotate
+		journalctl --vacuum-time=7d # 删除所有早于7天前的日志
+		journalctl --vacuum-size=500M
+	elif command -v apt &>/dev/null; then
+		wait_for_lock
+		fix_dpkg
+		apt autoremove --purge -y
+		apt clean -y
+		apt autoclean -y
+		journalctl --rotate
+		journalctl --vacuum-time=7d # 删除所有早于7天前的日志
+		journalctl --vacuum-size=500M
+	elif command -v apk &>/dev/null; then
+		apk cache clean
+		rm -fr /var/log/*
+		rm -fr /var/cache/apk/*
+		rm -fr /tmp/*
+	else
+		_red "未知的包管理器!"
+		return 1
+	fi
+
+	return 0
+}
+
+add_swap() {
+	local new_swap=$1
+
+	# 获取当前系统中所有的swap分区
+	local swap_partitions
+	swap_partitions=$(grep -E '^/dev/' /proc/swaps | awk '{print $1}')
+
+	# 遍历并删除所有的swap分区
+	for partition in $swap_partitions; do
+		swapoff "$partition"
+		wipefs -a "$partition"  # 清除文件系统标识符
+		mkswap -f "$partition"
+	done
+
+	# 确保/swapfile不再被使用
+	swapoff /swapfile 2>/dev/null
+
+	# 删除旧的/swapfile
+	if [ -f /swapfile ]; then
+		rm -f /swapfile
+	fi
+
+	# 创建新的swap文件
+	dd if=/dev/zero of=/swapfile bs=1M count=$new_swap status=progress
+	chmod 600 /swapfile
+	mkswap /swapfile
+	swapon /swapfile
+
+	# 更新fstab
+	if ! grep -q '/swapfile' /etc/fstab; then
+		echo "/swapfile swap swap defaults 0 0" | tee -a /etc/fstab
+	fi
+
+	# 针对Alpine Linux的额外设置
+	if [ -f /etc/alpine-release ]; then
+		echo "nohup swapon /swapfile" > /etc/local.d/swap.start
+		chmod +x /etc/local.d/swap.start
+		rc-update add local
+	fi
+
+	_green "虚拟内存大小已调整为 ${new_swap}MB"
+}
+
+check_swap() {
+	# 获取当前总交换空间大小(以MB为单位)
+	local swap_total
+	swap_total=$(free -m | awk 'NR==3{print $2}')
+
+	# 获取当前物理内存大小(以MB为单位)
+	local mem_total
+	mem_total=$(free -m | awk 'NR==2{print $2}')
+
+	# 判断是否需要创建虚拟内存
+	if [ "$swap_total" -le 0 ]; then
+		if [ "$mem_total" -le 900 ]; then
+			# 系统没有交换空间且物理内存小于等于900MB,设置默认的1024MB交换空间
+			local new_swap=1024
+			add_swap $new_swap
+		else
+			_green "物理内存大于900MB,不需要添加交换空间"
+		fi
+	else
+		_green "系统已经有交换空间,总大小为 ${swap_total}MB"
+	fi
+}
+
+linux_bbr() {
+	clear
+	if [ -f "/etc/alpine-release" ]; then
+		while true; do
+			clear
+			# 使用局部变量
+			local congestion_algorithm
+			local queue_algorithm
+			local choice
+
+			congestion_algorithm=$(sysctl -n net.ipv4.tcp_congestion_control)
+			queue_algorithm=$(sysctl -n net.core.default_qdisc)
+
+			_yellow "当前TCP阻塞算法:$congestion_algorithm $queue_algorithm"
+
+			echo ""
+			echo "BBR管理"
+			echo "-------------------------"
+			echo "1. 开启BBRv3              2. 关闭BBRv3（会重启）"
+			echo "-------------------------"
+			echo "0. 返回上一级选单"
+			echo "-------------------------"
+
+			echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+			read choice
+
+			case $choice in
+				1)
+					bbr_on
+					;;
+				2)
+					sed -i '/net.ipv4.tcp_congestion_control=bbr/d' /etc/sysctl.conf
+					sysctl -p
+					server_reboot
+					;;
+				0)
+					break  # 跳出循环,退出菜单
+					;;
+				*)
+					break  # 跳出循环,退出菜单
+					;;
+			esac
+		done
+	else
+		install wget
+		wget --no-check-certificate -O tcpx.sh https://raw.githubusercontent.com/ylx2016/Linux-NetSpeed/master/tcpx.sh && chmod +x tcpx.sh && ./tcpx.sh
+		rm tcpx.sh
+	fi
+}
+
+iptables_open(){
+	iptables -P INPUT ACCEPT
+	iptables -P FORWARD ACCEPT
+	iptables -P OUTPUT ACCEPT
+	iptables -F
+
+	ip6tables -P INPUT ACCEPT
+	ip6tables -P FORWARD ACCEPT
+	ip6tables -P OUTPUT ACCEPT
+	ip6tables -F
+}
+
+default_server_ssl() {
+
+	install openssl
+
+	if command -v dnf &>/dev/null || command -v yum &>/dev/null; then
+		openssl req -x509 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -keyout /data/docker_data/nginx/certs/default_server.key -out /data/docker_data/nginx/certs/default_server.crt -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
+	else
+		openssl genpkey -algorithm Ed25519 -out /data/docker_data/nginx/certs/default_server.key
+		openssl req -x509 -key /data/docker_data/nginx/certs/default_server.key -out /data/docker_data/nginx/certs/default_server.crt -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
+	fi
+}
+
+linux_tools() {
+	while true; do
+		clear
+		echo "▶ 常用工具"
+		echo "-------------------------"
+		echo "1. curl 下载工具                      2. wget下载工具"
+		echo "3. sudo 超级管理权限工具              4. socat 通信连接工具"
+		echo "5. htop 系统监控工具                  6. iftop 网络流量监控工具"
+		echo "7. unzip ZIP压缩解压工具              8. tar GZ压缩解压工具"
+		echo "9. tmux 多路后台运行工具              10. ffmpeg 视频编码直播推流工具"
+		echo "-------------------------"
+		echo "11. btop 现代化监控工具               12. ranger 文件管理工具"
+		echo "13. Gdu 磁盘占用查看工具              14. fzf 全局搜索工具"
+		echo "15. Vim文本编辑器                     16. nano文本编辑器"
+		echo "-------------------------"
+		echo "21. 黑客帝国屏保                      22. 跑火车屏保"
+		echo "26. 俄罗斯方块小游戏                  27. 贪吃蛇小游戏"
+		echo "28. 太空入侵者小游戏"
+		echo "-------------------------"
+		echo "31. 全部安装                          32. 全部安装(不含屏保和游戏)"
+		echo "33. 全部卸载"
+		echo "-------------------------"
+		echo "41. 安装指定工具                      42. 卸载指定工具"
+		echo "-------------------------"
+		echo "0. 返回主菜单"
+		echo "-------------------------"
+		
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read choice
+
+		case $choice in
+			1)
+				clear
+				install curl
+				clear
+				_yellow "工具已安装,使用方法如下:"
+				curl --help
+				;;
+			2)
+				clear
+				install wget
+				clear
+				_yellow "工具已安装,使用方法如下:"
+				wget --help
+				;;
+			3)
+				clear
+				install sudo
+				clear
+				_yellow "工具已安装,使用方法如下:"
+				sudo --help
+				;;
+			4)
+				clear
+				install socat
+				clear
+				_yellow "工具已安装,使用方法如下："
+				socat -h
+				;;
+			5)
+				clear
+				install htop
+				clear
+				htop
+				;;
+			6)
+				clear
+				install iftop
+				clear
+				iftop
+				;;
+			7)
+				clear
+				install unzip
+				clear
+				_yellow "工具已安装,使用方法如下："
+				unzip
+				;;
+			8)
+				clear
+				install tar
+				clear
+				_yellow "工具已安装,使用方法如下："
+				tar --help
+				;;
+			9)
+				clear
+				install tmux
+				clear
+				_yellow "工具已安装,使用方法如下："
+				tmux --help
+				;;
+			10)
+				clear
+				install ffmpeg
+				clear
+				_yellow "工具已安装,使用方法如下："
+				ffmpeg --help
+				send_stats "安装ffmpeg"
+				;;
+			11)
+				clear
+				install btop
+				clear
+				btop
+				;;
+			12)
+				clear
+				install ranger
+				cd /
+				clear
+				ranger
+				cd ~
+				;;
+			13)
+				clear
+				install gdu
+				cd /
+				clear
+				gdu
+				cd ~
+				;;
+			14)
+				clear
+				install fzf
+				cd /
+				clear
+				fzf
+				cd ~
+				;;
+			15)
+				clear
+				install vim
+				cd /
+				clear
+				vim -h
+				cd ~
+				;;
+			16)
+				clear
+				install nano
+				cd /
+				clear
+				nano -h
+				cd ~
+				;;
+			21)
+				clear
+				install cmatrix
+				clear
+				cmatrix
+				;;
+			22)
+				clear
+				install sl
+				clear
+				sl
+				;;
+			26)
+				clear
+				install bastet
+				clear
+				bastet
+				;;
+			27)
+				clear
+				install nsnake
+				clear
+				nsnake
+				;;
+			28)
+				clear
+				install ninvaders
+				clear
+				ninvaders
+				;;
+			31)
+				clear
+				install curl wget sudo socat htop iftop unzip tar tmux ffmpeg btop ranger gdu fzf cmatrix sl bastet nsnake ninvaders vim nano
+				;;
+			32)
+				clear
+				install curl wget sudo socat htop iftop unzip tar tmux ffmpeg btop ranger gdu fzf vim nano
+				;;
+			33)
+				clear
+				remove htop iftop unzip tmux ffmpeg btop ranger gdu fzf cmatrix sl bastet nsnake ninvaders vim nano
+				;;
+			41)
+				clear
+				echo -n -e "${yellow}请输入安装的工具名(wget curl sudo htop):${white}"
+				read installname
+				install $installname
+				;;
+			42)
+				clear
+				echo -n -e "${yellow}请输入卸载的工具名(htop ufw tmux cmatrix):${white}"
+				read removename
+				remove $removename
+				;;
+			0)
+				honeok
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+		end_of
+	done
+}
+
+node_create(){
+	if [[ "$(curl -s ipinfo.io/country)" == "CN" ]]; then
+		clear
+		_red "请遵守你当地的法律法规"
+		sleep 1
+		honeok # 返回主菜单
+	fi
+
+	local choice
+	while true; do
+		clear
+		echo "▶ 节点搭建脚本合集"
+		echo "-------------------------------"
+		echo "  Sing-box多合一/Argo-tunnel"
+		echo "-------------------------------"
+		echo "1. Fscarmen Sing-box一键脚本"
+		echo "2. Fscarmen ArgoX一键脚本"
+		echo "5. 233boy Sing-box一键脚本"
+		echo "7. WL一键Argo哪吒脚本"
+		echo "-------------------------------"
+		echo "     单协议/XRAY面板及其他"
+		echo "-------------------------------"
+		echo "22. Brutal-Reality一键脚本"
+		echo "23. Vaxilu X-UI面板一键脚本"
+		echo "24. FranzKafkaYu X-UI面板一键脚本"
+		echo "25. Alireza0 X-UI面板一键脚本"
+		echo "31. MHSanaei 3X-UI面板一键脚本"
+		echo "-------------------------------"
+		echo "35. OpenVPN一键安装脚本"
+		echo "36. 一键搭建TG代理"
+		echo "-------------------------------"
+		echo "0. 返回主菜单"
+		echo "-------------------------------"
+
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read choice
+
+		case $choice in
+
+			1)
+				clear
+				install wget
+				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/sing-box/main/sing-box.sh)
+				;;
+			2)
+				clear
+				install wget
+				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/argox/main/argox.sh)
+				;;
+			5)
+				clear
+				install wget
+				bash <(wget -qO- -o- https://github.com/233boy/sing-box/raw/main/install.sh)
+				;;          
+			7)
+				clear
+				bash <(curl -sL https://raw.githubusercontent.com/dsadsadsss/vps-argo/main/install.sh)
+				;;
+			22)
+				clear
+				_yellow "安装Tcp-Brutal-Reality需要内核高于5.8,不符合请手动升级5.8内核以上再安装"
+				
+				current_kernel_version=$(uname -r | cut -d'-' -f1 | awk -F'.' '{print $1 * 100 + $2}')
+				target_kernel_version=508
+				
+				# 比较内核版本
+				if [ "$current_kernel_version" -lt "$target_kernel_version" ]; then
+					_red "当前系统内核版本小于 $target_kernel_version,请手动升级内核后重试,正在退出"
+					sleep 2
+					honeok
+				else
+					_yellow "当前系统内核版本 $current_kernel_version,符合安装要求"
+					sleep 1
+					bash <(curl -fsSL https://github.com/vveg26/sing-box-reality-hysteria2/raw/main/tcp-brutal-reality.sh)
+					sleep 1
+				fi
+				;;
+			23)
+				clear
+				bash <(curl -Ls https://raw.githubusercontent.com/vaxilu/x-ui/master/install.sh)
+				;;
+			24)
+				clear
+				bash <(curl -Ls https://raw.githubusercontent.com/FranzKafkaYu/x-ui/master/install.sh)
+				;;
+			25)
+				clear
+				bash <(curl -Ls https://raw.githubusercontent.com/alireza0/x-ui/master/install.sh)
+				;;
+			31)
+				clear
+				bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh)
+				;;
+			35)
+				clear
+				install wget
+				wget https://git.io/vpn -O openvpn-install.sh && bash openvpn-install.sh
+				;;
+			36)
+				clear
+				rm -rf /home/mtproxy && mkdir /home/mtproxy && cd /home/mtproxy
+				curl -fsSL -o mtproxy.sh https://github.com/ellermister/mtproxy/raw/master/mtproxy.sh && chmod +x mtproxy.sh && bash mtproxy.sh
+				sleep 1
+				;;
+			0)
+				honeok # 返回主菜单
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+		end_of
+	done
+}
+
+add_sshpasswd() {
+	_yellow "设置你的ROOT密码"
+	passwd
+	sed -i 's/^\s*#\?\s*PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config;
+	sed -i 's/^\s*#\?\s*PasswordAuthentication.*/PasswordAuthentication yes/g' /etc/ssh/sshd_config;
+	rm -rf /etc/ssh/sshd_config.d/* /etc/ssh/ssh_config.d/*
+	restart_ssh
+
+	_green "ROOT登录设置完毕"
+}
+
+restart_ssh() {
+	restart sshd ssh > /dev/null 2>&1
+}
+
+oracle_script() {
+	while true; do
+		clear
+		echo "▶ 甲骨文云脚本合集"
+		echo "-------------------------"
+		echo "1. 安装闲置机器活跃脚本"
+		echo "2. 卸载闲置机器活跃脚本"
+		echo "-------------------------"
+		echo "3. DD重装系统脚本"
+		echo "4. R探长开机脚本"
+		echo "-------------------------"
+		echo "5. 开启ROOT密码登录模式"
+		echo "-------------------------"
+		echo "0. 返回主菜单"
+		echo "------------------------"
+
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read choice
+
+		case $choice in
+			1)
+				clear
+				_yellow "活跃脚本: CPU占用10-20% 内存占用20%"
+				echo -n -e "${yellow}确定安装吗?(y/n/):${white}"
+				read ins
+				
+				case "$ins" in
+					[Yy])
+						install_docker
+						# 设置默认值
+						DEFAULT_CPU_CORE=1
+						DEFAULT_CPU_UTIL="10-20"
+						DEFAULT_MEM_UTIL=20
+						DEFAULT_SPEEDTEST_INTERVAL=120
+
+						# 提示用户输入CPU核心数和占用百分比,如果回车则使用默认值
+						echo -n -e "${yellow}请输入CPU核心数[默认:$DEFAULT_CPU_CORE]:${white}"
+						read cpu_core
+						cpu_core=${cpu_core:-$DEFAULT_CPU_CORE}
+
+						echo -n -e "${yellow}请输入CPU占用百分比范围(例如10-20)[默认:$DEFAULT_CPU_UTIL]:${white}"
+						read cpu_util
+						cpu_util=${cpu_util:-$DEFAULT_CPU_UTIL}
+
+						echo -n -e "${yellow}请输入内存占用百分比[默认:$DEFAULT_MEM_UTIL]:${white}"
+						read mem_util
+						mem_util=${mem_util:-$DEFAULT_MEM_UTIL}
+
+						echo -n -e "${yellow}请输入Speedtest间隔时间(秒)[默认:$DEFAULT_SPEEDTEST_INTERVAL]:${white}"
+						read speedtest_interval
+						speedtest_interval=${speedtest_interval:-$DEFAULT_SPEEDTEST_INTERVAL}
+
+						# 运行Docker容器
+						docker run -itd --name=lookbusy --restart=always \
+							-e TZ=Asia/Shanghai \
+							-e CPU_UTIL="$cpu_util" \
+							-e CPU_CORE="$cpu_core" \
+							-e MEM_UTIL="$mem_util" \
+							-e SPEEDTEST_INTERVAL="$speedtest_interval" \
+							fogforest/lookbusy
+						;;
+					[Nn])
+						echo ""
+						;;
+					*)
+						_red "无效选项,请输入Y或N"
+						;;
+				esac
+				;;
+			2)
+				clear
+				docker rm -f lookbusy
+				docker rmi fogforest/lookbusy
+				_green "成功卸载甲骨文活跃脚本"
+				;;
+			3)
+				clear
+				_yellow "重装系统"
+				echo "-------------------------"
+				_yellow "注意:重装有风险失联,不放心者慎用,重装预计花费15分钟,请提前备份数据"
+				
+				echo -n -e "${yellow}确定继续吗?(y/n):${white}"
+				read choice
+
+				case "$choice" in
+					[Yy])
+						while true; do
+							echo -n -e "${yellow}请选择要重装的系统:  1. Debian12 | 2. Ubuntu20.04${white}"
+							read sys_choice
+
+							case "$sys_choice" in
+								1)
+									xitong="-d 12"
+									break  # 结束循环
+									;;
+								2)
+									xitong="-u 20.04"
+									break  # 结束循环
+									;;
+								*)
+									_red "无效选项,请重新输入"
+									;;
+							esac
+						done
+
+						echo -n -e "${yellow}请输入你重装后的密码:${white}"
+						read vpspasswd
+				
+						install wget
+						bash <(wget --no-check-certificate -qO- 'https://raw.githubusercontent.com/MoeClub/Note/master/InstallNET.sh') $xitong -v 64 -p $vpspasswd -port 22
+						;;
+					[Nn])
+						_yellow "已取消"
+						;;
+					*)
+						_red "无效选项,请输入Y或N"
+						;;
+				esac
+				;;
+			4)
+				clear
+				_yellow "该功能处于开发阶段,敬请期待!"
+				;;
+			5)
+				clear
+				add_sshpasswd
+				;;
+			0)
+				honeok
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+		end_of
+    done
+}
+
+fail2ban_status() {
+	docker restart fail2ban
+	sleep 5
+	docker exec -it fail2ban fail2ban-client status
+}
+
+fail2ban_status_jail() {
+	docker exec -it fail2ban fail2ban-client status $jail_name
+}
+
+fail2ban_sshd() {
+	if grep -q 'Alpine' /etc/issue; then
+		jail_name=alpine-sshd
+		fail2ban_status_jail
+	else
+		jail_name=linux-sshd
+		fail2ban_status_jail
+	fi
+}
+
+fail2ban_install_sshd() {
+	[ ! -d /data/docker_data/fail2ban ] && mkdir -p /data/docker_data/fail2ban
+	wget -O /data/docker_data/fail2ban/docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/docker-compose.yml
+	cd /data/docker_data/fail2ban
+	docker compose up -d
+
+	sleep 3
+	if grep -q 'Alpine' /etc/issue; then
+		cd /data/docker_data/fail2ban/config/fail2ban/filter.d
+		curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-sshd.conf
+		curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-sshd-ddos.conf
+		cd /data/docker_data/fail2ban/config/fail2ban/jail.d/
+		curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-ssh.conf
+	else
+		install rsyslog
+		systemctl start rsyslog
+		systemctl enable rsyslog
+		cd /data/docker_data/fail2ban/config/fail2ban/jail.d/
+		curl -sS -O https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/linux-ssh.conf
+	fi
+}
+
+linux_ldnmp() {
+	local choice
+	while true; do
+		clear
+		echo "▶ LDNMP建站"
+		echo "------------------------"
+		echo "35. 站点防御程序"
+		echo "------------------------"
+		echo "0. 返回主菜单"
+		echo "------------------------"
+
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read choice
+		
+		case $choice in
+			35)
+				if docker inspect fail2ban &>/dev/null ; then
+					while true; do
+						clear
+						echo "服务器防御程序已启动"
+						echo "------------------------"
+						echo "1. 开启SSH防暴力破解              2. 关闭SSH防暴力破解"
+						echo "3. 开启网站保护                   4. 关闭网站保护"
+						echo "------------------------"
+						echo "5. 查看SSH拦截记录                6. 查看网站拦截记录"
+						echo "7. 查看防御规则列表               8. 查看日志实时监控"
+						echo "------------------------"
+						echo "11. 配置拦截参数"
+						echo "------------------------"
+						echo "21. cloudflare模式                22. 高负载开启5秒盾"
+						echo "------------------------"
+						echo "9. 卸载防御程序"
+						echo "------------------------"
+						echo "0. 退出"
+						echo "------------------------"
+						
+						echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+						read choice
+						
+						case $choice in
+							1)
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/alpine-ssh.conf ] && sed -i 's/false/true/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/alpine-ssh.conf
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/linux-ssh.conf ] && sed -i 's/false/true/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/linux-ssh.conf
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/centos-ssh.conf ] && sed -i 's/false/true/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/centos-ssh.conf
+								fail2ban_status
+								;;
+							2)
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/alpine-ssh.conf ] && sed -i 's/true/false/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/alpine-ssh.conf
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/linux-ssh.conf ] && sed -i 's/true/false/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/linux-ssh.conf
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/centos-ssh.conf ] && sed -i 's/true/false/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/centos-ssh.conf
+								fail2ban_status
+								;;
+							3)
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf ] && sed -i 's/false/true/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
+								fail2ban_status
+								;;
+							4)
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf ] && sed -i 's/true/false/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
+								fail2ban_status
+								;;
+							5)
+								echo "------------------------"
+								fail2ban_sshd
+								echo "------------------------"
+								;;
+							6)
+								echo "------------------------"
+								jail_name=fail2ban-nginx-cc
+								fail2ban_status_jail
+								echo "------------------------"
+								jail_name=docker-nginx-bad-request
+								fail2ban_status_jail
+								echo "------------------------"
+								jail_name=docker-nginx-botsearch
+								fail2ban_status_jail
+								echo "------------------------"
+								jail_name=docker-nginx-http-auth
+								fail2ban_status_jail
+								echo "------------------------"
+								jail_name=docker-nginx-limit-req
+								fail2ban_status_jail
+								echo "------------------------"
+								jail_name=docker-php-url-fopen
+								fail2ban_status_jail
+								echo "------------------------"
+								;;
+							7)
+								docker exec -it fail2ban fail2ban-client status
+								;;
+							8)
+								timeout 5 tail -f /data/docker_data/fail2ban/config/log/fail2ban/fail2ban.log
+								;;
+							9)
+								docker rm -f fail2ban
+								rm -fr /data/docker_data/fail2ban
+								crontab -l | grep -v "CF-Under-Attack.sh" | crontab - 2>/dev/null
+								_yellow "Fail2Ban防御程序已卸载"
+								break
+								;;
+							11)
+								vim /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
+								fail2ban_status
+								break
+								;;
+							21)
+								echo "Cloudflare后台右上角我的个人资料,选择左侧API令牌,获取Global API Key"
+								echo "https://dash.cloudflare.com/login"
+								
+								# 获取CFUSER
+								while true; do
+									echo -n "请输入你的Cloudflare管理员邮箱:"
+									read CFUSER
+									if [[ "$CFUSER" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+										break
+									else
+										_red "无效的邮箱格式,请重新输入"
+									fi
+								done
+								# 获取CFKEY
+								while true; do
+									echo "cloudflare后台右上角我的个人资料,选择左侧API令牌,获取Global API Key"
+									echo "https://dash.cloudflare.com/login"
+									echo -n "请输入你的Global API Key:"
+									read CFKEY
+									if [[ -n "$CFKEY" ]]; then
+										break
+									else
+										_red "CFKEY不能为空,请重新输入"
+									fi
+								done
+								
+								wget -O /data/docker_data/nginx/conf.d/default.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default11.conf
+								docker restart nginx
+								
+								cd /data/docker_data/fail2ban/config/fail2ban/jail.d
+								curl -sS -O https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/nginx-docker-cc.conf
+								
+								cd /data/docker_data/fail2ban/config/fail2ban/action.d
+								curl -sS -O https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/cloudflare-docker.conf
+								
+								sed -i "s/kejilion@outlook.com/$CFUSER/g" /data/docker_data/fail2ban/config/fail2ban/action.d/cloudflare-docker.conf
+								sed -i "s/APIKEY00000/$CFKEY/g" /data/docker_data/fail2ban/config/fail2ban/action.d/cloudflare-docker.conf
+								fail2ban_status
+								_green "已配置Cloudflare模式,可在Cloudflare后台站点-安全性-事件中查看拦截记录"
+								;;
+							22)
+								echo "网站每5分钟自动检测,当达检测到高负载会自动开盾,低负载也会自动关闭5秒盾"
+								echo "------------------------"
+
+								# 获取CFUSER
+								while true; do
+									echo -n "请输入你的Cloudflare管理员邮箱:"
+									read CFUSER
+									if [[ "$CFUSER" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+										break
+									else
+										_red "无效的邮箱格式,请重新输入"
+									fi
+								done
+								# 获取CFKEY
+								while true; do
+									echo "cloudflare后台右上角我的个人资料,选择左侧API令牌,获取Global API Key"
+									echo "https://dash.cloudflare.com/login"
+									echo -n "请输入你的Global API Key:"
+									read CFKEY
+									if [[ -n "$CFKEY" ]]; then
+										break
+									else
+										_red "CFKEY不能为空,请重新输入"
+									fi
+								done
+								# 获取ZoneID
+								while true;do
+									echo "Cloudflare后台域名概要页面右下方获取区域ID"
+									echo -n "请输入你的ZoneID:"
+									read CFZoneID
+									if [[ -n "$CFZoneID" ]]; then
+										break
+									else
+										_red "CFZoneID不能为空,请重新输入"
+									fi
+								done
+
+								cd ~
+								install jq bc
+								check_crontab_installed
+								curl -sS -O https://raw.githubusercontent.com/honeok8s/shell/main/callscript/CF-Under-Attack.sh
+								chmod +x CF-Under-Attack.sh
+								sed -i "s/AAAA/$CFUSER/g" ~/CF-Under-Attack.sh
+								sed -i "s/BBBB/$CFKEY/g" ~/CF-Under-Attack.sh
+								sed -i "s/CCCC/$CFZoneID/g" ~/CF-Under-Attack.sh
+
+								cron_job="*/5 * * * * ~/CF-Under-Attack.sh"
+								existing_cron=$(crontab -l 2>/dev/null | grep -F "$cron_job")
+								
+								if [ -z "$existing_cron" ]; then
+									(crontab -l 2>/dev/null; echo "$cron_job") | crontab -
+									echo "高负载自动开盾脚本已添加"
+								else
+									echo "自动开盾脚本已存在,无需添加"
+								fi
+								;;
+							0)
+								break
+								;;
+							*)
+								_red "无效选项,请重新输入"
+								;;
+						esac
+						end_of
+					done
+				elif [ -x "$(command -v fail2ban-client)" ] ; then
+					clear
+					echo "卸载旧版Fail2ban"
+					echo -n "确定继续吗?(y/n):"
+					read choice
+
+					case "$choice" in
+						[Yy])
+							remove fail2ban
+							rm -fr /etc/fail2ban
+							echo "Fail2Ban防御程序已卸载"
+							;;
+						[Nn])
+							echo "已取消"
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac
+				else
+					clear
+					install_docker
+
+					docker rm -f nginx
+					
+					[ ! -d /data/docker_data/nginx ] && mkdir -p /data/docker_data/nginx
+					cd /data/docker_data/nginx
+
+					wget -O nginx.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/nginx-2C2G.conf
+
+					for dir in ./conf.d ./certs; do
+						[ ! -d "$dir" ] && mkdir -p "$dir"
+					done
+					wget -O ./conf.d/default.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default11.conf
+
+					default_server_ssl
+
+					wget -O docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/nginx/docker-compose.yml
+					
+					if command -v docker compose >/dev/null 2>&1; then
+						docker compose up -d
+					elif command -v docker-compose >/dev/null 2>&1; then
+						docker-compose up -d
+					fi
+
+					docker exec -it nginx chmod -R 777 /var/www/html
+
+					fail2ban_install_sshd
+					cd /data/docker_data/fail2ban/config/fail2ban/filter.d
+					curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/fail2ban-nginx-cc.conf
+					cd /data/docker_data/fail2ban/config/fail2ban/jail.d
+					curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/nginx-docker-cc.conf
+
+					sed -i "/cloudflare/d" /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
+
+					cd ~
+					fail2ban_status
+					_green "防御程序已开启"
+				fi
+				;;
+			0)
+				honeok
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+		end_of
+	done
 }
 
 cloudflare_ddns() {
