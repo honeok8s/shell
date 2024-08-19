@@ -3504,7 +3504,7 @@ linux_ldnmp() {
 				cd $domain
 				wget -qO latest.zip https://cn.wordpress.org/latest-zh_CN.zip && unzip latest.zip && rm latest.zip
 
-				echo "define('FS_METHOD', 'direct'); define('WP_REDIS_HOST', 'redis'); define('WP_REDIS_PORT', '6379');" >> /data/docker_data/web/nginx/html/$yuming/wordpress/wp-config-sample.php
+				echo "define('FS_METHOD', 'direct'); define('WP_REDIS_HOST', 'redis'); define('WP_REDIS_PORT', '6379');" >> /data/docker_data/web/nginx/html/$domain/wordpress/wp-config-sample.php
 
 				restart_ldnmp
 
