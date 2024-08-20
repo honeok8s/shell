@@ -3297,7 +3297,7 @@ install_ldnmp() {
 	fi
 
 	clear
-	_yellow "正在配置LDNMP环境,请耐心稍等"
+	_yellow "正在配置LDNMP环境,请耐心等待"
 
 	# 定义要执行的命令
 	commands=(
@@ -3402,7 +3402,7 @@ install_ldnmp() {
 				progressBar+="."
 			done
 			progressBar+="]"
-			echo -ne "\r[${orange}$percentage%${white}] $progressBar"
+			echo -ne "\r[${purple}$percentage%${white}] $progressBar"
 	done
 
 	echo # 打印换行,以便输出不被覆盖
