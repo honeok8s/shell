@@ -3803,16 +3803,23 @@ linux_ldnmp() {
 								done
 
 								wget -qO /data/docker_data/web/nginx/conf.d/default.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default11.conf
-								docker restart nginx >/dev/null 2>&1
 
-								cd /data/docker_data/fail2ban/config/fail2ban/jail.d
+								if nginx_check; then
+									docker restart nginx >/dev/null 2>&1
+								else
+									_red "Nginx配置校验失败,请检查配置文件"
+									return 1
+								fi
+
+								cd /data/docker_data/fail2ban/config/fail2ban/jail.d || { _red "无法进入目录 /data/docker_data/fail2ban/config/fail2ban/jail.d"; return 1; }
 								curl -sS -O https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/nginx-docker-cc.conf
 								
-								cd /data/docker_data/fail2ban/config/fail2ban/action.d
+								cd /data/docker_data/fail2ban/config/fail2ban/action.d || { _red "无法进入目录 /data/docker_data/fail2ban/config/fail2ban/action.d"; return 1; }
 								curl -sS -O https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/cloudflare-docker.conf
 								
 								sed -i "s/kejilion@outlook.com/$CFUSER/g" /data/docker_data/fail2ban/config/fail2ban/action.d/cloudflare-docker.conf
 								sed -i "s/APIKEY00000/$CFKEY/g" /data/docker_data/fail2ban/config/fail2ban/action.d/cloudflare-docker.conf
+
 								fail2ban_status
 								_green "已配置Cloudflare模式,可在Cloudflare后台站点-安全性-事件中查看拦截记录"
 								;;
