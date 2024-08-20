@@ -3526,11 +3526,30 @@ EOF
 fail2ban_status() {
 	docker restart fail2ban
 	sleep 5
-	docker exec -it fail2ban fail2ban-client status
+
+	# 尝试检测fail2ban容器状态最多三次
+	local retries=3
+	local count=0
+
+	while [ $count -lt $retries ]; do
+		if docker ps | grep -q fail2ban; then
+			# 显示fail2ban状态
+			docker exec fail2ban fail2ban-client status
+			return 0
+		else
+			# 容器未运行,等待一段时间后重试
+			_yellow "fail2ban容器未运行,正在重试($((count+1))/$retries)"
+			sleep 5
+			count=$((count + 1))
+		fi
+	done
+
+	# 如果三次检测后仍未找到容器运行,输出提示信息
+	_red "Fail2ban容器在重试后仍未运行"
 }
 
 fail2ban_status_jail() {
-	docker exec -it fail2ban fail2ban-client status $jail_name
+	docker exec fail2ban fail2ban-client status $jail_name
 }
 
 fail2ban_sshd() {
@@ -3585,7 +3604,7 @@ linux_ldnmp() {
 		echo "4. 安装可道云桌面"
 		echo "5. 安装苹果CMS网站"
 		echo "6. 安装独角数发卡网"
-		echo "7. 安装flarum论坛网站"
+		echo "7. 安装Flarum论坛网站"
 		echo "8. 安装Typecho轻量博客网站"
 		echo "20. 自定义动态站点"
 		echo "------------------------"
