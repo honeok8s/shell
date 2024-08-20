@@ -3413,6 +3413,116 @@ install_ldnmp() {
 	ldnmp_version
 }
 
+remove_nginx(){
+	local nginx_dir nginx_conf_dir backup_dir timestamp
+
+	nginx_dir="/data/docker_data/web/nginx"
+	nginx_conf_dir="/data/docker_data/web/nginx/conf.d"
+	backup_dir="/opt"
+	timestamp=$(date +%Y%m%d%H%M%S)
+
+	# 检查是否为LDNMP环境
+	if ! docker inspect "ldnmp" &>/dev/null;then
+		# 检查是否存在nginx容器
+		if docker inspect "nginx" &>/dev/null; then
+			if [ -d $nginx_dir ];then
+				cd $nginx_dir || { _red "无法进入目录$nginx_dir"; return 1; }
+
+				if docker compose version >/dev/null 2>&1; then
+					docker compose down --rmi all --volumes
+				elif command -v docker-compose >/dev/null 2>&1; then
+					docker-compose down --rmi all --volumes
+				fi
+
+				# 检查配置目录是否存在并且排除default.conf
+				if [ -d "$nginx_conf_dir" ] && ls "$nginx_conf_dir"/*.conf 2>/dev/null | grep -v 'default.conf' >/dev/null 2>&1; then
+					tar zvcf "$backup_dir/nginx_$timestamp.tar.gz" "$nginx_dir"
+				fi
+				rm -fr $nginx_dir
+			else
+				_yellow "目录$nginx_dir不存在,跳过删除"
+			fi
+		else
+			# 如果nginx容器不存在,直接删除目录(如果存在)
+			docker rm -f nginx >/dev/null 2>&1
+			if [ -d "$nginx_dir" ]; then
+				rm -fr "$nginx_dir"
+			fi
+		fi
+	elif ! docker inspect "nginx" &>/dev/null; then
+		_yellow "没有安装Nginx,跳过卸载"
+	else
+		_red "权限被拒绝,LDNMP环境的Nginx只能随LDNMP卸载!"
+	fi
+}
+
+install_nginx(){
+	local nginx_dir nginx_conf_dir default_conf
+
+	nginx_dir="/data/docker_data/web/nginx"
+	nginx_conf_dir="/data/docker_data/web/nginx/conf.d"
+	default_conf="$nginx_conf_dir/default.conf"
+
+	need_root
+	if ! docker inspect "ldnmp" &>/dev/null;then
+		remove_nginx
+		check_ldnmp_port
+		install_dependency
+		install_docker
+		install_certbot
+
+		if [ -d "$nginx_dir" ]; then
+			rm -fr "$nginx_dir"
+		fi
+
+		mkdir -p "$nginx_dir" "$nginx_conf_dir" "$nginx_dir/certs"
+		wget -qO $nginx_dir/nginx.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/nginx-2C2G.conf
+		wget -qO $nginx_conf_dir/default.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default2.conf
+		default_server_ssl
+
+		cat <<EOF > "$nginx_dir/docker-compose.yml"
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+      - 443:443/udp
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./conf.d:/etc/nginx/conf.d
+      - ./certs:/etc/nginx/certs
+      - ./html:/var/www/html
+      - ./log:/var/log/nginx
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    tmpfs:
+      - /var/cache/fst_cache:rw,noexec,nosuid,size=512m
+      - /var/cache/ngx_cache:rw,noexec,nosuid,size=512m
+EOF
+		cd $nginx_dir || { _red "无法进入目录$nginx_dir"; return 1; }
+
+		if docker compose version >/dev/null 2>&1; then
+			docker compose up -d
+		elif command -v docker-compose >/dev/null 2>&1; then
+			docker-compose up -d
+		fi
+
+		docker exec -it nginx chmod -R 777 /var/www/html
+
+		clear
+		nginx_version=$(docker exec nginx nginx -v 2>&1)
+		nginx_version=$(echo "$nginx_version" | grep -oP "nginx/\K[0-9]+\.[0-9]+\.[0-9]+")
+		_green "Nginx安装完成"
+		echo -e "当前版本:${yellow}v$nginx_version${white}"
+		echo ""
+	else
+		_yellow "LDNMP环境已集成Nginx,无须重复安装"
+	fi
+}
+
 fail2ban_status() {
 	docker restart fail2ban
 	sleep 5
@@ -3574,6 +3684,9 @@ linux_ldnmp() {
 				echo "密码:$DB_USER_PASSWD"
 				echo "数据库地址:mysql"
 				echo "表前缀:wp_"
+				;;
+			21)
+				echo ""
 				;;
 			31)
 				need_root
@@ -3952,31 +4065,11 @@ linux_ldnmp() {
 					clear
 					install_docker
 
-					docker rm -f nginx
-					
-					[ ! -d /data/docker_data/web/nginx ] && mkdir -p /data/docker_data/web/nginx
-					cd /data/docker_data/web/nginx || { _red "进入目录/data/docker_data/web/nginx失败"; return 1; }
-
-					wget -qO nginx.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/nginx-2C2G.conf
-
-					for dir in ./conf.d ./certs; do
-						[ ! -d "$dir" ] && mkdir -p "$dir"
-					done
-					wget -O ./conf.d/default.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default11.conf
-
-					default_server_ssl
-
-					wget -O docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/nginx/docker-compose.yml
-					
-					if docker compose version >/dev/null 2>&1; then
-						docker compose up -d
-					elif command -v docker-compose >/dev/null 2>&1; then
-						docker-compose up -d
-					fi
-
-					docker exec -it nginx chmod -R 777 /var/www/html
+					remove_nginx
+					install_nginx
 
 					fail2ban_install_sshd
+
 					cd /data/docker_data/fail2ban/config/fail2ban/filter.d
 					curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/fail2ban-nginx-cc.conf
 					cd /data/docker_data/fail2ban/config/fail2ban/jail.d
