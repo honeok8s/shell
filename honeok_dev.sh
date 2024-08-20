@@ -3981,7 +3981,6 @@ linux_ldnmp() {
 
 					sed -i "/cloudflare/d" /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
 
-					cd ~
 					fail2ban_status
 					_green "防御程序已开启"
 				fi
