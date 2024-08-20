@@ -3572,26 +3572,22 @@ linux_ldnmp() {
 
 					case $choice in
 						1)
-							echo -n "请输入你的域名:"
-							read -r domain
+							read -r -p "请输入你的域名: " domain
 							install_certbot
 							install_ssltls
 							certs_status
 							;;
 						2)
-							echo -n "请输入旧域名:"
-							read -r old_domain
-							echo -n "请输入新域名:"
-							read -r new_domain
+							read -r -p "请输入旧域名:" old_domain
+							read -r -p "请输入新域名:" new_domain
 							install_certbot
 							install_ssltls
 							certs_status
-							mv /data/docker_data/web/nginx/conf.d/$old_domain.conf /data/docker_data/web/nginx/conf.d/$new_domain.conf
-							sed -i "s/$old_domain/$new_domain/g" /data/docker_data/web/nginx/conf.d/$new_domain.conf
-							mv /data/docker_data/web/nginx/html/$old_domain /data/docker_data/web/nginx/html/$new_domain
+							mv "/data/docker_data/web/nginx/conf.d/$old_domain.conf" "/data/docker_data/web/nginx/conf.d/$new_domain.conf"
+							sed -i "s/$old_domain/$new_domain/g" "/data/docker_data/web/nginx/conf.d/$new_domain.conf"
+							mv "/data/docker_data/web/nginx/html/$old_domain" "/data/docker_data/web/nginx/html/$new_domain"
 
-							rm /data/docker_data/web/nginx/certs/${old_domain}_key.pem
-							rm /data/docker_data/web/nginx/certs/${old_domain}_cert.pem
+							rm -f "/data/docker_data/web/nginx/certs/${old_domain}_key.pem" "/data/docker_data/web/nginx/certs/${old_domain}_cert.pem"
 
 							docker restart nginx >/dev/null 2>&1
 							;;
@@ -3612,29 +3608,22 @@ linux_ldnmp() {
 							;;
 						5)
 							vim /data/docker_data/web/nginx/nginx.conf
-
 							docker restart nginx >/dev/null 2>&1
 							;;
 						6)
-							echo -n "编辑站点配置,请输入你要编辑的域名:"
-							read -r edit_domain
-							vim /data/docker_data/web/nginx/conf.d/$edit_domain.conf
-
+							read -r -p "编辑站点配置,请输入你要编辑的域名:" edit_domain
+							vim "/data/docker_data/web/nginx/conf.d/$edit_domain.conf"
 							docker restart nginx >/dev/null 2>&1
 							;;
 						7)
-							echo -n "删除站点数据目录,请输入你的域名:"
-							read -r del_domain
-							rm -r /data/docker_data/web/nginx/html/$del_domain
-							rm /data/docker_data/web/nginx/conf.d/$del_domain.conf
-							rm /data/docker_data/web/nginx/certs/${del_domain}_key.pem
-							rm /data/docker_data/web/nginx/certs/${del_domain}_cert.pem
+							read -r -p "删除站点数据目录,请输入你的域名:" del_domain
+							rm -fr "/data/docker_data/web/nginx/html/$del_domain"
+							rm -f "/data/docker_data/web/nginx/conf.d/$del_domain.conf" "/data/docker_data/web/nginx/certs/${del_domain}_key.pem" "/data/docker_data/web/nginx/certs/${del_domain}_cert.pem"
 
 							docker restart nginx >/dev/null 2>&1
 							;;
 						8)
-							echo -n "删除站点数据库,请输入数据库名:"
-							read -r del_database
+							read -r -p "删除站点数据库,请输入数据库名:" del_database
 							DBROOT_PASSWD=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
 							docker exec mysql mysql -u root -p"$DBROOT_PASSWD" -e "DROP DATABASE $del_database;" >/dev/null 2>&1
 							;;
