@@ -3015,7 +3015,7 @@ EOF
 
 #################### LDNMP建站START ####################
 ldnmp_install_status_1() {
-	if docker inspect "php" &>/dev/null; then
+	if docker inspect "ldnmp" &>/dev/null; then
 		_yellow "LDNMP环境已安装,无法再次安装,可以使用选项37进行更新LDNMP环境"
 		end_of
 		linux_ldnmp
@@ -3025,7 +3025,7 @@ ldnmp_install_status_1() {
 }
 
 ldnmp_install_status_2() {
-	if docker inspect "php" &>/dev/null; then
+	if docker inspect "ldnmp" &>/dev/null; then
 		_red "LDNMP环境已安装,无法还原LDNMP环境,请先卸载现有环境再次尝试还原"
 		end_of
 		linux_ldnmp
@@ -3035,7 +3035,7 @@ ldnmp_install_status_2() {
 }
 
 ldnmp_install_status() {
-	if docker inspect "php" &>/dev/null; then
+	if docker inspect "ldnmp" &>/dev/null; then
 		_yellow "LDNMP环境已安装,开始部署$WEB_NAME"
 	else
 		_yellow "LDNMP环境未安装,请先安装LDNMP环境,再部署网站"
