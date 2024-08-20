@@ -4001,10 +4001,8 @@ linux_ldnmp() {
 								cd /data/docker_data/web/
 								docker compose down --rmi all --volumes
 								rm -fr /data/docker_data/web/
-								;;
 							else
 								_red "未发现网站数据目录"
-								;;
 							fi
 							;;
 						[Nn])
