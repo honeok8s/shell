@@ -3985,6 +3985,33 @@ linux_ldnmp() {
 					_green "防御程序已开启"
 				fi
 				;;
+			38)
+				need_root
+				_yellow "建议先备份全部网站数据再卸载LDNMP环境"
+				echo -n "确定删除所有网站数据吗?(y/n):"
+				read -r choice
+
+				while true;do
+					case "$choice" in
+						[Yy])
+							if docker inspect "ldnmp" &>/dev/null; then
+								cd /data/docker_data/web/
+								docker compose down --rmi all --volumes
+								rm -fr /data/docker_data/web/
+							else
+								_red "未发现网站数据目录"
+								;;
+							fi
+							;;
+						[Nn])
+							:
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac
+				done
+				;;
 			0)
 				honeok
 				;;
