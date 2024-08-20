@@ -170,273 +170,317 @@ enable() {
 	_green "$service_name已设置为开机自启"
 }
 
+check_crontab_installed() {
+	if command -v crontab >/dev/null 2>&1; then
+		_green "crontab已安装"
+		return $?
+	else
+		install_crontab
+		return 0
+	fi
+}
+
+install_crontab() {
+	if [ -f /etc/os-release ]; then
+		. /etc/os-release
+			case "$ID" in
+				ubuntu|debian)
+					install cron
+					enable cron
+					start cron
+					;;
+				centos)
+					install cronie
+					enable crond
+					start crond
+					;;
+				alpine)
+					apk add --no-cache cronie
+					rc-update add crond
+					rc-service crond start
+					;;
+				*)
+					_red "不支持的发行版:$ID"
+					return 1
+					;;
+			esac
+	else
+		_red "无法确定操作系统"
+		return 1
+	fi
+
+	_yellow "Crontab已安装且Cron服务正在运行"
+}
+
 ###############################################################
 
-break_end() {
-      echo -e "${green}操作完成${white}"
-      echo "按任意键继续..."
-      read -n 1 -s -r -p ""
-      echo ""
-      clear
-}
-
-root_use() {
-clear
-[ "$EUID" -ne 0 ] && echo -e "${yellow}提示: ${white}该功能需要root用户才能运行！" && break_end && linux_ldnmp
-}
-
-ldnmp_install_status_one() {
-
-   if docker inspect "php" &>/dev/null; then
-    echo "无法再次安装LDNMP环境"
-    echo -e "${yellow}提示: ${white}LDNMP环境已安装。无法再次安装。可以使用37. 更新LDNMP环境。"
-    break_end
-    linux_ldnmp
-   else
-    :
-   fi
-
-}
-
-check_port() {
-
-    docker rm -f nginx >/dev/null 2>&1
-
-    # 定义要检测的端口
-    PORT=80
-
-    # 检查端口占用情况
-    result=$(ss -tulpn | grep ":\b$PORT\b")
-
-    # 判断结果并输出相应信息
-    if [ -n "$result" ]; then
-            clear
-            echo -e "${red}注意: ${white}端口 ${yellow}$PORT${white} 已被占用，无法安装环境，卸载以下程序后重试！"
-            echo "$result"
-            echo "端口冲突无法安装建站环境"
-            break_end
-            linux_ldnmp
-
-    fi
-}
-
-install_dependency() {
-      clear
-      install wget socat unzip tar
-}
-
-install_certbot() {
-
-    install certbot
-
-    cd ~
-
-    # 下载并使脚本可执行
-    curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/auto_cert_renewal.sh
-    chmod +x auto_cert_renewal.sh
-
-    # 设置定时任务字符串
-    check_crontab_installed
-    cron_job="0 0 * * * ~/auto_cert_renewal.sh"
-
-    # 检查是否存在相同的定时任务
-    existing_cron=$(crontab -l 2>/dev/null | grep -F "$cron_job")
-
-    # 如果不存在，则添加定时任务
-    if [ -z "$existing_cron" ]; then
-        (crontab -l 2>/dev/null; echo "$cron_job") | crontab -
-        echo "续签任务已添加"
-    fi
-}
-
-default_server_ssl() {
-install openssl
-
-if command -v dnf &>/dev/null || command -v yum &>/dev/null; then
-    openssl req -x509 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -keyout /home/web/certs/default_server.key -out /home/web/certs/default_server.crt -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
-else
-    openssl genpkey -algorithm Ed25519 -out /home/web/certs/default_server.key
-    openssl req -x509 -key /home/web/certs/default_server.key -out /home/web/certs/default_server.crt -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
-fi
-
-
-}
-
-install_ldnmp() {
-
-      #check_swap
-      cd /home/web && docker compose up -d
-      clear
-      echo "正在配置LDNMP环境，请耐心稍等……"
-
-      # 定义要执行的命令
-      commands=(
-          "docker exec nginx chmod -R 777 /var/www/html"
-          "docker restart nginx > /dev/null 2>&1"
-
-          # "docker exec php sed -i "s/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g" /etc/apk/repositories > /dev/null 2>&1"
-          # "docker exec php74 sed -i "s/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g" /etc/apk/repositories > /dev/null 2>&1"
-
-          "docker exec php apk update > /dev/null 2>&1"
-          "docker exec php74 apk update > /dev/null 2>&1"
-
-          # php安装包管理
-          "curl -sL https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions -o /usr/local/bin/install-php-extensions > /dev/null 2>&1"
-          "docker exec php mkdir -p /usr/local/bin/ > /dev/null 2>&1"
-          "docker exec php74 mkdir -p /usr/local/bin/ > /dev/null 2>&1"
-          "docker cp /usr/local/bin/install-php-extensions php:/usr/local/bin/ > /dev/null 2>&1"
-          "docker cp /usr/local/bin/install-php-extensions php74:/usr/local/bin/ > /dev/null 2>&1"
-          "docker exec php chmod +x /usr/local/bin/install-php-extensions > /dev/null 2>&1"
-          "docker exec php74 chmod +x /usr/local/bin/install-php-extensions > /dev/null 2>&1"
-
-          # php安装扩展
-          "docker exec php sh -c '\
-                    apk add --no-cache imagemagick imagemagick-dev \
-                    && apk add --no-cache git autoconf gcc g++ make pkgconfig \
-                    && rm -rf /tmp/imagick \
-                    && git clone https://github.com/Imagick/imagick /tmp/imagick \
-                    && cd /tmp/imagick \
-                    && phpize \
-                    && ./configure \
-                    && make \
-                    && make install \
-                    && echo 'extension=imagick.so' > /usr/local/etc/php/conf.d/imagick.ini \
-                    && rm -rf /tmp/imagick' > /dev/null 2>&1"
-
-
-          "docker exec php install-php-extensions imagick > /dev/null 2>&1"
-          "docker exec php install-php-extensions mysqli > /dev/null 2>&1"
-          "docker exec php install-php-extensions pdo_mysql > /dev/null 2>&1"
-          "docker exec php install-php-extensions gd > /dev/null 2>&1"
-          "docker exec php install-php-extensions intl > /dev/null 2>&1"
-          "docker exec php install-php-extensions zip > /dev/null 2>&1"
-          "docker exec php install-php-extensions exif > /dev/null 2>&1"
-          "docker exec php install-php-extensions bcmath > /dev/null 2>&1"
-          "docker exec php install-php-extensions opcache > /dev/null 2>&1"
-          "docker exec php install-php-extensions redis > /dev/null 2>&1"
-
-
-          # php配置参数
-          "docker exec php sh -c 'echo \"upload_max_filesize=50M \" > /usr/local/etc/php/conf.d/uploads.ini' > /dev/null 2>&1"
-          "docker exec php sh -c 'echo \"post_max_size=50M \" > /usr/local/etc/php/conf.d/post.ini' > /dev/null 2>&1"
-          "docker exec php sh -c 'echo \"memory_limit=256M\" > /usr/local/etc/php/conf.d/memory.ini' > /dev/null 2>&1"
-          "docker exec php sh -c 'echo \"max_execution_time=1200\" > /usr/local/etc/php/conf.d/max_execution_time.ini' > /dev/null 2>&1"
-          "docker exec php sh -c 'echo \"max_input_time=600\" > /usr/local/etc/php/conf.d/max_input_time.ini' > /dev/null 2>&1"
-
-          # php重启
-          "docker exec php chmod -R 777 /var/www/html"
-          "docker restart php > /dev/null 2>&1"
-
-          # php7.4安装扩展
-          "docker exec php74 install-php-extensions imagick > /dev/null 2>&1"
-          "docker exec php74 install-php-extensions mysqli > /dev/null 2>&1"
-          "docker exec php74 install-php-extensions pdo_mysql > /dev/null 2>&1"
-          "docker exec php74 install-php-extensions gd > /dev/null 2>&1"
-          "docker exec php74 install-php-extensions intl > /dev/null 2>&1"
-          "docker exec php74 install-php-extensions zip > /dev/null 2>&1"
-          "docker exec php74 install-php-extensions exif > /dev/null 2>&1"
-          "docker exec php74 install-php-extensions bcmath > /dev/null 2>&1"
-          "docker exec php74 install-php-extensions opcache > /dev/null 2>&1"
-          "docker exec php74 install-php-extensions redis > /dev/null 2>&1"
-
-          # php7.4配置参数
-          "docker exec php74 sh -c 'echo \"upload_max_filesize=50M \" > /usr/local/etc/php/conf.d/uploads.ini' > /dev/null 2>&1"
-          "docker exec php74 sh -c 'echo \"post_max_size=50M \" > /usr/local/etc/php/conf.d/post.ini' > /dev/null 2>&1"
-          "docker exec php74 sh -c 'echo \"memory_limit=256M\" > /usr/local/etc/php/conf.d/memory.ini' > /dev/null 2>&1"
-          "docker exec php74 sh -c 'echo \"max_execution_time=1200\" > /usr/local/etc/php/conf.d/max_execution_time.ini' > /dev/null 2>&1"
-          "docker exec php74 sh -c 'echo \"max_input_time=600\" > /usr/local/etc/php/conf.d/max_input_time.ini' > /dev/null 2>&1"
-
-          # php7.4重启
-          "docker exec php74 chmod -R 777 /var/www/html"
-          "docker restart php74 > /dev/null 2>&1"
-
-          # redis调优
-          "docker exec -it redis redis-cli CONFIG SET maxmemory 512mb > /dev/null 2>&1"
-          "docker exec -it redis redis-cli CONFIG SET maxmemory-policy allkeys-lru > /dev/null 2>&1"
-
-          # 最后一次php重启
-          "docker restart php > /dev/null 2>&1"
-          "docker restart php74 > /dev/null 2>&1"
-
-
-      )
-
-      total_commands=${#commands[@]}  # 计算总命令数
-
-      for ((i = 0; i < total_commands; i++)); do
-          command="${commands[i]}"
-          eval $command  # 执行命令
-
-          # 打印百分比和进度条
-          percentage=$(( (i + 1) * 100 / total_commands ))
-          completed=$(( percentage / 2 ))
-          remaining=$(( 50 - completed ))
-          progressBar="["
-          for ((j = 0; j < completed; j++)); do
-              progressBar+="#"
-          done
-          for ((j = 0; j < remaining; j++)); do
-              progressBar+="."
-          done
-          progressBar+="]"
-          echo -ne "\r[${green}$percentage%${white}] $progressBar"
-      done
-
-      echo  # 打印换行，以便输出不被覆盖
-
-
-      clear
-      echo "LDNMP环境安装完毕"
-      echo "------------------------"
-      ldnmp_version
-
-}
-
-ldnmp_version() {
-
-      # 获取nginx版本
-      nginx_version=$(docker exec nginx nginx -v 2>&1)
-      nginx_version=$(echo "$nginx_version" | grep -oP "nginx/\K[0-9]+\.[0-9]+\.[0-9]+")
-      echo -n -e "nginx : ${yellow}v$nginx_version${white}"
-
-      # 获取mysql版本
-      dbrootpasswd=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /home/web/docker-compose.yml | tr -d '[:space:]')
-      mysql_version=$(docker exec mysql mysql -u root -p"$dbrootpasswd" -e "SELECT VERSION();" 2>/dev/null | tail -n 1)
-      echo -n -e "            mysql : ${yellow}v$mysql_version${white}"
-
-      # 获取php版本
-      php_version=$(docker exec php php -v 2>/dev/null | grep -oP "PHP \K[0-9]+\.[0-9]+\.[0-9]+")
-      echo -n -e "            php : ${yellow}v$php_version${white}"
-
-      # 获取redis版本
-      redis_version=$(docker exec redis redis-server -v 2>&1 | grep -oP "v=+\K[0-9]+\.[0-9]+")
-      echo -e "            redis : ${yellow}v$redis_version${white}"
-
-      echo "------------------------"
-      echo ""
-
+ldnmp_check_status() {
+	if docker inspect "ldnmp" &>/dev/null; then
+		_red "无法再次安装LDNMP环境"
+		_yellow "LDNMP环境已安装,无法再次安装,可以使用37.更新LDNMP环境"
+		end_of
+		linux_ldnmp
+	fi
 }
 
 ldnmp_install_status() {
-
-   if docker inspect "php" &>/dev/null; then
-    echo "LDNMP环境已安装，开始部署 $webname"
-   else
-    send_stats "请先安装LDNMP环境"
-    echo -e "${gl_huang}提示: ${gl_bai}LDNMP环境未安装，请先安装LDNMP环境，再部署网站"
-    break_end
-    linux_ldnmp
-
-   fi
-
+	if docker inspect "ldnmp" &>/dev/null; then
+		_yellow "LDNMP环境已安装,开始部署$webname"
+	else
+		_red "LDNMP环境未安装,请先安装LDNMP环境再部署网站"
+		end_of
+		linux_ldnmp
+	fi
 }
 
-add_yuming() {
-      ip_address
-      echo -e "先将域名解析到本机IP: ${gl_huang}$ipv4_address  $ipv6_address${gl_bai}"
-      read -p "请输入你解析的域名: " yuming
-      repeat_add_yuming
+ldnmp_check_port() {
+	docker rm -f nginx >/dev/null 2>&1
 
+	# 定义要检测的端口
+	ports=("80" "443")
+
+	# 检查端口占用情况
+	for port in "${ports[@]}"; do
+		result=$(netstat -tulpn | grep ":$port ")
+
+		if [ -n "$result" ]; then
+			clear
+			_red "端口$port已被占用,无法安装环境,卸载以下程序后重试"
+			_yellow "$result"
+			end_of
+			linux_ldnmp
+			return 1
+		fi
+	done
+}
+
+ldnmp_install_deps() {
+	clear
+	# 安装依赖包
+	install wget socat unzip tar
+}
+
+ldnmp_install_certbot() {
+	local cron_job existing_cron
+
+	# 检查并安装certbot
+	if ! command -v certbot &> /dev/null; then
+		install certbot || { _red "安装certbot失败"; return 1; }
+	fi
+
+	[ ! -d /data/script ] && mkdir -p /data/script
+	cd /data/script || { _red "进入目录/data/script失败"; return 1; }
+
+	# 设置定时任务字符串
+	check_crontab_installed
+	cron_job="0 0 * * * /data/script/auto_cert_renewal.sh >/dev/null 2>&1"
+
+	# 检查是否存在相同的定时任务
+	existing_cron=$(crontab -l 2>/dev/null | grep -F "$cron_job")
+
+	if [ -z "$existing_cron" ]; then
+		# 下载并使脚本可执行
+		curl -sS -o ./auto_cert_renewal.sh https://raw.githubusercontent.com/honeok8s/shell/main/callscript/autocert_certbot.sh
+		chmod a+x auto_cert_renewal.sh
+
+		# 添加定时任务
+		(crontab -l 2>/dev/null; echo "$cron_job") | crontab -
+		_green "续签任务已安装"
+	else
+		_yellow "续签任务已存在,无需重复安装"
+	fi
+}
+
+default_server_ssl() {
+	install openssl
+
+	if command -v dnf &>/dev/null || command -v yum &>/dev/null; then
+		openssl req -x509 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -keyout /data/docker_data/web/nginx/certs/default_server.key -out /data/docker_data/web/nginx/certs/default_server.crt -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
+	else
+		openssl genpkey -algorithm Ed25519 -out /data/docker_data/web/nginx/certs/default_server.key
+		openssl req -x509 -key /data/docker_data/web/nginx/certs/default_server.key -out /data/docker_data/web/nginx/certs/default_server.crt -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
+	fi
+}
+
+# 启动Docker Compose
+start_docker_compose() {
+	if docker compose version >/dev/null 2>&1; then
+		docker compose up -d
+	elif command -v docker-compose >/dev/null 2>&1; then
+		docker-compose up -d
+	fi
+}
+
+install_ldnmp() {
+	#check_swap
+	cd "$web_dir" || { _red "无法进入目录$web_dir"; return 1; }
+
+	start_docker_compose
+
+	clear
+	_yellow "正在配置LDNMP环境,请耐心等待"
+
+	# 定义要执行的命令
+	commands=(
+		"docker exec nginx chmod -R 777 /var/www/html"
+		"docker restart nginx > /dev/null 2>&1"
+
+		"docker exec php apk update > /dev/null 2>&1"
+		"docker exec php74 apk update > /dev/null 2>&1"
+
+		# php安装包管理
+		"curl -sL https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions -o /usr/local/bin/install-php-extensions > /dev/null 2>&1"
+		"docker exec php mkdir -p /usr/local/bin/ > /dev/null 2>&1"
+		"docker exec php74 mkdir -p /usr/local/bin/ > /dev/null 2>&1"
+		"docker cp /usr/local/bin/install-php-extensions php:/usr/local/bin/ > /dev/null 2>&1"
+		"docker cp /usr/local/bin/install-php-extensions php74:/usr/local/bin/ > /dev/null 2>&1"
+		"docker exec php chmod +x /usr/local/bin/install-php-extensions > /dev/null 2>&1"
+		"docker exec php74 chmod +x /usr/local/bin/install-php-extensions > /dev/null 2>&1"
+
+		# php安装扩展
+		"docker exec php sh -c '\
+			apk add --no-cache imagemagick imagemagick-dev \
+			&& apk add --no-cache git autoconf gcc g++ make pkgconfig \
+			&& rm -rf /tmp/imagick \
+			&& git clone https://github.com/Imagick/imagick /tmp/imagick \
+			&& cd /tmp/imagick \
+			&& phpize \
+			&& ./configure \
+			&& make \
+			&& make install \
+			&& echo 'extension=imagick.so' > /usr/local/etc/php/conf.d/imagick.ini \
+			&& rm -rf /tmp/imagick' > /dev/null 2>&1"
+
+		"docker exec php install-php-extensions imagick > /dev/null 2>&1"
+		"docker exec php install-php-extensions mysqli > /dev/null 2>&1"
+		"docker exec php install-php-extensions pdo_mysql > /dev/null 2>&1"
+		"docker exec php install-php-extensions gd > /dev/null 2>&1"
+		"docker exec php install-php-extensions intl > /dev/null 2>&1"
+		"docker exec php install-php-extensions zip > /dev/null 2>&1"
+		"docker exec php install-php-extensions exif > /dev/null 2>&1"
+		"docker exec php install-php-extensions bcmath > /dev/null 2>&1"
+		"docker exec php install-php-extensions opcache > /dev/null 2>&1"
+		"docker exec php install-php-extensions redis > /dev/null 2>&1"
+
+		# php配置参数
+		"docker exec php sh -c 'echo \"upload_max_filesize=50M \" > /usr/local/etc/php/conf.d/uploads.ini' > /dev/null 2>&1"
+		"docker exec php sh -c 'echo \"post_max_size=50M \" > /usr/local/etc/php/conf.d/post.ini' > /dev/null 2>&1"
+		"docker exec php sh -c 'echo \"memory_limit=256M\" > /usr/local/etc/php/conf.d/memory.ini' > /dev/null 2>&1"
+		"docker exec php sh -c 'echo \"max_execution_time=1200\" > /usr/local/etc/php/conf.d/max_execution_time.ini' > /dev/null 2>&1"
+		"docker exec php sh -c 'echo \"max_input_time=600\" > /usr/local/etc/php/conf.d/max_input_time.ini' > /dev/null 2>&1"
+
+		# php重启
+		"docker exec php chmod -R 777 /var/www/html"
+		"docker restart php > /dev/null 2>&1"
+
+		# php7.4安装扩展
+		"docker exec php74 install-php-extensions imagick > /dev/null 2>&1"
+		"docker exec php74 install-php-extensions mysqli > /dev/null 2>&1"
+		"docker exec php74 install-php-extensions pdo_mysql > /dev/null 2>&1"
+		"docker exec php74 install-php-extensions gd > /dev/null 2>&1"
+		"docker exec php74 install-php-extensions intl > /dev/null 2>&1"
+		"docker exec php74 install-php-extensions zip > /dev/null 2>&1"
+		"docker exec php74 install-php-extensions exif > /dev/null 2>&1"
+		"docker exec php74 install-php-extensions bcmath > /dev/null 2>&1"
+		"docker exec php74 install-php-extensions opcache > /dev/null 2>&1"
+		"docker exec php74 install-php-extensions redis > /dev/null 2>&1"
+
+		# php7.4配置参数
+		"docker exec php74 sh -c 'echo \"upload_max_filesize=50M \" > /usr/local/etc/php/conf.d/uploads.ini' > /dev/null 2>&1"
+		"docker exec php74 sh -c 'echo \"post_max_size=50M \" > /usr/local/etc/php/conf.d/post.ini' > /dev/null 2>&1"
+		"docker exec php74 sh -c 'echo \"memory_limit=256M\" > /usr/local/etc/php/conf.d/memory.ini' > /dev/null 2>&1"
+		"docker exec php74 sh -c 'echo \"max_execution_time=1200\" > /usr/local/etc/php/conf.d/max_execution_time.ini' > /dev/null 2>&1"
+		"docker exec php74 sh -c 'echo \"max_input_time=600\" > /usr/local/etc/php/conf.d/max_input_time.ini' > /dev/null 2>&1"
+
+		# php7.4重启
+		"docker exec php74 chmod -R 777 /var/www/html"
+		"docker restart php74 > /dev/null 2>&1"
+
+		# redis调优
+		"docker exec -it redis redis-cli CONFIG SET maxmemory 512mb > /dev/null 2>&1"
+		"docker exec -it redis redis-cli CONFIG SET maxmemory-policy allkeys-lru > /dev/null 2>&1"
+
+		# 最后一次php重启
+		"docker restart php > /dev/null 2>&1"
+		"docker restart php74 > /dev/null 2>&1"
+      )
+
+	total_commands=${#commands[@]}  # 计算总命令数
+
+	for ((i = 0; i < total_commands; i++)); do
+		command="${commands[i]}"
+		eval $command  # 执行命令
+
+		# 打印百分比和进度条
+		percentage=$(( (i + 1) * 100 / total_commands ))
+		completed=$(( percentage / 2 ))
+		remaining=$(( 50 - completed ))
+		progressBar="["
+			for ((j = 0; j < completed; j++)); do
+				progressBar+="#"
+			done
+			for ((j = 0; j < remaining; j++)); do
+				progressBar+="."
+			done
+			progressBar+="]"
+			echo -ne "\r[${yellow}$percentage%${white}] $progressBar"
+	done
+
+	echo # 打印换行,以便输出不被覆盖
+
+	clear
+	_green "LDNMP环境安装完毕"
+	echo "------------------------"
+	ldnmp_version
+}
+
+
+ldnmp_version() {
+	# 获取nginx版本
+	nginx_version=$(docker exec nginx nginx -v 2>&1)
+	nginx_version=$(echo "$nginx_version" | grep -oP "nginx/\K[0-9]+\.[0-9]+\.[0-9]+")
+	echo -n -e "nginx : ${yellow}v$nginx_version${white}"
+
+	# 获取mysql版本
+	dbrootpasswd=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /home/web/docker-compose.yml | tr -d '[:space:]')
+	mysql_version=$(docker exec mysql mysql -u root -p"$dbrootpasswd" -e "SELECT VERSION();" 2>/dev/null | tail -n 1)
+	echo -n -e "     mysql : ${yellow}v$mysql_version${white}"
+
+	# 获取php版本
+	php_version=$(docker exec php php -v 2>/dev/null | grep -oP "PHP \K[0-9]+\.[0-9]+\.[0-9]+")
+	echo -n -e "     php : ${yellow}v$php_version${white}"
+
+	# 获取redis版本
+	redis_version=$(docker exec redis redis-server -v 2>&1 | grep -oP "v=+\K[0-9]+\.[0-9]+")
+	echo -e "     redis : ${yellow}v$redis_version${white}"
+
+	echo "------------------------"
+	echo ""
+}
+
+add_domain() {
+	ip_address
+
+	echo -e "先将域名解析到本机IP: ${yellow}$ipv4_address  $ipv6_address${white}"
+	echo -n "请输入你解析的域名:"
+	read -r domain
+
+	# 域名格式校验
+	domain_regex="^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$"
+	if [[ $domain =~ $domain_regex ]]; then
+		# 检查域名是否已存在
+		if [ -e $nginx_dir/conf.d/$domain.conf ]; then
+			_red "当前域名${domain}已被使用,请前往31站点管理-删除站点后再部署${webname}"
+			end_of
+			linux_ldnmp
+		else
+			_green "域名${domain}格式校验正确"
+		fi
+	else
+		_red "域名格式不正确,请重新输入"
+		end_of
+		linux_ldnmp
+	fi
 }
 
 ip_address() {
@@ -444,161 +488,198 @@ ipv4_address=$(curl -s ipv4.ip.sb)
 ipv6_address=$(curl -s --max-time 1 ipv6.ip.sb)
 }
 
-install_ssltls() {
-      docker stop nginx > /dev/null 2>&1
-      iptables_open > /dev/null 2>&1
-      cd ~
+ldnmp_ldnmp_install_ssltls() {
+	docker stop nginx > /dev/null 2>&1
 
-      yes | certbot delete --cert-name $yuming > /dev/null 2>&1
+	iptables_open > /dev/null 2>&1
 
-      certbot_version=$(certbot --version 2>&1 | grep -oP "\d+\.\d+\.\d+")
+	yes | certbot delete --cert-name $domain > /dev/null 2>&1
 
-      version_ge() {
-          [ "$(printf '%s\n' "$1" "$2" | sort -V | head -n1)" != "$1" ]
-      }
+	certbot_version=$(certbot --version 2>&1 | grep -oP "\d+\.\d+\.\d+")
 
-      if version_ge "$certbot_version" "1.17.0"; then
-          certbot certonly --standalone -d $yuming --email your@email.com --agree-tos --no-eff-email --force-renewal --key-type ecdsa
-      else
-          certbot certonly --standalone -d $yuming --email your@email.com --agree-tos --no-eff-email --force-renewal
-      fi
+	version_ge() {
+		[ "$(printf '%s\n' "$1" "$2" | sort -V | head -n1)" != "$1" ]
+	}
 
-      cp /etc/letsencrypt/live/$yuming/fullchain.pem /home/web/certs/${yuming}_cert.pem > /dev/null 2>&1
-      cp /etc/letsencrypt/live/$yuming/privkey.pem /home/web/certs/${yuming}_key.pem > /dev/null 2>&1
-      docker start nginx > /dev/null 2>&1
+	if version_ge "$certbot_version" "1.17.0"; then
+		certbot certonly --standalone -d $domain --email your@email.com --agree-tos --no-eff-email --force-renewal --key-type ecdsa
+	else
+		certbot certonly --standalone -d $domain --email your@email.com --agree-tos --no-eff-email --force-renewal
+	fi
+
+	cp /etc/letsencrypt/live/$domain/fullchain.pem /data/docker_data/web/nginx/certs/${domain}_cert.pem > /dev/null 2>&1
+	cp /etc/letsencrypt/live/$domain/privkey.pem /data/docker_data/web/nginx/certs/${domain}_key.pem > /dev/null 2>&1
+
+	docker start nginx > /dev/null 2>&1
 }
 
-certs_status() {
+ldnmp_certs_status() {
+	sleep 1
+	file_path="/etc/letsencrypt/live/$domain/fullchain.pem"
 
-    sleep 1
-    file_path="/etc/letsencrypt/live/$yuming/fullchain.pem"
-    if [ -f "$file_path" ]; then
-        send_stats "域名证书申请成功"
-    else
-        send_stats "域名证书申请失败"
-        echo -e "${gl_hong}注意: ${gl_bai}检测到域名证书申请失败，请检测域名是否正确解析或更换域名重新尝试！"
-        break_end
-        linux_ldnmp
-    fi
-
+	if [ ! -f "$file_path" ]; then
+		_red "域名证书申请失败,请检测域名是否正确解析或更换域名重新尝试!"
+		end_of
+		linux_ldnmp
+	fi
 }
 
-add_db() {
-      dbname=$(echo "$yuming" | sed -e 's/[^A-Za-z0-9]/_/g')
-      dbname="${dbname}"
+ldnmp_add_db() {
+	DB_NAME=$(echo "$domain" | sed -e 's/[^A-Za-z0-9]/_/g')
 
-      dbrootpasswd=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /home/web/docker-compose.yml | tr -d '[:space:]')
-      dbuse=$(grep -oP 'MYSQL_USER:\s*\K.*' /home/web/docker-compose.yml | tr -d '[:space:]')
-      dbusepasswd=$(grep -oP 'MYSQL_PASSWORD:\s*\K.*' /home/web/docker-compose.yml | tr -d '[:space:]')
-      docker exec mysql mysql -u root -p"$dbrootpasswd" -e "CREATE DATABASE $dbname; GRANT ALL PRIVILEGES ON $dbname.* TO \"$dbuse\"@\"%\";"
+	DB_ROOT_PASSWD=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
+	DB_USER=$(grep -oP 'MYSQL_USER:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
+	DB_USER_PASSWD=$(grep -oP 'MYSQL_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
+
+	if [[ -z "$DB_ROOT_PASSWD" || -z "$DB_USER" || -z "$DB_USER_PASSWD" ]]; then
+		_red "无法获取MySQL凭据"
+		return 1
+	fi
+
+	docker exec mysql mysql -u root -p"$DB_ROOT_PASSWD" -e "CREATE DATABASE IF NOT EXISTS $DB_NAME; GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'%';" || {
+		_red "创建数据库或授予权限失败"
+		return 1
+	}
+}
+
+nginx_check() {
+	docker exec nginx nginx -t > /dev/null 2>&1
+	return $?
+}
+
+ldnmp_restart() {
+	docker exec nginx chmod -R 777 /var/www/html
+	docker exec php chmod -R 777 /var/www/html
+	docker exec php74 chmod -R 777 /var/www/html
+
+	if nginx_check; then
+		docker restart nginx >/dev/null 2>&1
+	else
+		_red "Nginx配置校验失败,请检查配置文件"
+		return 1
+	fi
+	docker restart php >/dev/null 2>&1
+	docker restart php74 >/dev/null 2>&1
+}
+
+ldnmp_display_success() {
+	clear
+	echo "您的$WEB_NAME搭建好了!"
+	echo "https://$domain"
+	echo "------------------------"
+	echo "$WEB_NAME安装信息如下:"
 }
 
 #####################################
 linux_ldnmp() {
+	# 定义全局安装路径
+	web_dir="/data/docker_data/web"
+	nginx_dir="$web_dir/nginx"
 
-  while true; do
-    clear
-    # echo "LDNMP建站"
-    echo -e "${yellow}▶ LDNMP建站"
-    echo -e "${yellow}------------------------"
-    echo -e "${yellow}1.   ${white}安装LDNMP环境 ${yellow}★${white}"
-    echo -e "${yellow}2.   ${white}安装WordPress ${yellow}★${white}"
-    echo -e "${yellow}3.   ${white}安装Discuz论坛"
-    echo -e "${yellow}4.   ${white}安装可道云桌面"
-    echo -e "${yellow}5.   ${white}安装苹果CMS网站"
-    echo -e "${yellow}6.   ${white}安装独角数发卡网"
-    echo -e "${yellow}7.   ${white}安装flarum论坛网站"
-    echo -e "${yellow}8.   ${white}安装typecho轻量博客网站"
-    echo -e "${yellow}20.  ${white}自定义动态站点"
-    echo -e "${yellow}------------------------"
-    echo -e "${yellow}21.  ${white}仅安装nginx ${yellow}★${white}"
-    echo -e "${yellow}22.  ${white}站点重定向"
-    echo -e "${yellow}23.  ${white}站点反向代理-IP+端口 ${yellow}★${white}"
-    echo -e "${yellow}24.  ${white}站点反向代理-域名"
-    echo -e "${yellow}25.  ${white}自定义静态站点"
-    echo -e "${yellow}26.  ${white}安装Bitwarden密码管理平台"
-    echo -e "${yellow}27.  ${white}安装Halo博客网站"
-    echo -e "${yellow}------------------------"
-    echo -e "${yellow}31.  ${white}站点数据管理 ${yellow}★${white}"
-    echo -e "${yellow}32.  ${white}备份全站数据"
-    echo -e "${yellow}33.  ${white}定时远程备份"
-    echo -e "${yellow}34.  ${white}还原全站数据"
-    echo -e "${yellow}------------------------"
-    echo -e "${yellow}35.  ${white}站点防御程序"
-    echo -e "${yellow}------------------------"
-    echo -e "${yellow}36.  ${white}优化LDNMP环境"
-    echo -e "${yellow}37.  ${white}更新LDNMP环境"
-    echo -e "${yellow}38.  ${white}卸载LDNMP环境"
-    echo -e "${yellow}------------------------"
-    echo -e "${yellow}0.   ${white}返回主菜单"
-    echo -e "${yellow}------------------------${white}"
-    read -p "请输入你的选择: " sub_choice
+	while true; do
+		clear
+		echo "▶ LDNMP建站"
+		echo "------------------------"
+		echo "1. 安装LDNMP环境"
+		echo "2. 安装WordPress"
+		echo "3. 安装Discuz论坛"
+		echo "4. 安装可道云桌面"
+		echo "5. 安装苹果CMS网站"
+		echo "6. 安装独角数发卡网"
+		echo "7. 安装flarum论坛网站"
+		echo "8. 安装typecho轻量博客网站"
+		echo "20. 自定义动态站点"
+		echo "------------------------"
+		echo "21. 仅安装nginx"
+		echo "22. 站点重定向"
+		echo "23. 站点反向代理-IP+端口"
+		echo "24. 站点反向代理-域名"
+		echo "25. 自定义静态站点"
+		echo "26. 安装Bitwarden密码管理平台"
+		echo "27. 安装Halo博客网站"
+		echo "------------------------"
+		echo "31. 站点数据管理"
+		echo "32. 备份全站数据"
+		echo "33. 定时远程备份"
+		echo "34. 还原全站数据"
+		echo "------------------------"
+		echo "35. 站点防御程序"
+		echo "------------------------"
+		echo "36. 优化LDNMP环境"
+		echo "37. 更新LDNMP环境"
+		echo "38. 卸载LDNMP环境"
+		echo "------------------------"
+		echo "0. 返回主菜单"
+		echo "------------------------"
+		read -p "请输入你的选择: " choice
 
+		case $choice in
+			1)
+				need_root
+				ldnmp_check_status
+				ldnmp_check_port
+				ldnmp_install_deps
+				#install_docker
+				ldnmp_install_certbot
 
-    case $sub_choice in
-      1)
-      echo "安装LDNMP环境"
-      root_use
-      ldnmp_install_status_one
-      check_port
-      install_dependency
-      #install_docker
-      install_certbot
+				# 清理并创建必要的目录
+				[ -d "$web_dir" ] && rm -fr "$web_dir"
+				mkdir -p "$nginx_dir/certs" "$nginx_dir/conf.d" "$web_dir/redis" "$web_dir/mysql"
 
-      # 创建必要的目录和文件
-      cd /home && mkdir -p web/html web/mysql web/certs web/conf.d web/redis web/log/nginx && touch web/docker-compose.yml
+				cd "$web_dir" || { _red "无法进入目录 $web_dir"; return 1; }
 
-      wget -O /home/web/nginx.conf https://raw.githubusercontent.com/kejilion/nginx/main/nginx10.conf
-      wget -O /home/web/conf.d/default.conf https://raw.githubusercontent.com/kejilion/nginx/main/default10.conf
-      default_server_ssl
+				# 下载配置文件
+				wget -qO "$nginx_dir/nginx.conf" "https://raw.githubusercontent.com/honeok8s/conf/main/nginx/nginx-2C2G.conf"
+				wget -qO "$nginx_dir/conf.d/default.conf" "https://raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default2.conf"
+				wget -qO "$web_dir/docker-compose.yml" "https://raw.githubusercontent.com/honeok8s/conf/main/ldnmp/LDNMP-docker-compose.yml"
 
-      # 下载 docker-compose.yml 文件并进行替换
-      wget -O /home/web/docker-compose.yml https://raw.githubusercontent.com/kejilion/docker/main/LNMP-docker-compose-10.yml
+				default_server_ssl
 
-      dbrootpasswd=$(openssl rand -base64 16) && dbuse=$(openssl rand -hex 4) && dbusepasswd=$(openssl rand -base64 8)
+				# 随机生成数据库密码并替换
 
-      # 在 docker-compose.yml 文件中进行替换
-      sed -i "s#webroot#$dbrootpasswd#g" /home/web/docker-compose.yml
-      sed -i "s#kejilionYYDS#$dbusepasswd#g" /home/web/docker-compose.yml
-      sed -i "s#kejilion#$dbuse#g" /home/web/docker-compose.yml
+				DB_ROOT_PASSWD=$(openssl rand -base64 16)
+				DB_USER=$(openssl rand -hex 4)
+				DB_USER_PASSWD=$(openssl rand -base64 8)
 
-      install_ldnmp
+				sed -i "s#HONEOK_ROOTPASSWD#$DB_ROOT_PASSWD#g" "$web_dir/docker-compose.yml"
+				sed -i "s#HONEOK_USER#$DB_USER#g" "$web_dir/docker-compose.yml"
+				sed -i "s#HONEOK_PASSWD#$DB_USER_PASSWD#g" "$web_dir/docker-compose.yml"
 
-        ;;
-      2)
-      clear
-      # wordpress
-      webname="WordPress"
-      echo "安装$webname"
+				install_ldnmp
+				;;
+			2)
+				clear
+				webname="WordPress"
 
-      ldnmp_install_status
-      add_yuming
-      install_ssltls
-      certs_status
-      add_db
+				ldnmp_install_status
+				add_domain
+				ldnmp_ldnmp_install_ssltls
+				ldnmp_certs_status
+				ldnmp_add_db
 
-      wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/wordpress.com.conf
-      sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
+				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/wordpress.com.conf"
+				sed -i -e "s/yuming.com/$domain/g" -e "s/my_cache/fst_cache/g" "$nginx_dir/conf.d/$domain.conf"
 
-      cd /home/web/html
-      mkdir $yuming
-      cd $yuming
-      wget -O latest.zip https://cn.wordpress.org/latest-zh_CN.zip
-      unzip latest.zip
-      rm latest.zip
+				wordpress_dir="$nginx_dir/html/$domain"
+				[ ! -d $wordpress_dir ] && mkdir -p "$wordpress_dir"
+				cd "$wordpress_dir" || { _red "无法进入目录 $wordpress_dir"; return 1; }
+				wget -qO latest.zip "https://cn.wordpress.org/latest-zh_CN.zip" && unzip latest.zip && rm latest.zip
 
-      echo "define('FS_METHOD', 'direct'); define('WP_REDIS_HOST', 'redis'); define('WP_REDIS_PORT', '6379');" >> /home/web/html/$yuming/wordpress/wp-config-sample.php
+				# 配置WordPress
+				wp_config="$wordpress_dir/wordpress/wp-config-sample.php"
+				echo "define('FS_METHOD', 'direct');" >> "$wp_config"
+				echo "define('WP_REDIS_HOST', 'redis');" >> "$wp_config"
+				echo "define('WP_REDIS_PORT', '6379');" >> "$wp_config"
 
-      restart_ldnmp
+				ldnmp_restart
+				ldnmp_display_success
 
-      ldnmp_web_on
-      echo "数据库名: $dbname"
-      echo "用户名: $dbuse"
-      echo "密码: $dbusepasswd"
-      echo "数据库地址: mysql"
-      echo "表前缀: wp_"
-
-        ;;
+				echo "数据库名:$DB_NAME"
+				echo "用户名:$DB_USER"
+				echo "密码:$DB_USER_PASSWD"
+				echo "数据库地址:mysql"
+				echo "表前缀:wp_"
+				;;
 
       3)
       clear
@@ -606,10 +687,10 @@ linux_ldnmp() {
       webname="Discuz论坛"
       echo "安装$webname"
       ldnmp_install_status
-      add_yuming
-      install_ssltls
-      certs_status
-      add_db
+      add_domain
+      ldnmp_ldnmp_install_ssltls
+      ldnmp_certs_status
+      ldnmp_add_db
 
       wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/discuz.com.conf
 
@@ -622,7 +703,7 @@ linux_ldnmp() {
       unzip latest.zip
       rm latest.zip
 
-      restart_ldnmp
+      ldnmp_restart
 
 
       ldnmp_web_on
@@ -641,10 +722,10 @@ linux_ldnmp() {
       webname="可道云桌面"
       echo "安装$webname"
       ldnmp_install_status
-      add_yuming
-      install_ssltls
-      certs_status
-      add_db
+      add_domain
+      ldnmp_ldnmp_install_ssltls
+      ldnmp_certs_status
+      ldnmp_add_db
 
       wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/kdy.com.conf
       sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
@@ -656,7 +737,7 @@ linux_ldnmp() {
       unzip -o latest.zip
       rm latest.zip
       mv /home/web/html/$yuming/kodbox* /home/web/html/$yuming/kodbox
-      restart_ldnmp
+      ldnmp_restart
 
       ldnmp_web_on
       echo "数据库地址: mysql"
@@ -673,10 +754,10 @@ linux_ldnmp() {
       webname="苹果CMS"
       echo "安装$webname"
       ldnmp_install_status
-      add_yuming
-      install_ssltls
-      certs_status
-      add_db
+      add_domain
+      ldnmp_ldnmp_install_ssltls
+      ldnmp_certs_status
+      ldnmp_add_db
 
       wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/maccms.com.conf
 
@@ -692,7 +773,7 @@ linux_ldnmp() {
       cp /home/web/html/$yuming/template/DYXS2/asset/admin/dycms.html /home/web/html/$yuming/application/admin/view/system
       mv /home/web/html/$yuming/admin.php /home/web/html/$yuming/vip.php && wget -O /home/web/html/$yuming/application/extra/maccms.php https://raw.githubusercontent.com/kejilion/Website_source_code/main/maccms.php
 
-      restart_ldnmp
+      ldnmp_restart
 
 
       ldnmp_web_on
@@ -714,10 +795,10 @@ linux_ldnmp() {
       webname="独脚数卡"
       echo "安装$webname"
       ldnmp_install_status
-      add_yuming
-      install_ssltls
-      certs_status
-      add_db
+      add_domain
+      ldnmp_ldnmp_install_ssltls
+      ldnmp_certs_status
+      ldnmp_add_db
 
       wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/dujiaoka.com.conf
 
@@ -728,7 +809,7 @@ linux_ldnmp() {
       cd $yuming
       wget https://github.com/assimon/dujiaoka/releases/download/2.0.6/2.0.6-antibody.tar.gz && tar -zxvf 2.0.6-antibody.tar.gz && rm 2.0.6-antibody.tar.gz
 
-      restart_ldnmp
+      ldnmp_restart
 
 
       ldnmp_web_on
@@ -760,10 +841,10 @@ linux_ldnmp() {
       webname="flarum论坛"
       echo "安装$webname"
       ldnmp_install_status
-      add_yuming
-      install_ssltls
-      certs_status
-      add_db
+      add_domain
+      ldnmp_ldnmp_install_ssltls
+      ldnmp_certs_status
+      ldnmp_add_db
 
       wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/flarum.com.conf
       sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
@@ -781,7 +862,7 @@ linux_ldnmp() {
       docker exec php sh -c "cd /var/www/html/$yuming && composer require flarum-lang/chinese-simplified"
       docker exec php sh -c "cd /var/www/html/$yuming && composer require fof/polls"
 
-      restart_ldnmp
+      ldnmp_restart
 
 
       ldnmp_web_on
@@ -800,10 +881,10 @@ linux_ldnmp() {
       webname="typecho"
       echo "安装$webname"
       ldnmp_install_status
-      add_yuming
-      install_ssltls
-      certs_status
-      add_db
+      add_domain
+      ldnmp_ldnmp_install_ssltls
+      ldnmp_certs_status
+      ldnmp_add_db
 
       wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/typecho.com.conf
       sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
@@ -815,7 +896,7 @@ linux_ldnmp() {
       unzip latest.zip
       rm latest.zip
 
-      restart_ldnmp
+      ldnmp_restart
 
 
       clear
@@ -833,10 +914,10 @@ linux_ldnmp() {
       webname="PHP动态站点"
       echo "安装$webname"
       ldnmp_install_status
-      add_yuming
-      install_ssltls
-      certs_status
-      add_db
+      add_domain
+      ldnmp_ldnmp_install_ssltls
+      ldnmp_certs_status
+      ldnmp_add_db
 
       wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/index_php.conf
       sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
@@ -938,7 +1019,7 @@ linux_ldnmp() {
               ;;
       esac
 
-      restart_ldnmp
+      ldnmp_restart
 
       ldnmp_web_on
       prefix="web$(shuf -i 10-99 -n 1)_"
@@ -955,10 +1036,10 @@ linux_ldnmp() {
       21)
       echo "安装nginx环境"
       root_use
-      check_port
-      install_dependency
+      ldnmp_check_port
+      ldnmp_install_deps
       #install_docker
-      install_certbot
+      ldnmp_install_certbot
 
       cd /home && mkdir -p web/html web/mysql web/certs web/conf.d web/redis web/log/nginx && touch web/docker-compose.yml
 
@@ -982,11 +1063,11 @@ linux_ldnmp() {
       echo "安装$webname"
       nginx_install_status
       ip_address
-      add_yuming
+      add_domain
       read -p "请输入跳转域名: " reverseproxy
 
-      install_ssltls
-      certs_status
+      ldnmp_install_ssltls
+      ldnmp_certs_status
 
       wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/rewrite.conf
       sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
@@ -1005,12 +1086,12 @@ linux_ldnmp() {
       echo "安装$webname"
       nginx_install_status
       ip_address
-      add_yuming
+      add_domain
       read -p "请输入你的反代IP: " reverseproxy
       read -p "请输入你的反代端口: " port
 
-      install_ssltls
-      certs_status
+      ldnmp_install_ssltls
+      ldnmp_certs_status
 
       wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/reverse-proxy.conf
       sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
@@ -1029,12 +1110,12 @@ linux_ldnmp() {
       echo "安装$webname"
       nginx_install_status
       ip_address
-      add_yuming
+      add_domain
       echo -e "域名格式: ${yellow}http://www.google.com${white}"
       read -p "请输入你的反代域名: " fandai_yuming
 
-      install_ssltls
-      certs_status
+      ldnmp_install_ssltls
+      ldnmp_certs_status
 
       wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/reverse-proxy-domain.conf
       sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
@@ -1052,9 +1133,9 @@ linux_ldnmp() {
       webname="静态站点"
       echo "安装$webname"
       nginx_install_status
-      add_yuming
-      install_ssltls
-      certs_status
+      add_domain
+      ldnmp_install_ssltls
+      ldnmp_certs_status
 
       wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/html.conf
       sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
@@ -1100,9 +1181,9 @@ linux_ldnmp() {
       webname="Bitwarden"
       echo "安装$webname"
       nginx_install_status
-      add_yuming
-      install_ssltls
-      certs_status
+      add_domain
+      ldnmp_install_ssltls
+      ldnmp_certs_status
 
       docker run -d \
         --name bitwarden \
@@ -1122,9 +1203,9 @@ linux_ldnmp() {
       webname="halo"
       echo "安装$webname"
       nginx_install_status
-      add_yuming
-      install_ssltls
-      certs_status
+      add_domain
+      ldnmp_install_ssltls
+      ldnmp_certs_status
 
       docker run -d --name halo --restart always -p 8010:8090 -v /home/web/html/$yuming/.halo2:/root/.halo2 halohub/halo:2
       duankou=8010
@@ -1186,18 +1267,18 @@ linux_ldnmp() {
             1)
                 echo "申请域名证书"
                 read -p "请输入你的域名: " yuming
-                install_certbot
-                install_ssltls
-                certs_status
+                ldnmp_install_certbot
+                ldnmp_install_ssltls
+                ldnmp_certs_status
 
                 ;;
 
             2)
                 read -p "请输入旧域名: " oddyuming
                 read -p "请输入新域名: " yuming
-                install_certbot
-                install_ssltls
-                certs_status
+                ldnmp_install_certbot
+                ldnmp_install_ssltls
+                ldnmp_certs_status
                 mv /home/web/conf.d/$oddyuming.conf /home/web/conf.d/$yuming.conf
                 sed -i "s/$oddyuming/$yuming/g" /home/web/conf.d/$yuming.conf
                 mv /home/web/html/$oddyuming /home/web/html/$yuming
@@ -1355,10 +1436,10 @@ linux_ldnmp() {
       read -n 1 -s -r -p ""
       echo -e "${yellow}正在解压...${white}"
       cd /home/ && ls -t /home/*.tar.gz | head -1 | xargs -I {} tar -xzf {}
-      check_port
-      install_dependency
+      ldnmp_check_port
+      ldnmp_install_deps
       #install_docker
-      install_certbot
+      ldnmp_install_certbot
 
       install_ldnmp
 
@@ -1773,10 +1854,10 @@ linux_ldnmp() {
                     docker compose down
                     docker compose down --rmi all
 
-                    check_port
-                    install_dependency
+                    ldnmp_check_port
+                    ldnmp_install_deps
                     #install_docker
-                    install_certbot
+                    ldnmp_install_certbot
                     install_ldnmp
                     ;;
                   *)
