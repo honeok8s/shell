@@ -1,7 +1,7 @@
 #!/bin/bash
 
 log_dir="/data/docker_data/web/nginx/log"
-log_date=$(log_date +%Y-%m-%d)
+log_date=$(date +%Y-%m-%d)
 
 # 切割日志
 mv $log_dir/access.log $log_dir/access_$log_date.log
