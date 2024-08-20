@@ -3094,7 +3094,12 @@ restart_ldnmp() {
 	docker exec php chmod -R 777 /var/www/html
 	docker exec php74 chmod -R 777 /var/www/html
 
-	docker restart nginx >/dev/null 2>&1
+	if nginx_check; then
+		docker restart nginx >/dev/null 2>&1
+	else
+		_red "Nginx配置校验失败,请检查配置文件"
+		return 1
+	fi
 	docker restart php >/dev/null 2>&1
 	docker restart php74 >/dev/null 2>&1
 }
@@ -3608,7 +3613,12 @@ linux_ldnmp() {
 							fi
 							;;
 						3)
-							docker restart nginx
+							if nginx_check; then
+								docker restart nginx
+							else
+								_red "Nginx配置校验失败,请检查配置文件"
+								return 1
+							fi
 							docker exec php php -r 'opcache_reset();'
 							docker restart php
 							docker exec php74 php -r 'opcache_reset();'
