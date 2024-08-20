@@ -3998,15 +3998,22 @@ linux_ldnmp() {
 					case "$choice" in
 						[Yy])
 							if docker inspect "ldnmp" &>/dev/null; then
-								cd /data/docker_data/web/
-								docker compose down --rmi all --volumes
+								cd /data/docker_data/web/ || { _red "无法进入目录 /data/docker_data/web/"; return 1; }
+								if docker compose version >/dev/null 2>&1; then
+									docker compose down --rmi all --volumes
+								elif command -v docker-compose >/dev/null 2>&1; then
+									docker-compose down --rmi all --volumes
+								fi
 								rm -fr /data/docker_data/web/
+								_green "LDNMP环境已删除"
 							else
-								_red "未发现网站数据目录"
+								_red "未发现LDNMP环境"
 							fi
+							break
 							;;
 						[Nn])
-							echo ""
+							_yellow "操作已取消"
+							break
 							;;
 						*)
 							_red "无效选项,请重新输入"
