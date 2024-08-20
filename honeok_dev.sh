@@ -3016,7 +3016,7 @@ EOF
 #################### LDNMP建站START ####################
 ldnmp_install_status_1() {
 	if docker inspect "php" &>/dev/null; then
-		_yellow "LDNMP环境已安装,无法再次安装,可以使用37. 更新LDNMP环境"
+		_yellow "LDNMP环境已安装,无法再次安装,可以使用选项37进行更新LDNMP环境"
 		end_of
 		linux_ldnmp
 	else
@@ -3073,13 +3073,20 @@ add_domain() {
 
 add_database() {
 	DB_NAME=$(echo "$domain" | sed -e 's/[^A-Za-z0-9]/_/g')
-	DB_NAME="${DB_NAME}"
 
 	DBROOT_PASSWD=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
 	DB_USER=$(grep -oP 'MYSQL_USER:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
 	DB_USER_PASSWD=$(grep -oP 'MYSQL_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
 
-	docker exec mysql mysql -u root -p"$DBROOT_PASSWD" -e "CREATE DATABASE $DB_NAME; GRANT ALL PRIVILEGES ON $DB_NAME.* TO \"$DB_USER\"@\"%\";"
+	if [[ -z "$DBROOT_PASSWD" || -z "$DB_USER" || -z "$DB_USER_PASSWD" ]]; then
+		_red "无法获取MySQL凭据"
+		return 1
+	fi
+
+	docker exec mysql mysql -u root -p"$DBROOT_PASSWD" -e "CREATE DATABASE IF NOT EXISTS $DB_NAME; GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'%';" || {
+		_red "创建数据库或授予权限失败"
+		return 1
+	}
 }
 
 restart_ldnmp() {
