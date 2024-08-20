@@ -5218,7 +5218,7 @@ linux_system_tools(){
 				echo "查询更多版本: https://www.python.org/downloads/"
 				echo "------------------------"
 
-				echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+				echo -n -e "${yellow}请输入选项并按回车键确认(0退出):${white}"
 				read -r py_new_v
 
 				if [[ "$py_new_v" == "0" ]]; then
@@ -5228,9 +5228,9 @@ linux_system_tools(){
 
 				if ! grep -q 'export PYENV_ROOT="\$HOME/.pyenv"' ~/.bashrc; then
 					if command -v yum &>/dev/null; then
-						install git -y
+						install git
 						yum groupinstall "Development Tools" -y
-						install openssl-devel bzip2-devel libffi-devel ncurses-devel zlib-devel readline-devel sqlite-devel xz-devel findutils -y
+						install openssl-devel bzip2-devel libffi-devel ncurses-devel zlib-devel readline-devel sqlite-devel xz-devel findutils
 
 						curl -O https://www.openssl.org/source/openssl-1.1.1u.tar.gz
 						tar -xzf openssl-1.1.1u.tar.gz
