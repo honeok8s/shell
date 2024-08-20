@@ -3686,7 +3686,7 @@ linux_ldnmp() {
 				echo "表前缀:wp_"
 				;;
 			21)
-				echo ""
+				install_nginx
 				;;
 			31)
 				need_root
@@ -4063,11 +4063,7 @@ linux_ldnmp() {
 					esac
 				else
 					clear
-					install_docker
-
-					remove_nginx
 					install_nginx
-
 					fail2ban_install_sshd
 
 					cd /data/docker_data/fail2ban/config/fail2ban/filter.d
