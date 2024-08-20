@@ -224,7 +224,7 @@ install() {
 				return 1
 			fi
 		else
-			_green "$package已经安装"
+			_green "$package已安装"
 		fi
 	done
 
@@ -787,7 +787,7 @@ install_docker() {
 	if ! command -v docker >/dev/null 2>&1; then
 		install_add_docker
 	else
-		_green "Docker环境已经安装"
+		_green "Docker已安装"
 	fi
 }
 
