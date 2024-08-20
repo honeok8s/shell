@@ -3563,16 +3563,16 @@ linux_ldnmp() {
 
 					case $choice in
 						1)
-							echo -n "请输入你的域名: " domain
+							echo -n "请输入你的域名:"
 							read -r domain
 							install_certbot
 							install_ssltls
 							certs_status
 							;;
 						2)
-							echo -n "请输入旧域名: " old_domain
+							echo -n "请输入旧域名:"
 							read -r old_domain
-							echo -n "请输入新域名: " new_domain
+							echo -n "请输入新域名:"
 							read -r new_domain
 							install_certbot
 							install_ssltls
@@ -3607,14 +3607,14 @@ linux_ldnmp() {
 							docker restart nginx >/dev/null 2>&1
 							;;
 						6)
-							echo -n "编辑站点配置,请输入你要编辑的域名: " edit_domain
+							echo -n "编辑站点配置,请输入你要编辑的域名:"
 							read -r edit_domain
 							vim /data/docker_data/web/nginx/conf.d/$edit_domain.conf
 
 							docker restart nginx >/dev/null 2>&1
 							;;
 						7)
-							echo -n "删除站点数据目录,请输入你的域名: " del_domain
+							echo -n "删除站点数据目录,请输入你的域名:"
 							read -r del_domain
 							rm -r /data/docker_data/web/nginx/html/$del_domain
 							rm /data/docker_data/web/nginx/conf.d/$del_domain.conf
@@ -3624,7 +3624,7 @@ linux_ldnmp() {
 							docker restart nginx >/dev/null 2>&1
 							;;
 						8)
-							echo -n "删除站点数据库,请输入数据库名: " del_database
+							echo -n "删除站点数据库,请输入数据库名:"
 							read -r del_database
 							DBROOT_PASSWD=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
 							docker exec mysql mysql -u root -p"$DBROOT_PASSWD" -e "DROP DATABASE $del_database;" >/dev/null 2>&1
