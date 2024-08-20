@@ -3255,6 +3255,37 @@ ldnmp_version() {
 	echo ""
 }
 
+# Nginx日志轮转
+nginx_logrotate(){
+	web_dir="/data/docker_data/web"
+	nginx_dir="$web_dir/nginx"
+
+	# 定义日志截断文件脚本路径
+	logrotate_script="$nginx_dir/logrotate.sh"
+
+	if [[ ! -d $nginx_dir ]]; then
+		_red "Nginx目录不存在"
+		return 1
+	else
+		wget -qO "$logrotate_script" "https://raw.githubusercontent.com/honeok8s/shell/main/nginx/LDNMP_ngx_logrotate.sh"
+		chmod a+x "$logrotate_script"
+		if [[ $? -ne 0 ]]; then
+			_red "脚本下载失败,请检查网络连接或脚本URL"
+			return 1
+		fi
+	fi
+
+	# 检查crontab中是否存在相关任务
+	crontab_entry="0 0 * * 0 $logrotate_script >/dev/null 2>&1"
+	if ! crontab -l | grep -q "$logrotate_script"; then
+		# 添加crontab任务
+		(crontab -l; echo "$crontab_entry") | crontab -
+		_green "Nginx日志轮转任务已安装"
+	else
+		_yellow "Nginx日志轮转任务已存在"
+	fi
+}
+
 install_ldnmp() {
 	check_swap
 	cd /data/docker_data/web
@@ -3505,6 +3536,7 @@ linux_ldnmp() {
 				sed -i "s#HONEOK_PASSWD#$DB_USER_PASSWD#g" /data/docker_data/web/docker-compose.yml
 
 				install_ldnmp
+				nginx_logrotate
 				;;
 			2)
 				clear
