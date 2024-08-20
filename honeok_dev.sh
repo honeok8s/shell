@@ -3463,22 +3463,26 @@ linux_ldnmp() {
 				install_certbot
 
 				# 创建必要的目录和文件
-				[ ! -d /data/docker_data/web ] && mkdir -p /data/docker_data/web
-				cd /data/docker_data/web || { _red "无法进入目录/data/docker_data/web"; return 1; }
-				mkdir -p nginx redis mysql
-				mkdir -p nginx/certs nginx/conf.d
+				web_dir="/data/docker_data/web"
+				nginx_dir="$web_dir/nginx"
 
-				wget -qO ./nginx/nginx.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/nginx-2C2G.conf
-				wget -qO ./nginx/conf.d/default.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default2.conf
+				[ -d "$web_dir" ] && rm -fr "$web_dir"
+				mkdir -p "$nginx_dir/certs" "$nginx_dir/conf.d" "$web_dir/redis" "$web_dir/mysql"
+
+				cd "$web_dir" || { _red "无法进入目录 $web_dir"; return 1; }
+
+				# 下载配置文件
+				wget -qO "$nginx_dir/nginx.conf" "https://raw.githubusercontent.com/honeok8s/conf/main/nginx/nginx-2C2G.conf"
+				wget -qO "$nginx_dir/conf.d/default.conf" "https://raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default2.conf"
+
 				default_server_ssl
 
-				wget -qO /data/docker_data/web/docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/ldnmp/LDNMP-docker-compose.yml
+				wget -qO "$web_dir/docker-compose.yml" "https://raw.githubusercontent.com/honeok8s/conf/main/ldnmp/LDNMP-docker-compose.yml"
 
 				DBROOT_PASSWD=$(openssl rand -base64 16)
 				DB_USER=$(openssl rand -hex 4)
 				DB_USER_PASSWD=$(openssl rand -base64 8)
 
-				# 在docker-compose.yml文件中进行替换
 				sed -i "s#HONEOK_ROOTPASSWD#$DBROOT_PASSWD#g" /data/docker_data/web/docker-compose.yml
 				sed -i "s#HONEOK_USER#$DB_USER#g" /data/docker_data/web/docker-compose.yml
 				sed -i "s#HONEOK_PASSWD#$DB_USER_PASSWD#g" /data/docker_data/web/docker-compose.yml
@@ -3489,26 +3493,31 @@ linux_ldnmp() {
 				clear
 				WEB_NAME="WordPress"
 
+				# 检查LDNMP安装状态并添加域名,安装SSL/TLS,添加数据库
 				ldnmp_install_status
 				add_domain
 				install_ssltls
 				certs_status
 				add_database
 
-				wget -qO /data/docker_data/web/nginx/conf.d/$domain.conf https://raw.githubusercontent.com/kejilion/nginx/main/wordpress.com.conf
-				sed -i "s/yuming.com/$domain/g" /data/docker_data/web/nginx/conf.d/$domain.conf
-				sed -i "s/my_cache/fst_cache/g" /data/docker_data/web/nginx/conf.d/$domain.conf
+				nginx_conf="/data/docker_data/web/nginx/conf.d/$domain.conf"
+				wget -qO "$nginx_conf" "https://raw.githubusercontent.com/kejilion/nginx/main/wordpress.com.conf"
+				sed -i -e "s/yuming.com/$domain/g" -e "s/my_cache/fst_cache/g" "$nginx_conf"
 
-				cd /data/docker_data/web/nginx/html
-				mkdir $domain
-				cd $domain
-				wget -qO latest.zip https://cn.wordpress.org/latest-zh_CN.zip && unzip latest.zip && rm latest.zip
+				wordpress_dir="/data/docker_data/web/nginx/html/$domain"
+				mkdir -p "$wordpress_dir"
+				cd "$wordpress_dir" || { _red "无法进入目录 $wordpress_dir"; return 1; }
+				wget -qO latest.zip "https://cn.wordpress.org/latest-zh_CN.zip" && unzip latest.zip && rm latest.zip
 
-				echo "define('FS_METHOD', 'direct'); define('WP_REDIS_HOST', 'redis'); define('WP_REDIS_PORT', '6379');" >> /data/docker_data/web/nginx/html/$domain/wordpress/wp-config-sample.php
+				# 配置WordPress
+				wp_config="$wordpress_dir/wordpress/wp-config-sample.php"
+				echo "define('FS_METHOD', 'direct');" >> "$wp_config"
+				echo "define('WP_REDIS_HOST', 'redis');" >> "$wp_config"
+				echo "define('WP_REDIS_PORT', '6379');" >> "$wp_config"
 
 				restart_ldnmp
-
 				ldnmp_web_on
+
 				echo "数据库名:$DB_NAME"
 				echo "用户名:$DB_USER"
 				echo "密码:$DB_USER_PASSWD"
