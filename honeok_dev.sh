@@ -3558,7 +3558,6 @@ linux_ldnmp() {
 							printf "%-30s%s\n" "$domain" "$formatted_date"
 						fi
 					done
-
 					echo "------------------------"
 					echo ""
 					echo "数据库信息"
