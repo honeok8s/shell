@@ -3435,8 +3435,8 @@ fail2ban_sshd() {
 
 fail2ban_install_sshd() {
 	[ ! -d /data/docker_data/fail2ban ] && mkdir -p /data/docker_data/fail2ban
-	wget -qO /data/docker_data/fail2ban/docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/fail2ban-docker-compose.yml
 	cd /data/docker_data/fail2ban
+	wget -qO /data/docker_data/fail2ban/docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/fail2ban-docker-compose.yml
 
 	if docker compose version >/dev/null 2>&1; then
 		docker compose up -d
