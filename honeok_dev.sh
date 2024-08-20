@@ -3551,11 +3551,13 @@ linux_ldnmp() {
 					echo "站点信息                      证书到期时间"
 					echo "------------------------"
 					for cert_file in /data/docker_data/web/nginx/certs/*_cert.pem; do
-						domain=$(basename "$cert_file" | sed 's/_cert.pem//')
-						if [ -n "$domain" ]; then
-							expire_date=$(openssl x509 -noout -enddate -in "$cert_file" | awk -F'=' '{print $2}')
-							formatted_date=$(date -d "$expire_date" '+%Y-%m-%d')
-							printf "%-30s%s\n" "$domain" "$formatted_date"
+						if [ -f "$cert_file" ]; then
+							domain=$(basename "$cert_file" | sed 's/_cert.pem//')
+							if [ -n "$domain" ]; then
+								expire_date=$(openssl x509 -noout -enddate -in "$cert_file" | awk -F'=' '{print $2}')
+								formatted_date=$(date -d "$expire_date" '+%Y-%m-%d')
+								printf "%-30s%s\n" "$domain" "$formatted_date"
+							fi
 						fi
 					done
 					echo "------------------------"
