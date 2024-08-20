@@ -3191,6 +3191,11 @@ certs_status() {
 	fi
 }
 
+nginx_check() {
+	docker exec -it nginx nginx -t > /dev/null 2>&1
+	return $?
+}
+
 iptables_open(){
 	iptables -P INPUT ACCEPT
 	iptables -P FORWARD ACCEPT
@@ -3493,7 +3498,6 @@ linux_ldnmp() {
 				clear
 				WEB_NAME="WordPress"
 
-				# 检查LDNMP安装状态并添加域名,安装SSL/TLS,添加数据库
 				ldnmp_install_status
 				add_domain
 				install_ssltls
@@ -3558,7 +3562,7 @@ linux_ldnmp() {
 					echo ""
 					echo "操作"
 					echo "------------------------"
-					echo "1. 申请/更新域名证书"
+					echo "1. 申请/更新域名证书               2. 修改域名"
 					echo "3. 清理站点缓存                    4. 查看站点分析报告"
 					echo "5. 编辑全局配置                    6. 编辑站点配置"
 					echo "------------------------"
@@ -3589,7 +3593,12 @@ linux_ldnmp() {
 
 							rm -f "/data/docker_data/web/nginx/certs/${old_domain}_key.pem" "/data/docker_data/web/nginx/certs/${old_domain}_cert.pem"
 
-							docker restart nginx >/dev/null 2>&1
+							if nginx_check; then
+								docker restart nginx >/dev/null 2>&1
+							else
+								_red "Nginx配置校验失败,请检查配置文件"
+								return 1
+							fi
 							;;
 						3)
 							docker restart nginx
@@ -3608,19 +3617,36 @@ linux_ldnmp() {
 							;;
 						5)
 							vim /data/docker_data/web/nginx/nginx.conf
-							docker restart nginx >/dev/null 2>&1
+
+							if nginx_check; then
+								docker restart nginx >/dev/null 2>&1
+							else
+								_red "Nginx配置校验失败,请检查配置文件"
+								return 1
+							fi
 							;;
 						6)
 							read -r -p "编辑站点配置,请输入你要编辑的域名:" edit_domain
 							vim "/data/docker_data/web/nginx/conf.d/$edit_domain.conf"
-							docker restart nginx >/dev/null 2>&1
+
+							if nginx_check; then
+								docker restart nginx >/dev/null 2>&1
+							else
+								_red "Nginx配置校验失败,请检查配置文件"
+								return 1
+							fi
 							;;
 						7)
 							read -r -p "删除站点数据目录,请输入你的域名:" del_domain
 							rm -fr "/data/docker_data/web/nginx/html/$del_domain"
 							rm -f "/data/docker_data/web/nginx/conf.d/$del_domain.conf" "/data/docker_data/web/nginx/certs/${del_domain}_key.pem" "/data/docker_data/web/nginx/certs/${del_domain}_cert.pem"
 
-							docker restart nginx >/dev/null 2>&1
+							if nginx_check; then
+								docker restart nginx >/dev/null 2>&1
+							else
+								_red "Nginx配置校验失败,请检查配置文件"
+								return 1
+							fi
 							;;
 						8)
 							read -r -p "删除站点数据库,请输入数据库名:" del_database
