@@ -3288,7 +3288,7 @@ nginx_logrotate(){
 
 install_ldnmp() {
 	check_swap
-	cd /data/docker_data/web
+	[ -d /data/docker_data/web ] && cd /data/docker_data/web || { _red "无法进入目录 /data/docker_data/web"; return 1; }
 
 	if docker compose version >/dev/null 2>&1; then
 		docker compose up -d
