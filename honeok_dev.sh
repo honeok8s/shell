@@ -3236,20 +3236,20 @@ ldnmp_version() {
 	# 获取nginx版本
 	nginx_version=$(docker exec nginx nginx -v 2>&1)
 	nginx_version=$(echo "$nginx_version" | grep -oP "nginx/\K[0-9]+\.[0-9]+\.[0-9]+")
-	echo -n -e "nginx: ${yellow}v$nginx_version${white}"
+	echo -n -e "Nginx: ${yellow}v$nginx_version${white}"
 
 	# 获取mysql版本
 	DBROOT_PASSWD=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
 	mysql_version=$(docker exec mysql mysql -u root -p"$DBROOT_PASSWD" -e "SELECT VERSION();" 2>/dev/null | tail -n 1)
-	echo -n -e "          mysql: ${yellow}v$mysql_version${white}"
+	echo -n -e "     MySQL: ${yellow}v$mysql_version${white}"
 
 	# 获取php版本
 	php_version=$(docker exec php php -v 2>/dev/null | grep -oP "PHP \K[0-9]+\.[0-9]+\.[0-9]+")
-	echo -n -e "          php: ${yellow}v$php_version${white}"
+	echo -n -e "     PHP: ${yellow}v$php_version${white}"
 
 	# 获取redis版本
 	redis_version=$(docker exec redis redis-server -v 2>&1 | grep -oP "v=+\K[0-9]+\.[0-9]+")
-	echo -e "          redis: ${yellow}v$redis_version${white}"
+	echo -e "     Redis: ${yellow}v$redis_version${white}"
 
 	echo "------------------------"
 	echo ""
