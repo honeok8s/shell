@@ -3538,7 +3538,7 @@ fail2ban_status() {
 			return 0
 		else
 			# 容器未运行,等待一段时间后重试
-			_yellow "fail2ban容器未运行,正在重试($((count+1))/$retries)"
+			_yellow "Fail2ban容器未运行,正在重试($((count+1))/$retries)"
 			sleep 5
 			count=$((count + 1))
 		fi
