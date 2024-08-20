@@ -4032,12 +4032,24 @@ restart_ssh() {
 add_sshpasswd() {
 	_yellow "设置你的root密码"
 	passwd
-	sed -i 's/^\s*#\?\s*PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config;
-	sed -i 's/^\s*#\?\s*PasswordAuthentication.*/PasswordAuthentication yes/g' /etc/ssh/sshd_config;
+
+	# 处理SSH配置文件以允许root登录和密码认证
+	# 取消注释并启用PermitRootLogin
+	if ! grep -qE '^\s*PermitRootLogin\s+yes' /etc/ssh/sshd_config; then
+		sed -i 's/^\s*#\s*PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+	fi
+
+	# 取消注释并启用PasswordAuthentication
+	if ! grep -qE '^\s*PasswordAuthentication\s+yes' /etc/ssh/sshd_config; then
+		sed -i 's/^\s*#\s*PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+	fi
+
+	# 清理不再使用的SSH配置文件目录
 	rm -fr /etc/ssh/sshd_config.d/* /etc/ssh/ssh_config.d/*
+
 	restart_ssh
 
-	_green "ROOT登录设置完毕"
+	_green "root登录设置完毕"
 }
 
 # 备份DNS配置文件
@@ -4742,6 +4754,38 @@ install_crontab() {
 	_yellow "Crontab已安装且Cron服务正在运行"
 }
 
+new_ssh_port() {
+	# 备份SSH配置文件,如果备份文件不存在,只取原始配置文件
+	backup_file="/etc/ssh/sshd_config.bak"
+	if [[ ! -f $backup_file ]]; then
+		cp /etc/ssh/sshd_config $backup_file
+	fi
+
+	# 检查是否有未被注释的Port行
+	existing_port=$(grep -E '^[^#]*Port [0-9]+' /etc/ssh/sshd_config | awk '{print $2}')
+
+	if [[ -z $existing_port ]]; then
+		# 如果没有启用的Port行,则取消注释并设置新端口
+		sed -i 's/^\s*#\s*Port/Port/' /etc/ssh/sshd_config
+		sed -i "s/^\s*Port [0-9]\+/Port $new_port/" /etc/ssh/sshd_config
+	else
+		# 如果已经有启用的Port行,则只更新端口号
+		sed -i "s/^\s*Port [0-9]\+/Port $new_port/" /etc/ssh/sshd_config
+	fi
+
+	# 清理不再使用的配置文件
+	rm -fr /etc/ssh/sshd_config.d/* /etc/ssh/ssh_config.d/*
+
+	# 重启SSH服务
+	restart_ssh
+
+	iptables_open
+	remove iptables-persistent ufw firewalld iptables-services > /dev/null 2>&1
+
+	_green "SSH端口已修改为:$new_port"
+	sleep 1
+}
+
 cron_manager(){
 	local choice newquest dingshi day weekday hour minute kquest
 
@@ -5121,7 +5165,9 @@ linux_system_tools(){
 		clear
 		echo "▶ 系统工具"
 		echo "------------------------"
-		echo "3. root密码登录模式"
+		echo "2. 修改登录密码"
+		echo "3. root密码登录模式                    4. 安装Python指定版本"
+		echo "6. 修改SSH连接端口"
 		echo "7. 优化DNS地址                         8. 一键重装系统"
 		echo "------------------------"
 		echo "12. 修改虚拟内存大小"
@@ -5143,9 +5189,123 @@ linux_system_tools(){
 		read -r choice
 
 		case $choice in
+			2)
+				yellow "设置你的登录密码"
+				passwd
+				;;
 			3)
 				need_root
 				add_sshpasswd
+				;;
+			4)
+				need_root
+				echo "python版本管理"
+				echo "------------------------"
+				echo "该功能可无缝安装python官方支持的任何版本!"
+				VERSION=$(python3 -V 2>&1 | awk '{print $2}')
+				echo -e "当前python版本号:${yellow}$VERSION${white}"
+				echo "------------------------"
+				echo "推荐版本: 3.12   3.11   3.10   3.9   3.8   2.7"
+				echo "查询更多版本: https://www.python.org/downloads/"
+				echo "------------------------"
+
+				echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+				read -r py_new_v
+
+				if [[ "$py_new_v" == "0" ]]; then
+					end_of
+					linux_system_tools
+				fi
+
+				if ! grep -q 'export PYENV_ROOT="\$HOME/.pyenv"' ~/.bashrc; then
+					if command -v yum &>/dev/null; then
+						install git -y
+						yum groupinstall "Development Tools" -y
+						install openssl-devel bzip2-devel libffi-devel ncurses-devel zlib-devel readline-devel sqlite-devel xz-devel findutils -y
+
+						curl -O https://www.openssl.org/source/openssl-1.1.1u.tar.gz
+						tar -xzf openssl-1.1.1u.tar.gz
+						cd openssl-1.1.1u
+						./config --prefix=/usr/local/openssl --openssldir=/usr/local/openssl shared zlib
+						make
+						make install
+						echo "/usr/local/openssl/lib" > /etc/ld.so.conf.d/openssl-1.1.1u.conf
+						ldconfig -v
+						cd ..
+
+						export LDFLAGS="-L/usr/local/openssl/lib"
+						export CPPFLAGS="-I/usr/local/openssl/include"
+						export PKG_CONFIG_PATH="/usr/local/openssl/lib/pkgconfig"
+					elif command -v apt &>/dev/null; then
+						install git
+						install build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev liblzma-dev libgdbm-dev libnss3-dev libedit-dev
+					elif command -v apk &>/dev/null; then
+						install git
+						apk add --no-cache bash gcc musl-dev libffi-dev openssl-dev bzip2-dev zlib-dev readline-dev sqlite-dev libc6-compat linux-headers make xz-dev build-base ncurses-dev
+					else
+						_red "未知的包管理器!"
+						return 1
+					fi
+
+				curl https://pyenv.run | bash
+				cat << EOF >> ~/.bashrc
+
+export PYENV_ROOT="\$HOME/.pyenv"
+if [[ -d "\$PYENV_ROOT/bin" ]]; then
+  export PATH="\$PYENV_ROOT/bin:\$PATH"
+fi
+eval "\$(pyenv init --path)"
+eval "\$(pyenv init -)"
+eval "\$(pyenv virtualenv-init -)"
+
+EOF
+				fi
+
+				sleep 1
+				source ~/.bashrc
+				sleep 1
+				pyenv install $py_new_v
+				pyenv global $py_new_v
+
+				rm -rf /tmp/python-build.*
+				rm -fr $(pyenv root)/cache/*
+
+				VERSION=$(python -V 2>&1 | awk '{print $2}')
+				echo -e "当前python版本号: ${yellow}$VERSION${white}"
+				;;
+			6)
+				need_root
+
+				while true; do
+					clear
+					# 读取当前的SSH端口号
+					current_port=$(grep -E '^[^#]*Port [0-9]+' /etc/ssh/sshd_config | awk '{print $2}')
+
+					# 打印当前的SSH端口号
+					echo -e "当前的SSH端口号是:${yellow}$current_port${white}"
+
+					echo "------------------------"
+					echo "端口号范围30000到65535之间的数字(按0退出)"
+
+					# 提示用户输入新的SSH端口号
+					echo -n "请输入新的SSH端口号:"
+					read -r new_port
+
+					# 判断端口号是否在有效范围内
+					if [[ $new_port =~ ^[0-9]+$ ]]; then  # 检查输入是否为数字
+						if [[ $new_port -ge 30000 && $new_port -le 65535 ]]; then
+							new_ssh_port
+						elif [[ $new_port -eq 0 ]]; then
+							break
+						else
+							_red "端口号无效,请输入30000到65535之间的数字"
+							end_of
+						fi
+					else
+						_red "输入无效,请输入数字"
+						end_of
+					fi
+				done
 				;;
 			7)
 				need_root
