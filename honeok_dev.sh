@@ -3451,6 +3451,9 @@ fail2ban_install_sshd() {
 		curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-sshd-ddos.conf
 		cd /data/docker_data/fail2ban/config/fail2ban/jail.d/
 		curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-ssh.conf
+	elif command -v dnf &>/dev/null; then
+		cd /data/docker_data/fail2ban/config/fail2ban/jail.d/
+		curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/centos-ssh.conf
 	else
 		install rsyslog
 		systemctl start rsyslog
