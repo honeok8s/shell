@@ -595,12 +595,7 @@ ldnmp_install_ssltls() {
 	cp /etc/letsencrypt/live/$domain/fullchain.pem /data/docker_data/web/nginx/certs/${domain}_cert.pem > /dev/null 2>&1
 	cp /etc/letsencrypt/live/$domain/privkey.pem /data/docker_data/web/nginx/certs/${domain}_key.pem > /dev/null 2>&1
 
-	if nginx_check; then
-		docker start nginx > /dev/null 2>&1
-	else
-		_red "Nginx配置校验失败,请检查配置文件"
-		return 1
-	fi
+	docker start nginx > /dev/null 2>&1
 }
 
 ldnmp_certs_status() {
@@ -841,9 +836,9 @@ linux_ldnmp() {
 				cms_dir="$nginx_dir/html/$domain"
 				[ ! -d $cms_dir ] && mkdir -p "$cms_dir"
 				cd "$cms_dir" || { _red "无法进入目录$cms_dir"; return 1; }
-				wget -q https://github.com/magicblack/maccms_down/raw/master/maccms10.zip && unzip maccms10.zip && mv maccms10-*/* . && rm -r maccms10-* && rm maccms10.zip
+				wget -q https://github.com/magicblack/maccms_down/raw/master/maccms10.zip && unzip maccms10.zip && rm maccms10.zip
 				cd "$cms_dir/template/" || { _red "无法进入目录$cms_dir/template/"; return 1; }
-				wget -q https://github.com/kejilion/Website_source_code/raw/main/DYXS2.zip && rm "$cms_dir/template/DYXS2.zip"
+				wget -q https://github.com/kejilion/Website_source_code/raw/main/DYXS2.zip && unzip DYXS2.zip && rm "$cms_dir/template/DYXS2.zip"
 				cp "$cms_dir/template/DYXS2/asset/admin/Dyxs2.php" "$cms_dir/application/admin/controller"
 				cp "$cms_dir/template/DYXS2/asset/admin/dycms.html" "$cms_dir/application/admin/view/system"
 				mv "$cms_dir/admin.php" "$cms_dir/vip.php"
