@@ -812,7 +812,7 @@ linux_ldnmp() {
 				[ ! -d $kdy_dir ] && mkdir -p "$kdy_dir"
 				cd "$kdy_dir" || { _red "无法进入目录$kdy_dir"; return 1; }
 				wget -qO latest.zip https://github.com/kalcaddle/kodbox/archive/refs/tags/1.50.02.zip && unzip latest.zip && rm latest.zip
-				mv "$kdy_dir/kodbox*" "$kdy_dir/kodbox"
+				mv "$kdy_dir/kodbox-*" "$kdy_dir/kodbox"
 
 				ldnmp_restart
 				ldnmp_display_success
