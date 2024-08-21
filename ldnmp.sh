@@ -1401,10 +1401,17 @@ linux_ldnmp() {
 							cert_dir="/etc/letsencrypt/live"
 							echo -n "删除站点数据目录,请输入你的域名:"
 							read -r del_domain
+
+							# 删除站点数据目录和相关文件
 							rm -fr "$nginx_dir/html/$del_domain"
 							rm -f "$nginx_dir/conf.d/$del_domain.conf" "$nginx_dir/certs/${del_domain}_key.pem" "$nginx_dir/certs/${del_domain}_cert.pem"
-							[ -d $cert_dir == "$del_domain" ] && cd $cert_dir; rm -fr $del_domain
 
+							# 检查并删除证书目录
+							if [ -d "$cert_dir/$del_domain" ]; then
+								rm -fr "$cert_dir/$del_domain"
+							fi
+
+							# 检查Nginx配置并重启Nginx
 							if nginx_check; then
 								docker restart nginx >/dev/null 2>&1
 							else
