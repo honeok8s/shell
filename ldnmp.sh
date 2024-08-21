@@ -461,15 +461,19 @@ add_domain() {
 	ip_address
 
 	echo -e "先将域名解析到本机IP: ${yellow}$ipv4_address  $ipv6_address${white}"
-	echo -n "请输入你解析的域名:"
+	echo -n "请输入你解析的域名(输入0取消操作):"
 	read -r domain
+
+	if [[ "$domain" == "0" ]]; then
+		linux_ldnmp
+	fi
 
 	# 域名格式校验
 	domain_regex="^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$"
 	if [[ $domain =~ $domain_regex ]]; then
 		# 检查域名是否已存在
 		if [ -e $nginx_dir/conf.d/$domain.conf ]; then
-			_red "当前域名${domain}已被使用,请前往31站点管理-删除站点后再部署${webname}"
+			_red "当前域名${domain}已被使用,请前往31站点管理,删除站点后再部署${webname}"
 			end_of
 			linux_ldnmp
 		else
@@ -485,6 +489,18 @@ add_domain() {
 ip_address() {
 ipv4_address=$(curl -s ipv4.ip.sb)
 ipv6_address=$(curl -s --max-time 1 ipv6.ip.sb)
+}
+
+iptables_open(){
+	iptables -P INPUT ACCEPT
+	iptables -P FORWARD ACCEPT
+	iptables -P OUTPUT ACCEPT
+	iptables -F
+
+	ip6tables -P INPUT ACCEPT
+	ip6tables -P FORWARD ACCEPT
+	ip6tables -P OUTPUT ACCEPT
+	ip6tables -F
 }
 
 ldnmp_ldnmp_install_ssltls() {
