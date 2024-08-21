@@ -298,8 +298,13 @@ ldnmp_install_certbot() {
 
 ldnmp_uninstall_certbot() {
 	local cron_job existing_cron
-	cron_job="0 0 * * * /data/script/auto_cert_renewal.sh >/dev/null 2>&1"
 
+	# 检查并卸载certbot
+	if command -v certbot &> /dev/null; then
+		remove certbot || { _red "卸载certbot失败"; return 1; }
+	fi
+
+	cron_job="0 0 * * * /data/script/auto_cert_renewal.sh >/dev/null 2>&1"
 	# 检查并删除定时任务
 	existing_cron=$(crontab -l 2>/dev/null | grep -F "$cron_job")
 	if [ -n "$existing_cron" ]; then
@@ -1393,10 +1398,12 @@ linux_ldnmp() {
 							fi
 							;;
 						7)
+							cert_dir="/etc/letsencrypt/live"
 							echo -n "删除站点数据目录,请输入你的域名:"
 							read -r del_domain
 							rm -fr "$nginx_dir/html/$del_domain"
 							rm -f "$nginx_dir/conf.d/$del_domain.conf" "$nginx_dir/certs/${del_domain}_key.pem" "$nginx_dir/certs/${del_domain}_cert.pem"
+							[ -d $cert_dir == "$del_domain" ] && cd $cert_dir; rm -fr $del_domain
 
 							if nginx_check; then
 								docker restart nginx >/dev/null 2>&1
