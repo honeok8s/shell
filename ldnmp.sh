@@ -862,7 +862,7 @@ linux_ldnmp() {
 				;;
 			6)
 				clear
-				webname="独脚数卡"
+				webname="独角数卡"
 
 				ldnmp_install_status
 				add_domain
