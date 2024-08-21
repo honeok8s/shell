@@ -2000,15 +2000,14 @@ linux_ldnmp() {
 						;;
 				esac
 				;;
-    0)
-        kejilion
-      ;;
-
-    *)
-        echo "无效的输入!"
-    esac
-	end_of
-
+			0)
+				honeok
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+		end_of
 	done
 }
 linux_ldnmp
