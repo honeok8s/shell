@@ -331,6 +331,11 @@ ldnmp_install_certbot() {
 ldnmp_uninstall_certbot() {
 	local cron_job existing_cron
 
+	# 检查并卸载certbot
+	if command -v certbot &> /dev/null; then
+		remove certbot || { _red "卸载certbot失败"; return 1; }
+	fi
+
 	cron_job="0 0 * * * /data/script/auto_cert_renewal.sh >/dev/null 2>&1"
 	# 检查并删除定时任务
 	existing_cron=$(crontab -l 2>/dev/null | grep -F "$cron_job")
