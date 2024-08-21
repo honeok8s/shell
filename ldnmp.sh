@@ -435,23 +435,39 @@ install_ldnmp() {
 }
 
 ldnmp_version() {
-	# 获取nginx版本
-	nginx_version=$(docker exec nginx nginx -v 2>&1)
-	nginx_version=$(echo "$nginx_version" | grep -oP "nginx/\K[0-9]+\.[0-9]+\.[0-9]+")
-	echo -n -e "Nginx: ${yellow}v$nginx_version${white}"
+	# 获取Nginx版本
+	if docker ps --format '{{.Names}}' | grep -q '^nginx$'; then
+		nginx_version=$(docker exec nginx nginx -v 2>&1)
+		nginx_version=$(echo "$nginx_version" | grep -oP "nginx/\K[0-9]+\.[0-9]+\.[0-9]+")
+		echo -n -e "Nginx: ${yellow}v$nginx_version${white}"
+	else
+		echo -n -e "Nginx: ${red}未运行或容器名错误${white}"
+	fi
 
-	# 获取mysql版本
-	DB_ROOT_PASSWD=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
-	mysql_version=$(docker exec mysql mysql -u root -p"$DB_ROOT_PASSWD" -e "SELECT VERSION();" 2>/dev/null | tail -n 1)
-	echo -n -e "     MySQL: ${yellow}v$mysql_version${white}"
+	# 获取MySQL版本
+	if docker ps --format '{{.Names}}' | grep -q '^mysql$'; then
+		DB_ROOT_PASSWD=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
+		mysql_version=$(docker exec mysql mysql -u root -p"$DB_ROOT_PASSWD" -e "SELECT VERSION();" 2>/dev/null | tail -n 1)
+		echo -n -e "     MySQL: ${yellow}v$mysql_version${white}"
+	else
+		echo -n -e "     MySQL: ${red}未运行或容器名错误${white}"
+	fi
 
-	# 获取php版本
-	php_version=$(docker exec php php -v 2>/dev/null | grep -oP "PHP \K[0-9]+\.[0-9]+\.[0-9]+")
-	echo -n -e "     PHP: ${yellow}v$php_version${white}"
+	# 获取PHP版本
+	if docker ps --format '{{.Names}}' | grep -q '^php$'; then
+		php_version=$(docker exec php php -v 2>/dev/null | grep -oP "PHP \K[0-9]+\.[0-9]+\.[0-9]+")
+		echo -n -e "     PHP: ${yellow}v$php_version${white}"
+	else
+		echo -n -e "     PHP: ${red}未运行或容器名错误${white}"
+	fi
 
-	# 获取redis版本
-	redis_version=$(docker exec redis redis-server -v 2>&1 | grep -oP "v=+\K[0-9]+\.[0-9]+")
-	echo -e "     Redis: ${yellow}v$redis_version${white}"
+	# 获取Redis版本
+	if docker ps --format '{{.Names}}' | grep -q '^redis$'; then
+		redis_version=$(docker exec redis redis-server -v 2>&1 | grep -oP "v=+\K[0-9]+\.[0-9]+")
+		echo -e "     Redis: ${yellow}v$redis_version${white}"
+	else
+		echo -e "     Redis: ${red}未运行或容器名错误${white}"
+	fi
 
 	echo "------------------------"
 	echo ""
@@ -1618,7 +1634,7 @@ linux_ldnmp() {
                       echo "无效的选择，请重新输入。"
                       ;;
               esac
-              break_end
+              end_of
 
           done
 
@@ -1746,7 +1762,7 @@ linux_ldnmp() {
                       echo "无效的选择，请重新输入。"
                       ;;
               esac
-              break_end
+              end_of
 
           done
         ;;
@@ -1886,7 +1902,7 @@ linux_ldnmp() {
                   echo "无效的选择，请重新输入。"
                   ;;
           esac
-          break_end
+          end_of
       done
 
 
@@ -1919,7 +1935,7 @@ linux_ldnmp() {
     *)
         echo "无效的输入!"
     esac
-    break_end
+    end_of
 
   done
 
