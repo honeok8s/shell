@@ -668,7 +668,7 @@ linux_ldnmp() {
 
 				ldnmp_install_status
 				add_domain
-				ldnmp_ldnmp_install_ssltls
+				ldnmp_install_ssltls
 				ldnmp_certs_status
 				ldnmp_add_db
 
@@ -703,7 +703,7 @@ linux_ldnmp() {
       echo "安装$webname"
       ldnmp_install_status
       add_domain
-      ldnmp_ldnmp_install_ssltls
+      ldnmp_install_ssltls
       ldnmp_certs_status
       ldnmp_add_db
 
@@ -738,7 +738,7 @@ linux_ldnmp() {
       echo "安装$webname"
       ldnmp_install_status
       add_domain
-      ldnmp_ldnmp_install_ssltls
+      ldnmp_install_ssltls
       ldnmp_certs_status
       ldnmp_add_db
 
@@ -770,7 +770,7 @@ linux_ldnmp() {
       echo "安装$webname"
       ldnmp_install_status
       add_domain
-      ldnmp_ldnmp_install_ssltls
+      ldnmp_install_ssltls
       ldnmp_certs_status
       ldnmp_add_db
 
@@ -811,7 +811,7 @@ linux_ldnmp() {
       echo "安装$webname"
       ldnmp_install_status
       add_domain
-      ldnmp_ldnmp_install_ssltls
+      ldnmp_install_ssltls
       ldnmp_certs_status
       ldnmp_add_db
 
@@ -857,7 +857,7 @@ linux_ldnmp() {
       echo "安装$webname"
       ldnmp_install_status
       add_domain
-      ldnmp_ldnmp_install_ssltls
+      ldnmp_install_ssltls
       ldnmp_certs_status
       ldnmp_add_db
 
@@ -897,7 +897,7 @@ linux_ldnmp() {
       echo "安装$webname"
       ldnmp_install_status
       add_domain
-      ldnmp_ldnmp_install_ssltls
+      ldnmp_install_ssltls
       ldnmp_certs_status
       ldnmp_add_db
 
@@ -930,7 +930,7 @@ linux_ldnmp() {
       echo "安装$webname"
       ldnmp_install_status
       add_domain
-      ldnmp_ldnmp_install_ssltls
+      ldnmp_install_ssltls
       ldnmp_certs_status
       ldnmp_add_db
 
