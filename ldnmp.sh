@@ -601,7 +601,7 @@ ldnmp_add_db() {
 		return 1
 	fi
 
-	docker exec mysql mysql -u root -p"$DB_ROOT_PASSWD" -e "CREATE DATABASE IF NOT EXISTS $DB_NAME; GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'%';" || {
+	docker exec mysql mysql -u root -p"$DB_ROOT_PASSWD" -e "CREATE DATABASE IF NOT EXISTS $DB_NAME; GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'%';" > /dev/null 2>&1 || {
 		_red "创建数据库或授予权限失败"
 		return 1
 	}
@@ -761,7 +761,7 @@ linux_ldnmp() {
 				discuz_dir="$nginx_dir/html/$domain"
 				[ ! -d $discuz_dir ] && mkdir -p "$discuz_dir"
 				cd "$discuz_dir" || { _red "无法进入目录 $discuz_dir"; return 1; }
-				wget -O latest.zip https://github.com/kejilion/Website_source_code/raw/main/Discuz_X3.5_SC_UTF8_20240520.zip
+				wget -qO latest.zip https://github.com/kejilion/Website_source_code/raw/main/Discuz_X3.5_SC_UTF8_20240520.zip && unzip latest.zip && rm latest.zip
 
 				ldnmp_restart
 				ldnmp_display_success
