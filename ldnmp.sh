@@ -1309,7 +1309,7 @@ linux_ldnmp() {
 						DB_ROOT_PASSWD=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
 						docker exec mysql mysql -u root -p"$DB_ROOT_PASSWD" -e "SHOW DATABASES;" 2> /dev/null | grep -Ev "Database|information_schema|mysql|performance_schema|sys"
 					else
-						_red "MySQL未运行或查询失败"
+						_red "NONE"
 					fi
 					echo "------------------------"
 					echo ""
