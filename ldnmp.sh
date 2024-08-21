@@ -568,8 +568,9 @@ iptables_open(){
 }
 
 ldnmp_install_ssltls() {
-	docker stop nginx > /dev/null 2>&1
-
+	if docker ps --format '{{.Names}}' | grep -q '^nginx$'; then
+		docker stop nginx > /dev/null 2>&1
+	fi
 	iptables_open > /dev/null 2>&1
 
 	yes | certbot delete --cert-name $domain > /dev/null 2>&1
@@ -589,7 +590,12 @@ ldnmp_install_ssltls() {
 	cp /etc/letsencrypt/live/$domain/fullchain.pem /data/docker_data/web/nginx/certs/${domain}_cert.pem > /dev/null 2>&1
 	cp /etc/letsencrypt/live/$domain/privkey.pem /data/docker_data/web/nginx/certs/${domain}_key.pem > /dev/null 2>&1
 
-	docker start nginx > /dev/null 2>&1
+	if nginx_check; then
+		docker start nginx > /dev/null 2>&1
+	else
+		_red "Nginx配置校验失败,请检查配置文件"
+		return 1
+	fi
 }
 
 ldnmp_certs_status() {
