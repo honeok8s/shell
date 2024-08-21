@@ -503,7 +503,7 @@ iptables_open(){
 	ip6tables -F
 }
 
-ldnmp_ldnmp_install_ssltls() {
+ldnmp_install_ssltls() {
 	docker stop nginx > /dev/null 2>&1
 
 	iptables_open > /dev/null 2>&1
