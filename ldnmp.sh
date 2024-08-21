@@ -575,6 +575,9 @@ iptables_open(){
 ldnmp_install_ssltls() {
 	if docker ps --format '{{.Names}}' | grep -q '^nginx$'; then
 		docker stop nginx > /dev/null 2>&1
+	else
+		_red "未发现Nginx容器或未运行"
+		return 1
 	fi
 	iptables_open > /dev/null 2>&1
 
