@@ -739,11 +739,11 @@ linux_ldnmp() {
 				ldnmp_restart
 				ldnmp_display_success
 
-				echo "数据库名:$DB_NAME"
-				echo "用户名:$DB_USER"
-				echo "密码:$DB_USER_PASSWD"
-				echo "数据库地址:mysql"
-				echo "表前缀:wp_"
+				echo "数据库名: $DB_NAME"
+				echo "用户名: $DB_USER"
+				echo "密码: $DB_USER_PASSWD"
+				echo "数据库地址: mysql"
+				echo "表前缀: wp_"
 				;;
 			3)
 				clear
@@ -755,29 +755,23 @@ linux_ldnmp() {
 				ldnmp_certs_status
 				ldnmp_add_db
 
-      wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/discuz.com.conf
+				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/discuz.com.conf"
+				sed -i -e "s/yuming.com/$domain/g" -e "s/my_cache/fst_cache/g" "$nginx_dir/conf.d/$domain.conf"
 
-      sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
+				discuz_dir="$nginx_dir/html/$domain"
+				[ ! -d $discuz_dir ] && mkdir -p "$discuz_dir"
+				cd "$discuz_dir" || { _red "无法进入目录 $discuz_dir"; return 1; }
+				wget -O latest.zip https://github.com/kejilion/Website_source_code/raw/main/Discuz_X3.5_SC_UTF8_20240520.zip
 
-      cd /home/web/html
-      mkdir $yuming
-      cd $yuming
-      wget -O latest.zip https://github.com/kejilion/Website_source_code/raw/main/Discuz_X3.5_SC_UTF8_20240520.zip
-      unzip latest.zip
-      rm latest.zip
+				ldnmp_restart
+				ldnmp_display_success
 
-      ldnmp_restart
-
-
-      ldnmp_web_on
-      echo "数据库地址: mysql"
-      echo "数据库名: $dbname"
-      echo "用户名: $dbuse"
-      echo "密码: $dbusepasswd"
-      echo "表前缀: discuz_"
-
-
-        ;;
+				echo "数据库名: $DB_NAME"
+				echo "用户名: $DB_USER"
+				echo "密码: $DB_USER_PASSWD"
+				echo "数据库地址: mysql"
+				echo "表前缀: discuz_"
+				;;
 
       4)
       clear
