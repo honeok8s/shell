@@ -214,6 +214,39 @@ install_crontab() {
 
 ###############################################################
 
+manage_compose() {
+	case "$1" in
+		start)	# 启动容器
+			if docker compose version >/dev/null 2>&1; then
+				docker compose up -d
+			elif command -v docker-compose >/dev/null 2>&1; then
+				docker-compose up -d
+			fi
+			;;
+		stop)	# 停止容器
+			if docker compose version >/dev/null 2>&1; then
+				docker compose stop
+			elif command -v docker-compose >/dev/null 2>&1; then
+				docker-compose stop
+			fi
+			;;
+		down)	# 停止并删除容器
+			if docker compose version >/dev/null 2>&1; then
+				docker compose down
+			elif command -v docker-compose >/dev/null 2>&1; then
+				docker-compose down
+			fi
+			;;
+		clean_down)	# 停止容器并删除镜像和卷
+			if docker compose version >/dev/null 2>&1; then
+				docker compose down --rmi all --volumes
+			elif command -v docker-compose >/dev/null 2>&1; then
+				docker-compose down --rmi all --volumes
+			fi
+			;;
+	esac
+}
+
 ldnmp_check_status() {
 	if docker inspect "ldnmp" &>/dev/null; then
 		_yellow "LDNMP环境已安装无法再次安装,可以使用37.更新LDNMP环境"
@@ -331,29 +364,11 @@ default_server_ssl() {
 	fi
 }
 
-# 启动Docker Compose
-start_compose() {
-	if docker compose version >/dev/null 2>&1; then
-		docker compose up -d
-	elif command -v docker-compose >/dev/null 2>&1; then
-		docker-compose up -d
-	fi
-}
-
-# 停止并删除容器
-down_clean_compose(){
-	if docker compose version >/dev/null 2>&1; then
-		docker compose down --rmi all --volumes
-	elif command -v docker-compose >/dev/null 2>&1; then
-		docker-compose down --rmi all --volumes
-	fi
-}
-
 install_ldnmp() {
 	#check_swap
 	cd "$web_dir" || { _red "无法进入目录$web_dir"; return 1; }
 
-	start_compose
+	manage_compose start
 
 	clear
 	_yellow "正在配置LDNMP环境,请耐心等待"
@@ -1966,14 +1981,14 @@ linux_ldnmp() {
 					[Yy])
 						if docker inspect "ldnmp" &>/dev/null; then
 							cd "$web_dir" || { _red "无法进入目录 $web_dir"; return 1; }
-							down_clean_compose
+							manage_compose clean_down
 							ldnmp_uninstall_deps
 							ldnmp_uninstall_certbot
 							rm -fr "$web_dir"
 							_green "LDNMP环境已卸载并清除相关依赖"
 						elif docker inspect "nginx" &>/dev/null && [ -d "$nginx_dir" ]; then
 							cd "$web_dir" || { _red "无法进入目录 $web_dir"; return 1; }
-							down_clean_compose
+							manage_compose clean_down
 							ldnmp_uninstall_deps
 							ldnmp_uninstall_certbot
 							rm -fr "$web_dir"
