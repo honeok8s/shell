@@ -898,214 +898,209 @@ linux_ldnmp() {
 				echo "用户名: admin"
 				echo "密码: admin"
 				echo "------------------------"
-				echo "登录时右上角如果出现红色error0请使用如下命令: "
-				echo "sed -i 's/ADMIN_HTTPS=false/ADMIN_HTTPS=true/g' $djsk_dir/dujiaoka/.env"
+				echo "后台登录出现0err或者其他登录异常问题"
+				echo "使用命令: sed -i 's/ADMIN_HTTPS=false/ADMIN_HTTPS=true/g' $djsk_dir/dujiaoka/.env"
 				;;
-      7)
-      clear
-      # flarum论坛
-      webname="flarum论坛"
-      echo "安装$webname"
-      ldnmp_install_status
-      add_domain
-      ldnmp_install_ssltls
-      ldnmp_certs_status
-      ldnmp_add_db
+			7)
+				clear
+				webname="Flarum论坛"
 
-      wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/flarum.com.conf
-      sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
+				ldnmp_install_status
+				add_domain
+				ldnmp_install_ssltls
+				ldnmp_certs_status
+				ldnmp_add_db
 
-      cd /home/web/html
-      mkdir $yuming
-      cd $yuming
+				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/flarum.com.conf"
+				sed -i -e "s/yuming.com/$domain/g" -e "s/my_cache/fst_cache/g" "$nginx_dir/conf.d/$domain.conf"
 
-      docker exec php sh -c "php -r \"copy('https://getcomposer.org/installer', 'composer-setup.php');\""
-      docker exec php sh -c "php composer-setup.php"
-      docker exec php sh -c "php -r \"unlink('composer-setup.php');\""
-      docker exec php sh -c "mv composer.phar /usr/local/bin/composer"
+				flarum_dir="$nginx_dir/html/$domain"
+				[ ! -d $flarum_dir ] && mkdir -p "$flarum_dir"
+				cd "$flarum_dir" || { _red "无法进入目录$flarum_dir"; return 1; }
 
-      docker exec php composer create-project flarum/flarum /var/www/html/$yuming
-      docker exec php sh -c "cd /var/www/html/$yuming && composer require flarum-lang/chinese-simplified"
-      docker exec php sh -c "cd /var/www/html/$yuming && composer require fof/polls"
+				docker exec php sh -c "php -r \"copy('https://getcomposer.org/installer', 'composer-setup.php');\""
+				docker exec php sh -c "php composer-setup.php"
+				docker exec php sh -c "php -r \"unlink('composer-setup.php');\""
+				docker exec php sh -c "mv composer.phar /usr/local/bin/composer"
 
-      ldnmp_restart
+				docker exec php composer create-project flarum/flarum /var/www/html/$domain
+				docker exec php sh -c "cd /var/www/html/$domain && composer require flarum-lang/chinese-simplified"
+				docker exec php sh -c "cd /var/www/html/$domain && composer require fof/polls"
 
+				ldnmp_restart
+				ldnmp_display_success
 
-      ldnmp_web_on
-      echo "数据库地址: mysql"
-      echo "数据库名: $dbname"
-      echo "用户名: $dbuse"
-      echo "密码: $dbusepasswd"
-      echo "表前缀: flarum_"
-      echo "管理员信息自行设置"
+				echo "数据库名: $DB_NAME"
+				echo "用户名: $DB_USER"
+				echo "密码: $DB_USER_PASSWD"
+				echo "数据库地址: mysql"
+				echo "数据库端口: 3306"
+				echo "表前缀: flarum_"
+				echo "管理员信息自行设置"
+				;;
+			8)
+				clear
+				webname="Typecho"
 
-        ;;
+				ldnmp_install_status
+				add_domain
+				ldnmp_install_ssltls
+				ldnmp_certs_status
+				ldnmp_add_db
 
-      8)
-      clear
-      # typecho
-      webname="typecho"
-      echo "安装$webname"
-      ldnmp_install_status
-      add_domain
-      ldnmp_install_ssltls
-      ldnmp_certs_status
-      ldnmp_add_db
+				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/typecho.com.conf"
+				sed -i -e "s/yuming.com/$domain/g" -e "s/my_cache/fst_cache/g" "$nginx_dir/conf.d/$domain.conf"
 
-      wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/typecho.com.conf
-      sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
+				typecho_dir="$nginx_dir/html/$domain"
+				[ ! -d $typecho_dir ] && mkdir -p "$typecho_dir"
+				cd "$typecho_dir" || { _red "无法进入目录$typecho_dir"; return 1; }
+				wget -qO latest.zip https://github.com/typecho/typecho/releases/latest/download/typecho.zip && unzip latest.zip && rm latest.zip
 
-      cd /home/web/html
-      mkdir $yuming
-      cd $yuming
-      wget -O latest.zip https://github.com/typecho/typecho/releases/latest/download/typecho.zip
-      unzip latest.zip
-      rm latest.zip
+				ldnmp_restart
+				ldnmp_display_success
 
-      ldnmp_restart
+				echo "数据库名: $DB_NAME"
+				echo "用户名: $DB_USER"
+				echo "密码: $DB_USER_PASSWD"
+				echo "数据库地址: mysql"
+				echo "数据库端口: 3306"
+				echo "表前缀: typecho_"
+				;;
+			20)
+				clear
+				webname="PHP动态站点"
 
+				ldnmp_install_status
+				add_domain
+				ldnmp_install_ssltls
+				ldnmp_certs_status
+				ldnmp_add_db
 
-      clear
-      ldnmp_web_on
-      echo "数据库前缀: typecho_"
-      echo "数据库地址: mysql"
-      echo "用户名: $dbuse"
-      echo "密码: $dbusepasswd"
-      echo "数据库名: $dbname"
+				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/index_php.conf"
+				sed -i -e "s/yuming.com/$domain/g" -e "s/my_cache/fst_cache/g" "$nginx_dir/conf.d/$domain.conf"
 
-        ;;
+				dyna_dir="$nginx_dir/html/$domain"
+				[ ! -d $dyna_dir ] && mkdir -p "$dyna_dir"
+				cd "$dyna_dir" || { _red "无法进入目录$dyna_dir"; return 1; }
 
-      20)
-      clear
-      webname="PHP动态站点"
-      echo "安装$webname"
-      ldnmp_install_status
-      add_domain
-      ldnmp_install_ssltls
-      ldnmp_certs_status
-      ldnmp_add_db
+				clear
+				echo -e "[${yellow}1/6${white}] 上传PHP源码"
+				echo "-------------"
+				echo "目前只允许上传zip格式的源码包，请将源码包放到/home/web/html/${domain}目录下"
+				echo -n "也可以输入下载链接远程下载源码包,直接回车将跳过远程下载:"
+				read -r url_download
 
-      wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/index_php.conf
-      sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
+				if [ -n "$url_download" ]; then
+					wget -q "$url_download"
+				fi
 
-      cd /home/web/html
-      mkdir $yuming
-      cd $yuming
+				unzip $(ls -t *.zip | head -n 1)
+				rm -f $(ls -t *.zip | head -n 1)
 
-      clear
-      echo -e "[${yellow}1/6${white}] 上传PHP源码"
-      echo "-------------"
-      echo "目前只允许上传zip格式的源码包，请将源码包放到/home/web/html/${yuming}目录下"
-      read -p "也可以输入下载链接，远程下载源码包，直接回车将跳过远程下载： " url_download
+				clear
+				echo -e "[${yellow}2/6${white}] index.php所在路径"
+				echo "-------------"
+				find "$(realpath .)" -name "index.php" -print
 
-      if [ -n "$url_download" ]; then
-          wget "$url_download"
-      fi
+				echo -n "请输入index.php的路径,如($nginx_dir/html/$domain/wordpress/):"
+				read -r index_path
 
-      unzip $(ls -t *.zip | head -n 1)
-      rm -f $(ls -t *.zip | head -n 1)
+				sed -i "s#root /var/www/html/$domain/#root $index_path#g" "$nginx_dir/conf.d/$domain.conf"
+				sed -i "s#$nginx_dir/#/var/www/#g" "$nginx_dir/conf.d/$domain.conf"
 
-      clear
-      echo -e "[${yellow}2/6${white}] index.php所在路径"
-      echo "-------------"
-      find "$(realpath .)" -name "index.php" -print
+				clear
+				echo -e "[${yellow}3/6${white}] 请选择PHP版本"
+				echo "-------------"
+				echo -n "1. php最新版 | 2. php7.4:" 
+				read -r php_v
 
-      read -p "请输入index.php的路径，类似（/home/web/html/$yuming/wordpress/）： " index_lujing
+				case "$php_v" in
+					1)
+						sed -i "s#php:9000#php:9000#g" "$nginx_dir/conf.d/$domain.conf"
+						PHP_Version="php"
+						;;
+					2)
+						sed -i "s#php:9000#php74:9000#g" "$nginx_dir/conf.d/$domain.conf"
+						PHP_Version="php74"
+						;;
+					*)
+						echo "无效的选择，请重新输入。"
+						;;
+				esac
 
-      sed -i "s#root /var/www/html/$yuming/#root $index_lujing#g" /home/web/conf.d/$yuming.conf
-      sed -i "s#/home/web/#/var/www/#g" /home/web/conf.d/$yuming.conf
+				clear
+				echo -e "[${yellow}4/6${white}] 安装指定扩展"
+				echo "-------------"
+				echo "已经安装的扩展"
+				docker exec php php -m
 
-      clear
-      echo -e "[${yellow}3/6${white}] 请选择PHP版本"
-      echo "-------------"
-      read -p "1. php最新版 | 2. php7.4 : " pho_v
-      case "$pho_v" in
-        1)
-          sed -i "s#php:9000#php:9000#g" /home/web/conf.d/$yuming.conf
-          PHP_Version="php"
-          ;;
-        2)
-          sed -i "s#php:9000#php74:9000#g" /home/web/conf.d/$yuming.conf
-          PHP_Version="php74"
-          ;;
-        *)
-          echo "无效的选择，请重新输入。"
-          ;;
-      esac
+				echo -n "$(echo -e "输入需要安装的扩展名称,如 ${yellow}SourceGuardian imap ftp${white} 等,直接回车将跳过安装:")"
+				read -r php_extensions
+				if [ -n "$php_extensions" ]; then
+					docker exec $PHP_Version install-php-extensions $php_extensions
+				fi
 
+				clear
+				echo -e "[${yellow}5/6${white}] 编辑站点配置"
+				echo "-------------"
+				echo "按任意键继续,可以详细设置站点配置,如伪静态等内容"
+				read -n 1 -s -r -p ""
+				vim "$nginx_dir/conf.d/$domain.conf"
 
-      clear
-      echo -e "[${yellow}4/6${white}] 安装指定扩展"
-      echo "-------------"
-      echo "已经安装的扩展"
-      docker exec php php -m
+				clear
+				echo -e "[${yellow}6/6${white}] 数据库管理"
+				echo "-------------"
+				echo -n "1. 我搭建新站        2. 我搭建老站有数据库备份:"
+				read -r use_db
+				case $use_db in
+					1)
+						echo ""
+						;;
+					2)
+						echo "数据库备份必须是.gz结尾的压缩包,请放到/opt/目录下,支持宝塔/1panel备份数据导入"
+						echo -n "也可以输入下载链接,远程下载备份数据,直接回车将跳过远程下载:" 
+						read -r url_download_db
 
-      read -p "$(echo -e "输入需要安装的扩展名称，如 ${yellow}SourceGuardian imap ftp${white} 等等。直接回车将跳过安装 ： ")" php_extensions
-      if [ -n "$php_extensions" ]; then
-          docker exec $PHP_Version install-php-extensions $php_extensions
-      fi
+						cd /opt/
+						if [ -n "$url_download_db" ]; then
+							wget -q "$url_download_db"
+						fi
+						gunzip $(ls -t *.gz | head -n 1)
+						latest_sql=$(ls -t *.sql | head -n 1)
+						DB_ROOT_PASSWD=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
 
+						docker exec -i mysql mysql -u root -p"$DB_ROOT_PASSWD" $DB_NAME < "/opt/$latest_sql"
+						echo "数据库导入的表数据"
+						docker exec -i mysql mysql -u root -p"$DB_ROOT_PASSWD" -e "USE $DB_NAME; SHOW TABLES;"
+						rm -f *.sql
+						_green "数据库导入完成"
+						;;
+					*)
+						echo ""
+						;;
+				esac
 
-      clear
-      echo -e "[${yellow}5/6${white}] 编辑站点配置"
-      echo "-------------"
-      echo "按任意键继续，可以详细设置站点配置，如伪静态等内容"
-      read -n 1 -s -r -p ""
-      install nano
-      nano /home/web/conf.d/$yuming.conf
+				ldnmp_restart
+				ldnmp_display_success
 
+				prefix="web$(shuf -i 10-99 -n 1)_"
 
-      clear
-      echo -e "[${yellow}6/6${white}] 数据库管理"
-      echo "-------------"
-      read -p "1. 我搭建新站        2. 我搭建老站有数据库备份： " use_db
-      case $use_db in
-          1)
-              echo
-              ;;
-          2)
-              echo "数据库备份必须是.gz结尾的压缩包。请放到/home/目录下，支持宝塔/1panel备份数据导入。"
-              read -p "也可以输入下载链接，远程下载备份数据，直接回车将跳过远程下载： " url_download_db
-
-              cd /home/
-              if [ -n "$url_download_db" ]; then
-                  wget "$url_download_db"
-              fi
-              gunzip $(ls -t *.gz | head -n 1)
-              latest_sql=$(ls -t *.sql | head -n 1)
-              dbrootpasswd=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /home/web/docker-compose.yml | tr -d '[:space:]')
-              docker exec -i mysql mysql -u root -p"$dbrootpasswd" $dbname < "/home/$latest_sql"
-              echo "数据库导入的表数据"
-              docker exec -i mysql mysql -u root -p"$dbrootpasswd" -e "USE $dbname; SHOW TABLES;"
-              rm -f *.sql
-              echo "数据库导入完成"
-              ;;
-          *)
-              echo
-              ;;
-      esac
-
-      ldnmp_restart
-
-      ldnmp_web_on
-      prefix="web$(shuf -i 10-99 -n 1)_"
-      echo "数据库地址: mysql"
-      echo "数据库名: $dbname"
-      echo "用户名: $dbuse"
-      echo "密码: $dbusepasswd"
-      echo "表前缀: $prefix"
-      echo "管理员登录信息自行设置"
-
-        ;;
-
-
-      21)
-      echo "安装nginx环境"
-      root_use
-      ldnmp_check_port
-      ldnmp_install_deps
-      #install_docker
-      ldnmp_install_certbot
+				echo "数据库名: $DB_NAME"
+				echo "用户名: $DB_USER"
+				echo "密码: $DB_USER_PASSWD"
+				echo "数据库地址: mysql"
+				echo "数据库端口: 3306"
+				echo "表前缀: $prefix"
+				echo "管理员登录信息自行设置"
+				;;
+			21)
+				need_root
+				ldnmp_check_port
+				ldnmp_install_deps
+				#install_docker
+				ldnmp_install_certbot
+				# 实现的需求,检查是否是ldnmp环境已安装nginx，安装则跳过并提示    如果已经安装，判断是不是安装在/data/docker_data/web/nginx目录，如果是安装在/data/docker_data/web/nginx则校验compose文件是不是期望的，
+				# 如果不是安装在/data/docker_data/web/nginx里，则直接docker rm -f nginx 2>&1 
 
       cd /home && mkdir -p web/html web/mysql web/certs web/conf.d web/redis web/log/nginx && touch web/docker-compose.yml
 
