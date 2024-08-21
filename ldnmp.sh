@@ -303,7 +303,7 @@ default_server_ssl() {
 }
 
 # 启动Docker Compose
-start_docker_compose() {
+start_compose() {
 	if docker compose version >/dev/null 2>&1; then
 		docker compose up -d
 	elif command -v docker-compose >/dev/null 2>&1; then
@@ -311,11 +311,20 @@ start_docker_compose() {
 	fi
 }
 
+# 停止并删除容器
+down_clean_compose(){
+	if docker compose version >/dev/null 2>&1; then
+		docker compose down --rmi all --volumes
+	elif command -v docker-compose >/dev/null 2>&1; then
+		docker-compose down --rmi all --volumes
+	fi
+}
+
 install_ldnmp() {
 	#check_swap
 	cd "$web_dir" || { _red "无法进入目录$web_dir"; return 1; }
 
-	start_docker_compose
+	start_compose
 
 	clear
 	_yellow "正在配置LDNMP环境,请耐心等待"
@@ -1916,26 +1925,37 @@ linux_ldnmp() {
 
       ;;
 
-    38)
-        root_use
-        echo "卸载LDNMP环境"
-        read -p "$(echo -e "${red}强烈建议：${white}先备份全部网站数据，再卸载LDNMP环境。确定删除所有网站数据吗？(Y/N): ")" choice
-        case "$choice" in
-          [Yy])
-            cd /home/web/
-            docker compose down
-            docker compose down --rmi all
-            rm -rf /home/web
-            ;;
-          [Nn])
+			38)
+				need_root
+				echo "建议先备份全部网站数据再卸载LDNMP环境"
+				echo "同时会移除由LDNMP建站安装的依赖"
+				echo -n "确认继续?(y/n):"
+				read -r choice
 
-            ;;
-          *)
-            echo "无效的选择，请输入 Y 或 N。"
-            ;;
-        esac
-        ;;
-
+				case "$choice" in
+					[Yy])
+						if docker inspect "ldnmp" &>/dev/null; then
+							cd "$web_dir" || { _red "无法进入目录 $web_dir"; return 1; }
+							down_clean_compose
+							rm -fr "$web_dir"
+							_green "LDNMP环境已卸载并清除相关依赖"
+						elif docker inspect "nginx" &>/dev/null && [ -d "$nginx_dir" ]; then
+							cd "$web_dir" || { _red "无法进入目录 $web_dir"; return 1; }
+							down_clean_compose
+							rm -fr "$web_dir"
+							_green "Nginx环境已卸载并清除相关依赖"
+						else
+							_red "未发现符合条件的LDNMP或Nginx环境"
+						fi
+						;;
+					[Nn])
+						_yellow "操作已取消"
+						;;
+					*)
+						_red "无效选项,请重新输入"
+						;;
+				esac
+				;;
     0)
         kejilion
       ;;
@@ -1943,9 +1963,8 @@ linux_ldnmp() {
     *)
         echo "无效的输入!"
     esac
-    end_of
+	end_of
 
-  done
-
+	done
 }
 linux_ldnmp
