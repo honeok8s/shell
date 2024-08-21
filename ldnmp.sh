@@ -447,7 +447,7 @@ ldnmp_version() {
 	# 获取MySQL版本
 	if docker ps --format '{{.Names}}' | grep -q '^mysql$'; then
 		DB_ROOT_PASSWD=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
-		mysql_version=$(docker exec mysql mysql -u root -p"$DB_ROOT_PASSWD" -e "SELECT VERSION();" 2>/dev/null | tail -n 1)
+		mysql_version=$(docker exec mysql mysql --silent --skip-column-names -u root -p"$DB_ROOT_PASSWD" -e "SELECT VERSION();" 2>/dev/null | tail -n 1)
 		echo -n -e "     MySQL: ${yellow}v$mysql_version${white}"
 	else
 		echo -n -e "     MySQL: ${red}未运行或容器名错误${white}"
@@ -595,10 +595,10 @@ ldnmp_restart() {
 
 ldnmp_display_success() {
 	clear
-	echo "您的$WEB_NAME搭建好了!"
+	echo "您的$webname搭建好了!"
 	echo "https://$domain"
 	echo "------------------------"
-	echo "$WEB_NAME安装信息如下:"
+	echo "$webname安装信息如下"
 }
 
 #####################################
@@ -1248,144 +1248,152 @@ linux_ldnmp() {
 
 
 
-    31)
-    root_use
-    while true; do
-        clear
-        echo "LDNMP站点管理"
-        echo "LDNMP环境"
-        echo "------------------------"
-        ldnmp_version
+			31)
+				need_root
+				while true; do
+					clear
+					echo "LDNMP站点管理"
+					echo "LDNMP环境"
+					echo "------------------------"
+					ldnmp_version
 
-        # ls -t /home/web/conf.d | sed 's/\.[^.]*$//'
-        echo "站点信息                      证书到期时间"
-        echo "------------------------"
-        for cert_file in /home/web/certs/*_cert.pem; do
-          domain=$(basename "$cert_file" | sed 's/_cert.pem//')
-          if [ -n "$domain" ]; then
-            expire_date=$(openssl x509 -noout -enddate -in "$cert_file" | awk -F'=' '{print $2}')
-            formatted_date=$(date -d "$expire_date" '+%Y-%m-%d')
-            printf "%-30s%s\n" "$domain" "$formatted_date"
-          fi
-        done
+					echo "站点信息                      证书到期时间"
+					echo "------------------------"
+					for cert_file in /data/docker_data/web/nginx/certs/*_cert.pem; do
+						if [ -f "$cert_file" ]; then
+							domain=$(basename "$cert_file" | sed 's/_cert.pem//')
+							if [ -n "$domain" ]; then
+								expire_date=$(openssl x509 -noout -enddate -in "$cert_file" | awk -F'=' '{print $2}')
+								formatted_date=$(date -d "$expire_date" '+%Y-%m-%d')
+								printf "%-30s%s\n" "$domain" "$formatted_date"
+							fi
+						fi
+					done
+					echo "------------------------"
+					echo ""
+					echo "数据库信息"
+					echo "------------------------"
+					if docker ps --format '{{.Names}}' | grep -q '^mysql$'; then
+						DB_ROOT_PASSWD=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
+						docker exec mysql mysql -u root -p"$DB_ROOT_PASSWD" -e "SHOW DATABASES;" 2> /dev/null | grep -Ev "Database|information_schema|mysql|performance_schema|sys"
+					else
+						_red "MySQL未运行或查询失败"
+					fi
+					echo "------------------------"
+					echo ""
+					echo "站点目录"
+					echo "------------------------"
+					echo "数据目录: /data/docker_data/web/nginx/html     证书目录: /data/docker_data/web/nginx/certs     配置文件目录: /data/docker_data/web/nginx/conf.d"
+					echo "------------------------"
+					echo ""
+					echo "操作"
+					echo "------------------------"
+					echo "1. 申请/更新域名证书               2. 修改域名"
+					echo "3. 清理站点缓存                    4. 查看站点分析报告"
+					echo "5. 编辑全局配置                    6. 编辑站点配置"
+					echo "------------------------"
+					echo "7. 删除指定站点                    8. 删除指定数据库"
+					echo "------------------------"
+					echo "0. 返回上一级选单"
+					echo "------------------------"
 
-        echo "------------------------"
-        echo ""
-        echo "数据库信息"
-        echo "------------------------"
-        dbrootpasswd=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /home/web/docker-compose.yml | tr -d '[:space:]')
-        docker exec mysql mysql -u root -p"$dbrootpasswd" -e "SHOW DATABASES;" 2> /dev/null | grep -Ev "Database|information_schema|mysql|performance_schema|sys"
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					read -r choice
 
-        echo "------------------------"
-        echo ""
-        echo "站点目录"
-        echo "------------------------"
-        echo -e "数据 ${hui}/home/web/html${white}     证书 ${hui}/home/web/certs${white}     配置 ${hui}/home/web/conf.d${white}"
-        echo "------------------------"
-        echo ""
-        echo "操作"
-        echo "------------------------"
-        echo "1. 申请/更新域名证书"
-        echo "3. 清理站点缓存                    4. 查看站点分析报告"
-        echo "5. 编辑全局配置                    6. 编辑站点配置"
-        echo "------------------------"
-        echo "7. 删除指定站点                    8. 删除指定数据库"
-        echo "------------------------"
-        echo "0. 返回上一级选单"
-        echo "------------------------"
-        read -p "请输入你的选择: " sub_choice
-        case $sub_choice in
-            1)
-                echo "申请域名证书"
-                read -p "请输入你的域名: " yuming
-                ldnmp_install_certbot
-                ldnmp_install_ssltls
-                ldnmp_certs_status
+					case $choice in
+						1)
+							echo -n "请输入你的域名:"
+							read -r domain
 
-                ;;
+							ldnmp_install_certbot
+							ldnmp_install_ssltls
+							ldnmp_certs_status
+							;;
+						2)
+							echo -n "请输入旧域名:"
+							read -r old_domain
+							echo -n "请输入新域名:"
+							rand -r new_domain
+							ldnmp_install_certbot
+							ldnmp_install_ssltls
+							ldnmp_certs_status
+							mv "$nginx_dir/conf.d/$old_domain.conf" "$nginx_dir/conf.d/$new_domain.conf"
+							sed -i "s/$old_domain/$new_domain/g" "/data/docker_data/web/nginx/conf.d/$new_domain.conf"
+							mv "$nginx_dir/html/$old_domain" "$nginx_dir/html/$new_domain"
+							
+							rm -f "$nginx_dir/certs/${old_domain}_key.pem" "$nginx_dir/certs/${old_domain}_cert.pem"
 
-            2)
-                read -p "请输入旧域名: " oddyuming
-                read -p "请输入新域名: " yuming
-                ldnmp_install_certbot
-                ldnmp_install_ssltls
-                ldnmp_certs_status
-                mv /home/web/conf.d/$oddyuming.conf /home/web/conf.d/$yuming.conf
-                sed -i "s/$oddyuming/$yuming/g" /home/web/conf.d/$yuming.conf
-                mv /home/web/html/$oddyuming /home/web/html/$yuming
+							if nginx_check; then
+								docker restart nginx >/dev/null 2>&1
+							else
+								_red "Nginx配置校验失败,请检查配置文件"
+								return 1
+							fi
+							;;
+						3)
+							docker restart nginx
+							docker exec php php -r 'opcache_reset();'
+							docker restart php
+							docker exec php74 php -r 'opcache_reset();'
+							docker restart php74
+							docker restart redis
+							docker exec redis redis-cli FLUSHALL
+							docker exec -it redis redis-cli CONFIG SET maxmemory 512mb
+							docker exec -it redis redis-cli CONFIG SET maxmemory-policy allkeys-lru
+							;;
+						4)
+							install goaccess
+							goaccess --log-format=COMBINED $nginx_dir/log/access.log
+							;;
+						5)
+							vim $nginx_dir/nginx.conf
 
-                rm /home/web/certs/${oddyuming}_key.pem
-                rm /home/web/certs/${oddyuming}_cert.pem
+							if nginx_check; then
+								docker restart nginx >/dev/null 2>&1
+							else
+								_red "Nginx配置校验失败,请检查配置文件"
+								return 1
+							fi
+							;;
+						6)
+							echo -n "编辑站点配置,请输入你要编辑的域名:"
+							vim "$nginx_dir/conf.d/$edit_domain.conf"
 
-                docker restart nginx
+							if nginx_check; then
+								docker restart nginx >/dev/null 2>&1
+							else
+								_red "Nginx配置校验失败,请检查配置文件"
+								return 1
+							fi
+							;;
+						7)
+							echo -n "删除站点数据目录,请输入你的域名:"
+							read -r del_domain
+							rm -fr "$nginx_dir/html/$del_domain"
+							rm -f "$nginx_dir/conf.d/$del_domain.conf" "$nginx_dir/certs/${del_domain}_key.pem" "$nginx_dir/certs/${del_domain}_cert.pem"
 
-
-                ;;
-
-
-            3)
-                echo "清理站点缓存"
-                # docker exec -it nginx rm -rf /var/cache/nginx
-                docker restart nginx
-                docker exec php php -r 'opcache_reset();'
-                docker restart php
-                docker exec php74 php -r 'opcache_reset();'
-                docker restart php74
-                docker restart redis
-                docker exec redis redis-cli FLUSHALL
-                docker exec -it redis redis-cli CONFIG SET maxmemory 512mb
-                docker exec -it redis redis-cli CONFIG SET maxmemory-policy allkeys-lru
-
-                ;;
-            4)
-                echo "查看站点数据"
-                install goaccess
-                goaccess --log-format=COMBINED /home/web/log/nginx/access.log
-
-                ;;
-
-            5)
-                echo "编辑全局配置"
-                install nano
-                nano /home/web/nginx.conf
-                docker restart nginx
-                ;;
-
-            6)
-                echo "编辑站点配置"
-                read -p "编辑站点配置，请输入你要编辑的域名: " yuming
-                install nano
-                nano /home/web/conf.d/$yuming.conf
-                docker restart nginx
-                ;;
-
-            7)
-                echo "删除站点数据目录"
-                read -p "删除站点数据目录，请输入你的域名: " yuming
-                rm -r /home/web/html/$yuming
-                rm /home/web/conf.d/$yuming.conf
-                rm /home/web/certs/${yuming}_key.pem
-                rm /home/web/certs/${yuming}_cert.pem
-                docker restart nginx
-                ;;
-            8)
-                echo "删除站点数据库"
-                read -p "删除站点数据库，请输入数据库名: " shujuku
-                dbrootpasswd=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /home/web/docker-compose.yml | tr -d '[:space:]')
-                docker exec mysql mysql -u root -p"$dbrootpasswd" -e "DROP DATABASE $shujuku;" 2> /dev/null
-                ;;
-            0)
-                break  # 跳出循环，退出菜单
-                ;;
-            *)
-                break  # 跳出循环，退出菜单
-                ;;
-        esac
-    done
-
-      ;;
-
-
+							if nginx_check; then
+								docker restart nginx >/dev/null 2>&1
+							else
+								_red "Nginx配置校验失败,请检查配置文件"
+								return 1
+							fi
+							;;
+						8)
+							echo -n "删除站点数据库,请输入数据库名:"
+							read -r del_database
+							DB_ROOT_PASSWD=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
+							docker exec mysql mysql -u root -p"$DB_ROOT_PASSWD" -e "DROP DATABASE $del_database;" >/dev/null 2>&1
+							;;
+						0)
+							break
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac
+				done
+				;;
     32)
       clear
       echo "LDNMP环境备份"
