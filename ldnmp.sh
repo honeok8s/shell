@@ -819,46 +819,43 @@ linux_ldnmp() {
 				echo "数据库地址: mysql"
 				echo "Redis主机: redis"
 				;;
-      5)
-      clear
-      # 苹果CMS
-      webname="苹果CMS"
-      echo "安装$webname"
-      ldnmp_install_status
-      add_domain
-      ldnmp_install_ssltls
-      ldnmp_certs_status
-      ldnmp_add_db
+			5)
+				clear
+				webname="苹果CMS"
 
-      wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/maccms.com.conf
+				ldnmp_install_status
+				add_domain
+				ldnmp_install_ssltls
+				ldnmp_certs_status
+				ldnmp_add_db
 
-      sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
+				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/maccms.com.conf"
+				sed -i -e "s/yuming.com/$domain/g" -e "s/my_cache/fst_cache/g" "$nginx_dir/conf.d/$domain.conf"
 
-      cd /home/web/html
-      mkdir $yuming
-      cd $yuming
-      # wget https://github.com/magicblack/maccms_down/raw/master/maccms10.zip && unzip maccms10.zip && rm maccms10.zip
-      wget https://github.com/magicblack/maccms_down/raw/master/maccms10.zip && unzip maccms10.zip && mv maccms10-*/* . && rm -r maccms10-* && rm maccms10.zip
-      cd /home/web/html/$yuming/template/ && wget https://github.com/kejilion/Website_source_code/raw/main/DYXS2.zip && unzip DYXS2.zip && rm /home/web/html/$yuming/template/DYXS2.zip
-      cp /home/web/html/$yuming/template/DYXS2/asset/admin/Dyxs2.php /home/web/html/$yuming/application/admin/controller
-      cp /home/web/html/$yuming/template/DYXS2/asset/admin/dycms.html /home/web/html/$yuming/application/admin/view/system
-      mv /home/web/html/$yuming/admin.php /home/web/html/$yuming/vip.php && wget -O /home/web/html/$yuming/application/extra/maccms.php https://raw.githubusercontent.com/kejilion/Website_source_code/main/maccms.php
+				cms_dir="$nginx_dir/html/$domain"
+				[ ! -d $cms_dir ] && mkdir -p "$cms_dir"
+				cd "$cms_dir" || { _red "无法进入目录$cms_dir"; return 1; }
+				wget -q https://github.com/magicblack/maccms_down/raw/master/maccms10.zip && unzip maccms10.zip && mv maccms10-*/* . && rm -r maccms10-* && rm maccms10.zip
+				cd "$cms_dir/template/" || { _red "无法进入目录$cms_dir/template/"; return 1; }
+				wget -q https://github.com/kejilion/Website_source_code/raw/main/DYXS2.zip && rm "$cms_dir/template/DYXS2.zip"
+				cp "$cms_dir/template/DYXS2/asset/admin/Dyxs2.php" "$cms_dir/application/admin/controller"
+				cp "$cms_dir/template/DYXS2/asset/admin/dycms.html" "$cms_dir/application/admin/view/system"
+				mv "$cms_dir/admin.php" "$cms_dir/vip.php"
+				wget -qO "$cms_dir/application/extra/maccms.php" https://raw.githubusercontent.com/kejilion/Website_source_code/main/maccms.php
+ 
+				ldnmp_restart
+				ldnmp_display_success
 
-      ldnmp_restart
-
-
-      ldnmp_web_on
-      echo "数据库地址: mysql"
-      echo "数据库端口: 3306"
-      echo "数据库名: $dbname"
-      echo "用户名: $dbuse"
-      echo "密码: $dbusepasswd"
-      echo "数据库前缀: mac_"
-      echo "------------------------"
-      echo "安装成功后登录后台地址"
-      echo "https://$yuming/vip.php"
-
-        ;;
+				echo "数据库名: $DB_NAME"
+				echo "用户名: $DB_USER"
+				echo "密码: $DB_USER_PASSWD"
+				echo "数据库地址: mysql"
+				echo "数据库端口: 3306"
+				echo "表前缀: mac_"
+				echo "------------------------"
+				echo "安装成功后登录后台地址"
+				echo "https://$domain/vip.php"
+				;;
 
       6)
       clear
