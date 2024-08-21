@@ -331,11 +331,6 @@ ldnmp_install_certbot() {
 ldnmp_uninstall_certbot() {
 	local cron_job existing_cron
 
-	# 检查并卸载certbot
-	if command -v certbot &> /dev/null; then
-		remove certbot || { _red "卸载certbot失败"; return 1; }
-	fi
-
 	cron_job="0 0 * * * /data/script/auto_cert_renewal.sh >/dev/null 2>&1"
 	# 检查并删除定时任务
 	existing_cron=$(crontab -l 2>/dev/null | grep -F "$cron_job")
@@ -817,7 +812,7 @@ linux_ldnmp() {
 				echo "用户名: $DB_USER"
 				echo "密码: $DB_USER_PASSWD"
 				echo "数据库地址: mysql"
-				echo "Redis主机: redis"
+				echo "Redis地址: redis"
 				;;
 			5)
 				clear
@@ -856,53 +851,47 @@ linux_ldnmp() {
 				echo "安装成功后登录后台地址"
 				echo "https://$domain/vip.php"
 				;;
+			6)
+				clear
+				webname="独脚数卡"
 
-      6)
-      clear
-      # 独脚数卡
-      webname="独脚数卡"
-      echo "安装$webname"
-      ldnmp_install_status
-      add_domain
-      ldnmp_install_ssltls
-      ldnmp_certs_status
-      ldnmp_add_db
+				ldnmp_install_status
+				add_domain
+				ldnmp_install_ssltls
+				ldnmp_certs_status
+				ldnmp_add_db
 
-      wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/dujiaoka.com.conf
+				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/dujiaoka.com.conf"
+				sed -i -e "s/yuming.com/$domain/g" -e "s/my_cache/fst_cache/g" "$nginx_dir/conf.d/$domain.conf"
 
-      sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
+				djsk_dir="$nginx_dir/html/$domain"
+				[ ! -d $djsk_dir ] && mkdir -p "$djsk_dir"
+				cd "$djsk_dir" || { _red "无法进入目录$djsk_dir"; return 1; }
+				wget -q https://github.com/assimon/dujiaoka/releases/download/2.0.6/2.0.6-antibody.tar.gz && tar -zxvf 2.0.6-antibody.tar.gz && rm 2.0.6-antibody.tar.gz
 
-      cd /home/web/html
-      mkdir $yuming
-      cd $yuming
-      wget https://github.com/assimon/dujiaoka/releases/download/2.0.6/2.0.6-antibody.tar.gz && tar -zxvf 2.0.6-antibody.tar.gz && rm 2.0.6-antibody.tar.gz
+				ldnmp_restart
+				ldnmp_display_success
 
-      ldnmp_restart
-
-
-      ldnmp_web_on
-      echo "数据库地址: mysql"
-      echo "数据库端口: 3306"
-      echo "数据库名: $dbname"
-      echo "用户名: $dbuse"
-      echo "密码: $dbusepasswd"
-      echo ""
-      echo "redis地址: redis"
-      echo "redis密码: 默认不填写"
-      echo "redis端口: 6379"
-      echo ""
-      echo "网站url: https://$yuming"
-      echo "后台登录路径: /admin"
-      echo "------------------------"
-      echo "用户名: admin"
-      echo "密码: admin"
-      echo "------------------------"
-      echo "登录时右上角如果出现红色error0请使用如下命令: "
-      echo "我也很气愤独角数卡为啥这么麻烦，会有这样的问题！"
-      echo "sed -i 's/ADMIN_HTTPS=false/ADMIN_HTTPS=true/g' /home/web/html/$yuming/dujiaoka/.env"
-
-        ;;
-
+				echo "数据库名: $DB_NAME"
+				echo "用户名: $DB_USER"
+				echo "密码: $DB_USER_PASSWD"
+				echo "数据库地址: mysql"
+				echo "数据库端口: 3306"
+				echo ""
+				echo "Redis主机: redis"
+				echo "Redis地址: redis"
+				echo "Redis端口: 6379"
+				echo "Redis密码: 默认不填写"
+				echo ""
+				echo "网站url: https://$domain"
+				echo "后台登录路径: /admin"
+				echo "------------------------"
+				echo "用户名: admin"
+				echo "密码: admin"
+				echo "------------------------"
+				echo "登录时右上角如果出现红色error0请使用如下命令: "
+				echo "sed -i 's/ADMIN_HTTPS=false/ADMIN_HTTPS=true/g' $djsk_dir/dujiaoka/.env"
+				;;
       7)
       clear
       # flarum论坛
@@ -1404,7 +1393,9 @@ linux_ldnmp() {
 							fi
 							;;
 						7)
-							cert_dir="/etc/letsencrypt/live"
+							cert_live_dir="/etc/letsencrypt/live"
+							cert_archive_dir="/etc/letsencrypt/archive"
+							cert_renewal_dir="/etc/letsencrypt/renewal"
 							echo -n "删除站点数据目录,请输入你的域名:"
 							read -r del_domain
 
@@ -1413,8 +1404,16 @@ linux_ldnmp() {
 							rm -f "$nginx_dir/conf.d/$del_domain.conf" "$nginx_dir/certs/${del_domain}_key.pem" "$nginx_dir/certs/${del_domain}_cert.pem"
 
 							# 检查并删除证书目录
-							if [ -d "$cert_dir/$del_domain" ]; then
-								rm -fr "$cert_dir/$del_domain"
+							if [ -d "$cert_live_dir/$del_domain" ]; then
+								rm -fr "$cert_live_dir/$del_domain"
+							fi
+
+							if [ -d "$cert_archive_dir/$del_domain" ];then
+								rm -fr "$cert_archive_dir/del_domain"
+							fi
+
+							if [ -d "$cert_renewal_dir/$del_domain" ];then
+								rm -fr "$cert_renewal_dir/$del_domain"
 							fi
 
 							# 检查Nginx配置并重启Nginx
