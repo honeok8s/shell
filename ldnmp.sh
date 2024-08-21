@@ -746,7 +746,7 @@ linux_ldnmp() {
 
 				wordpress_dir="$nginx_dir/html/$domain"
 				[ ! -d $wordpress_dir ] && mkdir -p "$wordpress_dir"
-				cd "$wordpress_dir" || { _red "无法进入目录 $wordpress_dir"; return 1; }
+				cd "$wordpress_dir" || { _red "无法进入目录$wordpress_dir"; return 1; }
 				wget -qO latest.zip "https://cn.wordpress.org/latest-zh_CN.zip" && unzip latest.zip && rm latest.zip
 
 				# 配置WordPress
@@ -779,7 +779,7 @@ linux_ldnmp() {
 
 				discuz_dir="$nginx_dir/html/$domain"
 				[ ! -d $discuz_dir ] && mkdir -p "$discuz_dir"
-				cd "$discuz_dir" || { _red "无法进入目录 $discuz_dir"; return 1; }
+				cd "$discuz_dir" || { _red "无法进入目录$discuz_dir"; return 1; }
 				wget -qO latest.zip https://github.com/kejilion/Website_source_code/raw/main/Discuz_X3.5_SC_UTF8_20240520.zip && unzip latest.zip && rm latest.zip
 
 				ldnmp_restart
@@ -791,39 +791,34 @@ linux_ldnmp() {
 				echo "数据库地址: mysql"
 				echo "表前缀: discuz_"
 				;;
+			4)
+				clear
+				webname="可道云桌面"
 
-      4)
-      clear
-      # 可道云桌面
-      webname="可道云桌面"
-      echo "安装$webname"
-      ldnmp_install_status
-      add_domain
-      ldnmp_install_ssltls
-      ldnmp_certs_status
-      ldnmp_add_db
+				ldnmp_install_status
+				add_domain
+				ldnmp_install_ssltls
+				ldnmp_certs_status
+				ldnmp_add_db
 
-      wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/kdy.com.conf
-      sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
+				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/kdy.com.conf"
+				sed -i -e "s/yuming.com/$domain/g" -e "s/my_cache/fst_cache/g" "$nginx_dir/conf.d/$domain.conf"
 
-      cd /home/web/html
-      mkdir $yuming
-      cd $yuming
-      wget -O latest.zip https://github.com/kalcaddle/kodbox/archive/refs/tags/1.50.02.zip
-      unzip -o latest.zip
-      rm latest.zip
-      mv /home/web/html/$yuming/kodbox* /home/web/html/$yuming/kodbox
-      ldnmp_restart
+				kdy_dir="$nginx_dir/html/$domain"
+				[ ! -d $kdy_dir ] && mkdir -p "$kdy_dir"
+				cd "$kdy_dir" || { _red "无法进入目录$kdy_dir"; return 1; }
+				wget -qO latest.zip https://github.com/kalcaddle/kodbox/archive/refs/tags/1.50.02.zip && unzip latest.zip && rm latest.zip
+				mv "$kdy_dir/kodbox*" "$kdy_dir/kodbox"
 
-      ldnmp_web_on
-      echo "数据库地址: mysql"
-      echo "用户名: $dbuse"
-      echo "密码: $dbusepasswd"
-      echo "数据库名: $dbname"
-      echo "redis主机: redis"
+				ldnmp_restart
+				ldnmp_display_success
 
-        ;;
-
+				echo "数据库名: $DB_NAME"
+				echo "用户名: $DB_USER"
+				echo "密码: $DB_USER_PASSWD"
+				echo "数据库地址: mysql"
+				echo "Redis主机: redis"
+				;;
       5)
       clear
       # 苹果CMS
