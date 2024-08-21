@@ -249,7 +249,7 @@ manage_compose() {
 
 ldnmp_check_status() {
 	if docker inspect "ldnmp" &>/dev/null; then
-		_yellow "LDNMP环境已安装无法再次安装,可以使用37.更新LDNMP环境"
+		_yellow "LDNMP环境已安装,可以选择更新LDNMP环境"
 		end_of
 		linux_ldnmp
 	fi
