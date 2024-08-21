@@ -260,6 +260,11 @@ ldnmp_install_deps() {
 	install wget socat unzip tar
 }
 
+ldnmp_uninstall_deps(){
+	clear
+	remove socat
+}
+
 ldnmp_install_certbot() {
 	local cron_job existing_cron
 
@@ -288,6 +293,26 @@ ldnmp_install_certbot() {
 		_green "续签任务已安装"
 	else
 		_yellow "续签任务已存在,无需重复安装"
+	fi
+}
+
+ldnmp_uninstall_certbot() {
+	local cron_job existing_cron
+	cron_job="0 0 * * * /data/script/auto_cert_renewal.sh >/dev/null 2>&1"
+
+	# 检查并删除定时任务
+	existing_cron=$(crontab -l 2>/dev/null | grep -F "$cron_job")
+	if [ -n "$existing_cron" ]; then
+		(crontab -l 2>/dev/null | grep -Fv "$cron_job") | crontab -
+		_green "续签任务已从定时任务中移除"
+	else
+		_yellow "定时任务未找到,无需移除"
+	fi
+
+	# 删除脚本文件
+	if [ -f /data/script/auto_cert_renewal.sh ]; then
+		rm /data/script/auto_cert_renewal.sh
+		_green "续签脚本文件已删除"
 	fi
 }
 
@@ -450,7 +475,7 @@ ldnmp_version() {
 		nginx_version=$(echo "$nginx_version" | grep -oP "nginx/\K[0-9]+\.[0-9]+\.[0-9]+")
 		echo -n -e "Nginx: ${yellow}v$nginx_version${white}"
 	else
-		echo -n -e "Nginx: ${red}未运行或容器名错误${white}"
+		echo -n -e "Nginx: ${red}NONE${white}"
 	fi
 
 	# 获取MySQL版本
@@ -459,7 +484,7 @@ ldnmp_version() {
 		mysql_version=$(docker exec mysql mysql --silent --skip-column-names -u root -p"$DB_ROOT_PASSWD" -e "SELECT VERSION();" 2>/dev/null | tail -n 1)
 		echo -n -e "     MySQL: ${yellow}v$mysql_version${white}"
 	else
-		echo -n -e "     MySQL: ${red}未运行或容器名错误${white}"
+		echo -n -e "     MySQL: ${red}NONE${white}"
 	fi
 
 	# 获取PHP版本
@@ -467,7 +492,7 @@ ldnmp_version() {
 		php_version=$(docker exec php php -v 2>/dev/null | grep -oP "PHP \K[0-9]+\.[0-9]+\.[0-9]+")
 		echo -n -e "     PHP: ${yellow}v$php_version${white}"
 	else
-		echo -n -e "     PHP: ${red}未运行或容器名错误${white}"
+		echo -n -e "     PHP: ${red}NONE${white}"
 	fi
 
 	# 获取Redis版本
@@ -475,7 +500,7 @@ ldnmp_version() {
 		redis_version=$(docker exec redis redis-server -v 2>&1 | grep -oP "v=+\K[0-9]+\.[0-9]+")
 		echo -e "     Redis: ${yellow}v$redis_version${white}"
 	else
-		echo -e "     Redis: ${red}未运行或容器名错误${white}"
+		echo -e "     Redis: ${red}NONE${white}"
 	fi
 
 	echo "------------------------"
@@ -720,17 +745,15 @@ linux_ldnmp() {
 				echo "数据库地址:mysql"
 				echo "表前缀:wp_"
 				;;
+			3)
+				clear
+				webname="Discuz论坛"
 
-      3)
-      clear
-      # Discuz论坛
-      webname="Discuz论坛"
-      echo "安装$webname"
-      ldnmp_install_status
-      add_domain
-      ldnmp_install_ssltls
-      ldnmp_certs_status
-      ldnmp_add_db
+				ldnmp_install_status
+				add_domain
+				ldnmp_install_ssltls
+				ldnmp_certs_status
+				ldnmp_add_db
 
       wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/discuz.com.conf
 
@@ -1937,11 +1960,15 @@ linux_ldnmp() {
 						if docker inspect "ldnmp" &>/dev/null; then
 							cd "$web_dir" || { _red "无法进入目录 $web_dir"; return 1; }
 							down_clean_compose
+							ldnmp_uninstall_deps
+							ldnmp_uninstall_certbot
 							rm -fr "$web_dir"
 							_green "LDNMP环境已卸载并清除相关依赖"
 						elif docker inspect "nginx" &>/dev/null && [ -d "$nginx_dir" ]; then
 							cd "$web_dir" || { _red "无法进入目录 $web_dir"; return 1; }
 							down_clean_compose
+							ldnmp_uninstall_deps
+							ldnmp_uninstall_certbot
 							rm -fr "$web_dir"
 							_green "Nginx环境已卸载并清除相关依赖"
 						else
