@@ -1938,11 +1938,11 @@ linux_ldnmp() {
 							echo -n "请输入${ldnmp_pods}版本号(如: 7.4 8.0 8.1 8.2 8.3)(回车获取最新版):"
 							read -r version
 							version=${version:-8.3}
-							cd $web_dir
+							cd "$web_dir"
 
 							cp "$web_dir/docker-compose.yml" "$web_dir/docker-compose1.yml"
 							sed -i "s/image: php:fpm-alpine/image: php:${version}-fpm-alpine/" "$web_dir/docker-compose.yml"
-							docker rm -f $ldnmp_pods
+							docker rm -f "$ldnmp_pods"
 							docker images --filter=reference="${ldnmp_pods}*" -q | xargs docker rmi > /dev/null 2>&1
 							docker compose up -d --force-recreate "$ldnmp_pods"
 							docker exec "$ldnmp_pods" chmod -R 777 /var/www/html
