@@ -854,13 +854,13 @@ linux_ldnmp() {
 			1)
 				need_root
 				ldnmp_check_status
-				ldnmp_check_port
 
 				if [ -d "$nginx_dir" ];then
 					cd "$web_dir"
 					manage_compose down && rm docker-compose.yml
 				fi
 
+				ldnmp_check_port
 				ldnmp_install_deps
 				#install_docker
 				ldnmp_install_certbot
