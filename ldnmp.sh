@@ -1910,12 +1910,13 @@ linux_ldnmp() {
 					case $choice in
 						1)
 							ldnmp_pods="nginx"
-							cd $web_dir
-							docker rm -f $ldnmp_pods
+							cd "$web_dir"
+
+							docker rm -f "$ldnmp_pods" > /dev/null 2>&1
 							docker images --filter=reference="$ldnmp_pods*" -q | xargs docker rmi > /dev/null 2>&1
-							docker compose up -d --force-recreate $ldnmp_pods
-							docker exec $ldnmp_pods chmod -R 777 /var/www/html
-							docker restart $ldnmp_pods > /dev/null 2>&1
+							docker compose up -d --force-recreate "$ldnmp_pods"
+							docker exec "$ldnmp_pods" chmod -R 777 /var/www/html
+							docker restart "$ldnmp_pods" > /dev/null 2>&1
 							_green "更新${ldnmp_pods}完成"
 							;;
 						2)
@@ -1923,14 +1924,15 @@ linux_ldnmp() {
 							echo -n "请输入${ldnmp_pods}版本号(如: 8.0 8.3 8.4 9.0)(回车获取最新版):"
 							read -r version
 							version=${version:-latest}
-							cd $web_dir
-							cp $web_dir/docker-compose.yml $web_dir/docker-compose.yml
-							sed -i "s/image: mysql/image: mysql:${version}/" $web_dir/docker-compose.yml
-							docker rm -f $ldnmp_pods
+							cd "$web_dir"
+
+							#cp "$web_dir/docker-compose.yml" "$web_dir/docker-compose1.yml"
+							sed -i "s/image: mysql/image: mysql:${version}/" "$web_dir/docker-compose.yml"
+							docker rm -f "$ldnmp_pods" > /dev/null 2>&1
 							docker images --filter=reference="$ldnmp_pods*" -q | xargs docker rmi > /dev/null 2>&1
-							docker compose up -d --force-recreate $ldnmp_pods
-							docker restart $ldnmp_pods
-							cp $web_dir/docker-compose.yml $web_dir/docker-compose.yml
+							docker compose up -d --force-recreate "$ldnmp_pods"
+							docker restart "$ldnmp_pods"
+							#cp "$web_dir/docker-compose.yml" "$web_dir/docker-compose.yml"
 							_green "更新${ldnmp_pods}完成"
 							;;
 						3)
@@ -1940,9 +1942,9 @@ linux_ldnmp() {
 							version=${version:-8.3}
 							cd "$web_dir"
 
-							cp "$web_dir/docker-compose.yml" "$web_dir/docker-compose1.yml"
+							#cp "$web_dir/docker-compose.yml" "$web_dir/docker-compose1.yml"
 							sed -i "s/image: php:fpm-alpine/image: php:${version}-fpm-alpine/" "$web_dir/docker-compose.yml"
-							docker rm -f "$ldnmp_pods"
+							docker rm -f "$ldnmp_pods" > /dev/null 2>&1
 							docker images --filter=reference="${ldnmp_pods}*" -q | xargs docker rmi > /dev/null 2>&1
 							docker compose up -d --force-recreate "$ldnmp_pods"
 							docker exec "$ldnmp_pods" chmod -R 777 /var/www/html
@@ -1976,19 +1978,19 @@ linux_ldnmp() {
 							docker exec "$ldnmp_pods" sh -c 'echo "max_input_time=600" > /usr/local/etc/php/conf.d/max_input_time.ini' > /dev/null 2>&1
 
 							docker restart "$ldnmp_pods" > /dev/null 2>&1
-							cp "$web_dir/docker-compose1.yml" "$web_dir/docker-compose.yml"
+							#cp "$web_dir/docker-compose1.yml" "$web_dir/docker-compose.yml"
 							_green "更新${ldnmp_pods}完成"
 							;;
 						4)
 							ldnmp_pods="redis"
 
-							cd $web_dir
-							docker rm -f $ldnmp_pods
+							cd "$web_dir"
+							docker rm -f "$ldnmp_pods" > /dev/null 2>&1
 							docker images --filter=reference="$ldnmp_pods*" -q | xargs docker rmi > /dev/null 2>&1
-							docker compose up -d --force-recreate $ldnmp_pods
-							docker exec -it redis redis-cli CONFIG SET maxmemory 512mb
-							docker exec -it redis redis-cli CONFIG SET maxmemory-policy allkeys-lru
-							docker restart $ldnmp_pods > /dev/null 2>&1
+							docker compose up -d --force-recreate "$ldnmp_pods"
+							docker exec -it "$ldnmp_pods" redis-cli CONFIG SET maxmemory 512mb
+							docker exec -it "$ldnmp_pods" redis-cli CONFIG SET maxmemory-policy allkeys-lru
+							docker restart "$ldnmp_pods" > /dev/null 2>&1
 							_green "更新${ldnmp_pods}完成"
 							;;
 						5)
@@ -1998,7 +2000,7 @@ linux_ldnmp() {
 							case "$choice" in
 								[Yy])
 									_yellow "完整更新LDNMP环境"
-									cd $web_dir
+									cd "$web_dir"
 									manage_compose down_all
 
 									ldnmp_check_port
