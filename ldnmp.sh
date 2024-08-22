@@ -1954,6 +1954,7 @@ linux_ldnmp() {
 							docker exec "$ldnmp_pods" mkdir -p /usr/local/bin/
 							docker cp /usr/local/bin/install-php-extensions "$ldnmp_pods":/usr/local/bin/
 							docker exec "$ldnmp_pods" chmod +x /usr/local/bin/install-php-extensions
+							rm /usr/local/bin/install-php-extensions
 
 							docker exec "$ldnmp_pods" sh -c "\
 								apk add --no-cache imagemagick imagemagick-dev \
