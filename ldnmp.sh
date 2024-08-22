@@ -1483,95 +1483,104 @@ linux_ldnmp() {
 					esac
 				done
 				;;
-    32)
-      clear
-      echo "LDNMP环境备份"
-      cd /home/ && tar czvf web_$(date +"%Y%m%d%H%M%S").tar.gz web
+			32)
+				clear
 
-      while true; do
-        clear
-        read -p "要传送文件到远程服务器吗？(Y/N): " choice
-        case "$choice" in
-          [Yy])
-            read -p "请输入远端服务器IP:  " remote_ip
-            if [ -z "$remote_ip" ]; then
-              echo "错误: 请输入远端服务器IP。"
-              continue
-            fi
-            latest_tar=$(ls -t /home/*.tar.gz | head -1)
-            if [ -n "$latest_tar" ]; then
-              ssh-keygen -f "/root/.ssh/known_hosts" -R "$remote_ip"
-              sleep 2  # 添加等待时间
-              scp -o StrictHostKeyChecking=no "$latest_tar" "root@$remote_ip:/home/"
-              echo "文件已传送至远程服务器home目录。"
-            else
-              echo "未找到要传送的文件。"
-            fi
-            break
-            ;;
-          [Nn])
-            break
-            ;;
-          *)
-            echo "无效的选择，请输入 Y 或 N。"
-            ;;
-        esac
-      done
-      ;;
+				if docker ps --format '{{.Names}}' | grep -q '^ldnmp$'; then
+					cd $web_dir && manage_compose down
+					cd .. && tar czvf web_$(date +"%Y%m%d%H%M%S").tar.gz web
 
-    33)
-      clear
-      echo "定时远程备份"
-      read -p "输入远程服务器IP: " useip
-      read -p "输入远程服务器密码: " usepasswd
+					while true; do
+						clear
+						read -p "要传送文件到远程服务器吗?(y/n):"
+						read -r choice
 
-      cd ~
-      wget -O ${useip}_beifen.sh https://raw.githubusercontent.com/kejilion/sh/main/beifen.sh > /dev/null 2>&1
-      chmod +x ${useip}_beifen.sh
+						case "$choice" in
+							[Yy])
+								echo -n "请输入远端服务器IP:" remote_ip
+								read -r remote_ip
 
-      sed -i "s/0.0.0.0/$useip/g" ${useip}_beifen.sh
-      sed -i "s/123456/$usepasswd/g" ${useip}_beifen.sh
+								if [ -z "$remote_ip" ]; then
+									_red "请正确输入远端服务器IP"
+									continue
+								fi
+								latest_tar=$(ls -t $web_dir/*.tar.gz | head -1)
+								if [ -n "$latest_tar" ]; then
+									ssh-keygen -f "/root/.ssh/known_hosts" -R "$remote_ip"
+									sleep 2  # 添加等待时间
+									scp -o StrictHostKeyChecking=no "$latest_tar" "root@$remote_ip:/opt"
+									_green "文件已传送至远程服务器/opt目录"
+								else
+									_red "未找到要传送的文件"
+								fi
+								break
+								;;
+							[Nn])
+								break
+								;;
+							*)
+								_red "无效选项,请重新输入"
+								;;
+						esac
+					done
+				else
+					_red "未检测到LDNMP环境"
+				fi
+				;;
+			33)
+				clear
 
-      echo "------------------------"
-      echo "1. 每周备份                 2. 每天备份"
-      read -p "请输入你的选择: " dingshi
+				echo -n "输入远程服务器IP:"
+				read -r useip
+				echo -n "输入远程服务器密码:"
+				read -r usepasswd
 
-      case $dingshi in
-          1)
-              check_crontab_installed
-              read -p "选择每周备份的星期几 (0-6，0代表星期日): " weekday
-              (crontab -l ; echo "0 0 * * $weekday ./${useip}_beifen.sh") | crontab - > /dev/null 2>&1
-              ;;
-          2)
-              check_crontab_installed
-              read -p "选择每天备份的时间（小时，0-23）: " hour
-              (crontab -l ; echo "0 $hour * * * ./${useip}_beifen.sh") | crontab - > /dev/null 2>&1
-              ;;
-          *)
-              break  # 跳出
-              ;;
-      esac
+				[ ! -d /data/script ] && mkdir -p /data/script
+				cd /data/script || { _red "进入目录/data/script失败"; return 1; }
+				wget -qO "${useip}_beifen.sh" "https://raw.githubusercontent.com/kejilion/sh/main/beifen.sh"
+				chmod +x ${useip}_beifen.sh
 
-      install sshpass
+				sed -i "s/0.0.0.0/$useip/g" ${useip}_beifen.sh
+				sed -i "s/123456/$usepasswd/g" ${useip}_beifen.sh
 
-      ;;
+				echo "------------------------"
+				echo "1. 每周备份                 2. 每天备份"
+				echo -n "请输入你的选择: "
+				read -r choice
 
-    34)
-      root_use
-      echo "LDNMP环境还原"
-      ldnmp_install_status_two
-      echo "请确认home目录中已经放置网站备份的gz压缩包，按任意键继续……"
-      read -n 1 -s -r -p ""
-      echo -e "${yellow}正在解压...${white}"
-      cd /home/ && ls -t /home/*.tar.gz | head -1 | xargs -I {} tar -xzf {}
-      ldnmp_check_port
-      ldnmp_install_deps
-      #install_docker
-      ldnmp_install_certbot
+				case $choice in
+					1)
+						check_crontab_installed
+						echo -n "选择每周备份的星期几(0-6,0代表星期日):" weekday
+						(crontab -l ; echo "0 0 * * $weekday ./${useip}_beifen.sh > /dev/null 2>&1") | crontab -
+						;;
+					2)
+						check_crontab_installed
+						read -p "选择每天备份的时间（小时，0-23）: " hour
+						(crontab -l ; echo "0 $hour * * * ./${useip}_beifen.sh") | crontab - > /dev/null 2>&1
+						;;
+					*)
+						break  # 跳出
+						;;
+				esac
 
-      install_ldnmp
+				install sshpass
+				;;
+			34)
+				need_root
 
-      ;;
+				ldnmp_install_status_two
+				echo "请确认home目录中已经放置网站备份的gz压缩包，按任意键继续……"
+				read -n 1 -s -r -p ""
+				_yellow "正在解压"
+				cd /opt && ls -t /home/*.tar.gz | head -1 | xargs -I {} tar -xzf {}
+				ldnmp_check_port
+				ldnmp_install_deps
+				#install_docker
+				ldnmp_install_certbot
+
+				install_ldnmp
+				;;
 
     35)
         echo "LDNMP环境防御"
