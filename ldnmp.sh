@@ -692,7 +692,7 @@ ldnmp_display_success() {
 	echo "$webname安装信息如下"
 }
 
-nginx_display_success() {}
+nginx_display_success() {
 	clear
 	echo "您的$webname搭建好了"
 	echo "https://$domain"
