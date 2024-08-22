@@ -1940,7 +1940,7 @@ linux_ldnmp() {
 							version=${version:-8.3}
 							cd "$web_dir"
 
-							cp "$web_dir/docker-compose.yml" "$web_dir/docker-compose1.yml"
+							#cp "$web_dir/docker-compose.yml" "$web_dir/docker-compose1.yml"
 							sed -i "s/image: php:fpm-alpine/image: php:${version}-fpm-alpine/" "$web_dir/docker-compose.yml"
 							docker rm -f "$ldnmp_pods"
 							docker images --filter=reference="${ldnmp_pods}*" -q | xargs docker rmi > /dev/null 2>&1
@@ -1978,7 +1978,7 @@ linux_ldnmp() {
 							docker exec "$ldnmp_pods" sh -c 'echo "max_input_time=600" > /usr/local/etc/php/conf.d/max_input_time.ini' > /dev/null 2>&1
 
 							docker restart "$ldnmp_pods" > /dev/null 2>&1
-							cp "$web_dir/docker-compose1.yml" "$web_dir/docker-compose.yml"
+							#cp "$web_dir/docker-compose1.yml" "$web_dir/docker-compose.yml"
 							_green "更新${ldnmp_pods}完成"
 							;;
 						4)
