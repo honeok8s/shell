@@ -771,6 +771,10 @@ fail2ban_status() {
 	_red "Fail2ban容器在重试后仍未运行"
 }
 
+fail2ban_status_jail() {
+	docker exec fail2ban fail2ban-client status $jail_name
+}
+
 fail2ban_sshd() {
 	if grep -q 'Alpine' /etc/issue; then
 		jail_name=alpine-sshd
