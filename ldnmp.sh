@@ -291,8 +291,6 @@ nginx_install_status() {
 }
 
 ldnmp_check_port() {
-	docker rm -f nginx >/dev/null 2>&1
-
 	# 定义要检测的端口
 	ports=("80" "443")
 
@@ -512,6 +510,56 @@ install_ldnmp() {
 	ldnmp_version
 }
 
+ldnmp_install_nginx(){
+	local nginx_dir nginx_conf_dir default_conf
+
+	nginx_dir="/data/docker_data/web/nginx"
+	nginx_conf_dir="/data/docker_data/web/nginx/conf.d"
+	default_conf="$nginx_conf_dir/default.conf"
+
+	need_root
+
+	# 如果已安装LDNMP环境直接返回
+	if docker inspect "ldnmp" &>/dev/null; then
+		_yellow "LDNMP环境已集成Nginx,无须重复安装"
+		return 0
+	fi
+
+	if docker inspect "nginx" &>/dev/null
+		if curl -s https://raw.githubusercontent.com/honeok8s/conf/main/nginx/ldnmp-docker-compose.yml | head -n 20 | diff - "/data/docker_data/web/docker-compose.yml" &>/dev/null; then
+			_yellow "检测到通过本脚本已安装Nginx"
+			return 0
+		else
+			docker rm -f nginx >/dev/null 2>&1
+		fi
+	else
+		ldnmp_check_port
+		ldnmp_install_deps
+		#install_docker
+		ldnmp_install_certbot
+
+		mkdir -p "$nginx_dir" "$nginx_conf_dir" "$nginx_dir/certs"
+		wget -qO "$nginx_dir/nginx.conf" "https://raw.githubusercontent.com/honeok8s/conf/main/nginx/nginx-2C2G.conf"
+		wget -qO "$nginx_conf_dir/default.conf" "https://raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default2.conf"
+
+		default_server_ssl
+
+		wget -qO "/data/docker_data/web/docker-compose.yml" "https://raw.githubusercontent.com/honeok8s/conf/main/nginx/ldnmp-docker-compose.yml"
+
+		cd /data/docker_data/web || { _red "无法进入目录/data/docker_data/web"; return 1; }
+		manage_compose start
+
+		docker exec -it nginx chmod -R 777 /var/www/html
+
+		clear
+		nginx_version=$(docker exec nginx nginx -v 2>&1)
+		nginx_version=$(echo "$nginx_version" | grep -oP "nginx/\K[0-9]+\.[0-9]+\.[0-9]+")
+		_green "Nginx安装完成"
+		echo -e "当前版本:${yellow}v$nginx_version${white}"
+		echo ""
+	fi
+}
+
 ldnmp_version() {
 	# 获取Nginx版本
 	if docker ps --format '{{.Names}}' | grep -q '^nginx$'; then
@@ -698,7 +746,68 @@ nginx_display_success() {
 	echo "https://$domain"
 }
 
-#####################################
+fail2ban_status() {
+	docker restart fail2ban >/dev/null 2>&1
+	sleep 5
+
+	# 尝试检测fail2ban容器状态最多三次
+	local retries=3
+	local count=0
+
+	while [ $count -lt $retries ]; do
+		if docker ps | grep -q fail2ban; then
+			# 显示fail2ban状态
+			docker exec fail2ban fail2ban-client status
+			return 0
+		else
+			# 容器未运行,等待一段时间后重试
+			_yellow "Fail2ban容器未运行,正在重试($((count+1))/$retries)"
+			sleep 5
+			count=$((count + 1))
+		fi
+	done
+
+	# 如果三次检测后仍未找到容器运行,输出提示信息
+	_red "Fail2ban容器在重试后仍未运行"
+}
+
+fail2ban_sshd() {
+	if grep -q 'Alpine' /etc/issue; then
+		jail_name=alpine-sshd
+		fail2ban_status_jail
+	else
+		jail_name=linux-sshd
+		fail2ban_status_jail
+	fi
+}
+
+fail2ban_install_sshd() {
+	[ ! -d /data/docker_data/fail2ban ] && mkdir -p /data/docker_data/fail2ban
+	cd /data/docker_data/fail2ban
+	wget -qO docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/fail2ban-docker-compose.yml
+
+	manage_compose start
+
+	sleep 3
+	if grep -q 'Alpine' /etc/issue; then
+		cd /data/docker_data/fail2ban/config/fail2ban/filter.d
+		curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-sshd.conf
+		curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-sshd-ddos.conf
+		cd /data/docker_data/fail2ban/config/fail2ban/jail.d/
+		curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-ssh.conf
+	elif command -v dnf &>/dev/null; then
+		cd /data/docker_data/fail2ban/config/fail2ban/jail.d/
+		curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/centos-ssh.conf
+	else
+		install rsyslog
+		systemctl start rsyslog
+		systemctl enable rsyslog
+		cd /data/docker_data/fail2ban/config/fail2ban/jail.d/
+		curl -sS -O https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/linux-ssh.conf
+	fi
+}
+
+############################################################################################################
 linux_ldnmp() {
 	# 定义全局安装路径
 	web_dir="/data/docker_data/web"
@@ -746,6 +855,12 @@ linux_ldnmp() {
 				need_root
 				ldnmp_check_status
 				ldnmp_check_port
+
+				if [ -d "$nginx_dir" ];then
+					cd "$web_dir"
+					manage_compose down && rm docker-compose.yml
+				fi
+
 				ldnmp_install_deps
 				#install_docker
 				ldnmp_install_certbot
@@ -1134,30 +1249,8 @@ linux_ldnmp() {
 				echo "管理员登录信息自行设置"
 				;;
 			21)
-				need_root
-				ldnmp_check_port
-				ldnmp_install_deps
-				#install_docker
-				ldnmp_install_certbot
-				# 实现的需求,检查是否是ldnmp环境已安装nginx，安装则跳过并提示    如果已经安装，判断是不是安装在/data/docker_data/web/nginx目录，如果是安装在/data/docker_data/web/nginx则校验compose文件是不是期望的，
-				# 如果不是安装在/data/docker_data/web/nginx里，则直接docker rm -f nginx 2>&1 
-
-      cd /home && mkdir -p web/html web/mysql web/certs web/conf.d web/redis web/log/nginx && touch web/docker-compose.yml
-
-      wget -O /home/web/nginx.conf https://raw.githubusercontent.com/kejilion/nginx/main/nginx10.conf
-      wget -O /home/web/conf.d/default.conf https://raw.githubusercontent.com/kejilion/nginx/main/default10.conf
-      default_server_ssl
-      docker rmi nginx nginx:alpine >/dev/null 2>&1
-      docker run -d --name nginx --restart always -p 80:80 -p 443:443 -p 443:443/udp -v /home/web/nginx.conf:/etc/nginx/nginx.conf -v /home/web/conf.d:/etc/nginx/conf.d -v /home/web/certs:/etc/nginx/certs -v /home/web/html:/var/www/html -v /home/web/log/nginx:/var/log/nginx nginx:alpine
-
-      clear
-      nginx_version=$(docker exec nginx nginx -v 2>&1)
-      nginx_version=$(echo "$nginx_version" | grep -oP "nginx/\K[0-9]+\.[0-9]+\.[0-9]+")
-      echo "nginx已安装完成"
-      echo -e "当前版本: ${yellow}v$nginx_version${white}"
-      echo ""
-        ;;
-
+				ldnmp_install_nginx
+				;;
 			22)
 				clear
 				webname="站点重定向"
@@ -1591,10 +1684,9 @@ linux_ldnmp() {
 				cd /opt && ls -t /opt/*.tar.gz | head -1 | xargs -I {} tar -xzf {}
 
 				# 清理并创建必要的目录
-				web_dir=""
-				web_dir="/data/docker_data"
+				web_dir="/data/docker_data/web"
 				[ -d "$web_dir" ] && rm -fr "$web_dir"
-				mkdir -p $web_dir
+				mkdir -p "$web_dir"
 
 				cd "$web_dir" || { _red "无法进入目录 $web_dir"; return 1; }
 				mv /opt/web .
@@ -1608,208 +1700,248 @@ linux_ldnmp() {
 			35)
 				if docker inspect fail2ban &>/dev/null ; then
 					while true; do
+						clear
+						echo "服务器防御程序已启动"
+						echo "------------------------"
+						echo "1. 开启SSH防暴力破解              2. 关闭SSH防暴力破解"
+						echo "3. 开启网站保护                   4. 关闭网站保护"
+						echo "------------------------"
+						echo "5. 查看SSH拦截记录                6. 查看网站拦截记录"
+						echo "7. 查看防御规则列表               8. 查看日志实时监控"
+						echo "------------------------"
+						echo "11. 配置拦截参数"
+						echo "------------------------"
+						echo "21. cloudflare模式                22. 高负载开启5秒盾"
+						echo "------------------------"
+						echo "9. 卸载防御程序"
+						echo "------------------------"
+						echo "0. 退出"
+						echo "------------------------"
+
+						echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+						read -r choice
+
+						case $choice in
+							1)
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/alpine-ssh.conf ] && sed -i 's/false/true/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/alpine-ssh.conf
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/linux-ssh.conf ] && sed -i 's/false/true/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/linux-ssh.conf
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/centos-ssh.conf ] && sed -i 's/false/true/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/centos-ssh.conf
+								fail2ban_status
+								;;
+							2)
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/alpine-ssh.conf ] && sed -i 's/true/false/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/alpine-ssh.conf
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/linux-ssh.conf ] && sed -i 's/true/false/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/linux-ssh.conf
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/centos-ssh.conf ] && sed -i 's/true/false/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/centos-ssh.conf
+								fail2ban_status
+								;;
+							3)
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf ] && sed -i 's/false/true/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
+								fail2ban_status
+								;;
+							4)
+								[ -f /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf ] && sed -i 's/true/false/g' /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
+								fail2ban_status
+								;;
+							5)
+								echo "------------------------"
+								fail2ban_sshd
+								echo "------------------------"
+								;;
+							6)
+								echo "------------------------"
+								jail_name=fail2ban-nginx-cc
+								fail2ban_status_jail
+								echo "------------------------"
+								jail_name=docker-nginx-bad-request
+								fail2ban_status_jail
+								echo "------------------------"
+								jail_name=docker-nginx-botsearch
+								fail2ban_status_jail
+								echo "------------------------"
+								jail_name=docker-nginx-http-auth
+								fail2ban_status_jail
+								echo "------------------------"
+								jail_name=docker-nginx-limit-req
+								fail2ban_status_jail
+								echo "------------------------"
+								jail_name=docker-php-url-fopen
+								fail2ban_status_jail
+								echo "------------------------"
+								;;
+							7)
+								docker exec fail2ban fail2ban-client status
+								;;
+							8)
+								timeout 5 tail -f /data/docker_data/fail2ban/config/log/fail2ban/fail2ban.log
+								;;
+							9)
+								cd /data/docker_data/fail2ban || { _red "无法进入目录/data/docker_data/fail2ban"; return 1; }
+								manage_compose clean_down
+
+								[ -d /data/docker_data/fail2ban ] && rm -fr /data/docker_data/fail2ban
+								crontab -l | grep -v "CF-Under-Attack.sh" | crontab - 2>/dev/null
+								_green "Fail2Ban防御程序已卸载"
+								break
+								;;
+							11)
+								vim /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
+								fail2ban_status
+								break
+								;;
+							21)
+								echo "Cloudflare后台右上角我的个人资料,选择左侧API令牌,获取Global API Key"
+								echo "https://dash.cloudflare.com/login"
+
+								# 获取CFUSER
+								while true; do
+									echo -n "请输入你的Cloudflare管理员邮箱:"
+									read -r CFUSER
+									if [[ "$CFUSER" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+										break
+									else
+										_red "无效的邮箱格式,请重新输入"
+									fi
+								done
+								# 获取CFKEY
+								while true; do
+									echo "cloudflare后台右上角我的个人资料,选择左侧API令牌,获取Global API Key"
+									echo "https://dash.cloudflare.com/login"
+									echo -n "请输入你的Global API Key:"
+									read -r CFKEY
+									if [[ -n "$CFKEY" ]]; then
+										break
+									else
+										_red "CFKEY不能为空,请重新输入"
+									fi
+								done
+
+								wget -qO /data/docker_data/web/nginx/conf.d/default.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default11.conf
+
+								if nginx_check; then
+									docker restart nginx >/dev/null 2>&1
+								else
+									_red "Nginx配置校验失败,请检查配置文件"
+									return 1
+								fi
+
+								cd /data/docker_data/fail2ban/config/fail2ban/jail.d || { _red "无法进入目录 /data/docker_data/fail2ban/config/fail2ban/jail.d"; return 1; }
+								curl -sS -O https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/nginx-docker-cc.conf
+								
+								cd /data/docker_data/fail2ban/config/fail2ban/action.d || { _red "无法进入目录 /data/docker_data/fail2ban/config/fail2ban/action.d"; return 1; }
+								curl -sS -O https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/cloudflare-docker.conf
+								
+								sed -i "s/kejilion@outlook.com/$CFUSER/g" /data/docker_data/fail2ban/config/fail2ban/action.d/cloudflare-docker.conf
+								sed -i "s/APIKEY00000/$CFKEY/g" /data/docker_data/fail2ban/config/fail2ban/action.d/cloudflare-docker.conf
+
+								fail2ban_status
+								_green "已配置Cloudflare模式,可在Cloudflare后台站点-安全性-事件中查看拦截记录"
+								;;
+							22)
+								echo "网站每5分钟自动检测,当达检测到高负载会自动开盾,低负载也会自动关闭5秒盾"
+								echo "------------------------"
+
+								# 获取CFUSER
+								while true; do
+									echo -n "请输入你的Cloudflare管理员邮箱:"
+									read -r CFUSER
+									if [[ "$CFUSER" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+										break
+									else
+										_red "无效的邮箱格式,请重新输入"
+									fi
+								done
+								# 获取CFKEY
+								while true; do
+									echo "cloudflare后台右上角我的个人资料,选择左侧API令牌,获取Global API Key"
+									echo "https://dash.cloudflare.com/login"
+									echo -n "请输入你的Global API Key:"
+									read -r CFKEY
+									if [[ -n "$CFKEY" ]]; then
+										break
+									else
+										_red "CFKEY不能为空,请重新输入"
+									fi
+								done
+								# 获取ZoneID
+								while true;do
+									echo "Cloudflare后台域名概要页面右下方获取区域ID"
+									echo -n "请输入你的ZoneID:"
+									read -r CFZoneID
+									if [[ -n "$CFZoneID" ]]; then
+										break
+									else
+										_red "CFZoneID不能为空,请重新输入"
+									fi
+								done
+
+								install jq bc
+								check_crontab_installed
+
+								[ ! -d /data/script ] && mkdir -p /data/script
+								cd /data/script || { _red "进入目录/data/script失败"; return 1; }
+
+								curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/CF-Under-Attack.sh
+								chmod +x CF-Under-Attack.sh
+								sed -i "s/AAAA/$CFUSER/g" /data/script/CF-Under-Attack.sh
+								sed -i "s/BBBB/$CFKEY/g" /data/script/CF-Under-Attack.sh
+								sed -i "s/CCCC/$CFZoneID/g" /data/script/CF-Under-Attack.sh
+
+								cron_job="*/5 * * * * /data/script/CF-Under-Attack.sh >/dev/null 2>&1"
+								existing_cron=$(crontab -l 2>/dev/null | grep -F "$cron_job")
+								
+								if [ -z "$existing_cron" ]; then
+									(crontab -l 2>/dev/null; echo "$cron_job") | crontab -
+									_green "高负载自动开盾脚本已添加"
+								else
+									_yellow "自动开盾脚本已存在,无需添加"
+								fi
+								;;
+							0)
+								break
+								;;
+							*)
+								_red "无效选项,请重新输入"
+								;;
+						esac
+						end_of
+					done
+				elif [ -x "$(command -v fail2ban-client)" ] ; then
 					clear
-              echo "服务器防御程序已启动"
-              echo "------------------------"
-              echo "1. 开启SSH防暴力破解              2. 关闭SSH防暴力破解"
-              echo "3. 开启网站保护                   4. 关闭网站保护"
-              echo "------------------------"
-              echo "5. 查看SSH拦截记录                6. 查看网站拦截记录"
-              echo "7. 查看防御规则列表               8. 查看日志实时监控"
-              echo "------------------------"
-              echo "11. 配置拦截参数"
-              echo "------------------------"
-              echo "21. cloudflare模式                22. 高负载开启5秒盾"
-              echo "------------------------"
-              echo "9. 卸载防御程序"
-              echo "------------------------"
-              echo "0. 退出"
-              echo "------------------------"
-              read -p "请输入你的选择: " sub_choice
-              case $sub_choice in
-                  1)
-                      sed -i 's/false/true/g' /path/to/fail2ban/config/fail2ban/jail.d/alpine-ssh.conf
-                      sed -i 's/false/true/g' /path/to/fail2ban/config/fail2ban/jail.d/linux-ssh.conf
-                      sed -i 's/false/true/g' /path/to/fail2ban/config/fail2ban/jail.d/centos-ssh.conf
-                      f2b_status
-                      ;;
-                  2)
-                      sed -i 's/true/false/g' /path/to/fail2ban/config/fail2ban/jail.d/alpine-ssh.conf
-                      sed -i 's/true/false/g' /path/to/fail2ban/config/fail2ban/jail.d/linux-ssh.conf
-                      sed -i 's/true/false/g' /path/to/fail2ban/config/fail2ban/jail.d/centos-ssh.conf
-                      f2b_status
-                      ;;
-                  3)
-                      sed -i 's/false/true/g' /path/to/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
-                      f2b_status
-                      ;;
-                  4)
-                      sed -i 's/true/false/g' /path/to/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
-                      f2b_status
-                      ;;
-                  5)
-                      echo "------------------------"
-                      f2b_sshd
-                      echo "------------------------"
-                      ;;
-                  6)
+					echo "卸载旧版Fail2ban"
+					echo -n "确定继续吗?(y/n):"
+					read -r choice
+					
+					case "$choice" in
+						[Yy])
+							remove fail2ban
+							rm -fr /etc/fail2ban
+							_green "Fail2Ban防御程序已卸载"
+							;;
+						[Nn])
+							:
+							_yellow "已取消"
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac
+				else
+					clear
+					#install_docker
+					ldnmp_install_nginx
+					fail2ban_install_sshd
 
-                      echo "------------------------"
-                      xxx=fail2ban-nginx-cc
-                      f2b_status_xxx
-                      echo "------------------------"
-                      xxx=docker-nginx-bad-request
-                      f2b_status_xxx
-                      echo "------------------------"
-                      xxx=docker-nginx-botsearch
-                      f2b_status_xxx
-                      echo "------------------------"
-                      xxx=docker-nginx-http-auth
-                      f2b_status_xxx
-                      echo "------------------------"
-                      xxx=docker-nginx-limit-req
-                      f2b_status_xxx
-                      echo "------------------------"
-                      xxx=docker-php-url-fopen
-                      f2b_status_xxx
-                      echo "------------------------"
+					cd /data/docker_data/fail2ban/config/fail2ban/filter.d
+					curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/fail2ban-nginx-cc.conf
+					cd /data/docker_data/fail2ban/config/fail2ban/jail.d
+					curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/nginx-docker-cc.conf
 
-                      ;;
+					sed -i "/cloudflare/d" /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
 
-                  7)
-                      docker exec -it fail2ban fail2ban-client status
-                      ;;
-                  8)
-                      tail -f /path/to/fail2ban/config/log/fail2ban/fail2ban.log
-
-                      ;;
-                  9)
-                      docker rm -f fail2ban
-                      rm -rf /path/to/fail2ban
-                      crontab -l | grep -v "CF-Under-Attack.sh" | crontab - 2>/dev/null
-                      echo "Fail2Ban防御程序已卸载"
-                      break
-                      ;;
-
-                  11)
-                      install nano
-                      nano /path/to/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
-                      f2b_status
-
-                      break
-                      ;;
-                  21)
-                      echo "cloudflare模式"
-                      echo "到cf后台右上角我的个人资料，选择左侧API令牌，获取Global API Key"
-                      echo "https://dash.cloudflare.com/login"
-                      read -p "输入CF的账号: " cfuser
-                      read -p "输入CF的Global API Key: " cftoken
-
-                      wget -O /home/web/conf.d/default.conf https://raw.githubusercontent.com/kejilion/nginx/main/default11.conf
-                      docker restart nginx
-
-                      cd /path/to/fail2ban/config/fail2ban/jail.d/
-                      curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/nginx-docker-cc.conf
-
-                      cd /path/to/fail2ban/config/fail2ban/action.d
-                      curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/cloudflare-docker.conf
-
-                      sed -i "s/kejilion@outlook.com/$cfuser/g" /path/to/fail2ban/config/fail2ban/action.d/cloudflare-docker.conf
-                      sed -i "s/APIKEY00000/$cftoken/g" /path/to/fail2ban/config/fail2ban/action.d/cloudflare-docker.conf
-                      f2b_status
-
-                      echo "已配置cloudflare模式，可在cf后台，站点-安全性-事件中查看拦截记录"
-                      ;;
-
-                  22)
-                      echo "高负载开启5秒盾"
-                      echo -e "${yellow}网站每5分钟自动检测，当达检测到高负载会自动开盾，低负载也会自动关闭5秒盾。${white}"
-                      echo "--------------"
-                      echo "获取CF参数: "
-                      echo -e "到cf后台右上角我的个人资料，选择左侧API令牌，获取${yellow}Global API Key${white}"
-                      echo -e "到cf后台域名概要页面右下方获取${yellow}区域ID${white}"
-                      echo "https://dash.cloudflare.com/login"
-                      echo "--------------"
-                      read -p "输入CF的账号: " cfuser
-                      read -p "输入CF的Global API Key: " cftoken
-                      read -p "输入CF中域名的区域ID: " cfzonID
-
-                      cd ~
-                      install jq bc
-                      check_crontab_installed
-                      curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/CF-Under-Attack.sh
-                      chmod +x CF-Under-Attack.sh
-                      sed -i "s/AAAA/$cfuser/g" ~/CF-Under-Attack.sh
-                      sed -i "s/BBBB/$cftoken/g" ~/CF-Under-Attack.sh
-                      sed -i "s/CCCC/$cfzonID/g" ~/CF-Under-Attack.sh
-
-                      cron_job="*/5 * * * * ~/CF-Under-Attack.sh"
-
-                      existing_cron=$(crontab -l 2>/dev/null | grep -F "$cron_job")
-
-                      if [ -z "$existing_cron" ]; then
-                          (crontab -l 2>/dev/null; echo "$cron_job") | crontab -
-                          echo "高负载自动开盾脚本已添加"
-                      else
-                          echo "自动开盾脚本已存在，无需添加"
-                      fi
-
-                      ;;
-                  0)
-                      break
-                      ;;
-                  *)
-                      echo "无效的选择，请重新输入。"
-                      ;;
-              esac
-              end_of
-
-          done
-
-      elif [ -x "$(command -v fail2ban-client)" ] ; then
-          clear
-          echo "卸载旧版fail2ban"
-          read -p "确定继续吗？(Y/N): " choice
-          case "$choice" in
-            [Yy])
-              remove fail2ban
-              rm -rf /etc/fail2ban
-              echo "Fail2Ban防御程序已卸载"
-              ;;
-            [Nn])
-              echo "已取消"
-              ;;
-            *)
-              echo "无效的选择，请输入 Y 或 N。"
-              ;;
-          esac
-
-      else
-          clear
-          #install_docker
-
-          docker rm -f nginx
-          wget -O /home/web/nginx.conf https://raw.githubusercontent.com/kejilion/nginx/main/nginx10.conf
-          wget -O /home/web/conf.d/default.conf https://raw.githubusercontent.com/kejilion/nginx/main/default10.conf
-          default_server_ssl
-          docker run -d --name nginx --restart always --network web_default -p 80:80 -p 443:443 -p 443:443/udp -v /home/web/nginx.conf:/etc/nginx/nginx.conf -v /home/web/conf.d:/etc/nginx/conf.d -v /home/web/certs:/etc/nginx/certs -v /home/web/html:/var/www/html -v /home/web/log/nginx:/var/log/nginx nginx:alpine
-          docker exec -it nginx chmod -R 777 /var/www/html
-
-          f2b_install_sshd
-
-          cd /path/to/fail2ban/config/fail2ban/filter.d
-          curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/fail2ban-nginx-cc.conf
-          cd /path/to/fail2ban/config/fail2ban/jail.d/
-          curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/nginx-docker-cc.conf
-          sed -i "/cloudflare/d" /path/to/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
-
-          cd ~
-          f2b_status
-
-          echo "防御程序已开启"
-      fi
-
-        ;;
+					fail2ban_status
+					_green "防御程序已开启"
+				fi
+				;;
 			36)
 				while true; do
 					clear
