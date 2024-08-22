@@ -265,6 +265,16 @@ ldnmp_install_status() {
 	fi
 }
 
+nginx_install_status() {
+	if docker inspect "nginx" &>/dev/null; then
+		_yellow "Nginx环境已安装,开始部署$webname"
+	else
+		_red "Nginx环境未安装,请先安装Nginx环境再部署网站"
+		end_of
+		linux_ldnmp
+	fi
+}
+
 ldnmp_check_port() {
 	docker rm -f nginx >/dev/null 2>&1
 
@@ -630,6 +640,15 @@ ldnmp_add_db() {
 	}
 }
 
+reverse_proxy() {
+      ip_address
+      wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/reverse-proxy.conf
+      sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
+      sed -i "s/0.0.0.0/$ipv4_address/g" /home/web/conf.d/$yuming.conf
+      sed -i "s/0000/$duankou/g" /home/web/conf.d/$yuming.conf
+      docker restart nginx
+}
+
 nginx_check() {
 	docker exec nginx nginx -t > /dev/null 2>&1
 	return $?
@@ -656,6 +675,12 @@ ldnmp_display_success() {
 	echo "https://$domain"
 	echo "------------------------"
 	echo "$webname安装信息如下"
+}
+
+nginx_display_success()
+	clear
+	echo "您的$webname搭建好了"
+	echo "https://$domain"
 }
 
 #####################################
@@ -986,7 +1011,7 @@ linux_ldnmp() {
 				clear
 				echo -e "[${yellow}1/6${white}] 上传PHP源码"
 				echo "-------------"
-				echo "目前只允许上传zip格式的源码包，请将源码包放到/home/web/html/${domain}目录下"
+				echo "目前只允许上传zip格式的源码包,请将源码包放到$dyna_dir目录下"
 				echo -n "也可以输入下载链接远程下载源码包,直接回车将跳过远程下载:"
 				read -r url_download
 
@@ -1118,166 +1143,176 @@ linux_ldnmp() {
       echo ""
         ;;
 
-      22)
-      clear
-      webname="站点重定向"
-      echo "安装$webname"
-      nginx_install_status
-      ip_address
-      add_domain
-      read -p "请输入跳转域名: " reverseproxy
+			22)
+				clear
+				webname="站点重定向"
 
-      ldnmp_install_ssltls
-      ldnmp_certs_status
+				nginx_install_status
+				ip_address
+				add_domain
+				echo -n "请输入跳转域名:"
+				read -r reverseproxy
 
-      wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/rewrite.conf
-      sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
-      sed -i "s/baidu.com/$reverseproxy/g" /home/web/conf.d/$yuming.conf
+				ldnmp_install_ssltls
+				ldnmp_certs_status
 
-      docker restart nginx
+				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/rewrite.conf"
+				sed -i "s/yuming.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
+				sed -i "s/baidu.com/$reverseproxy/g" "$nginx_dir/conf.d/$domain.conf"
 
-      nginx_web_on
+				if nginx_check; then
+					docker restart nginx >/dev/null 2>&1
+				else
+					_red "Nginx配置校验失败,请检查配置文件"
+					return 1
+				fi
 
+				nginx_display_success
+				;;
+			23)
+				clear
+				webname="反向代理-IP+端口"
 
-        ;;
+				nginx_install_status
+				ip_address
+				add_domain
+				echo -n "请输入你的反代IP:" reverseproxy
+				read -r reverseproxy
+				echo -n "请输入你的反代端口:"
+				read -r port
 
-      23)
-      clear
-      webname="反向代理-IP+端口"
-      echo "安装$webname"
-      nginx_install_status
-      ip_address
-      add_domain
-      read -p "请输入你的反代IP: " reverseproxy
-      read -p "请输入你的反代端口: " port
+				ldnmp_install_ssltls
+				ldnmp_certs_status
 
-      ldnmp_install_ssltls
-      ldnmp_certs_status
+				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/reverse-proxy.conf"
+				sed -i "s/yuming.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
+				sed -i "s/0.0.0.0/$reverseproxy/g" "$nginx_dir/conf.d/$domain.conf"
+				sed -i "s/0000/$port/g" "$nginx_dir/conf.d/$domain.conf"
 
-      wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/reverse-proxy.conf
-      sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
-      sed -i "s/0.0.0.0/$reverseproxy/g" /home/web/conf.d/$yuming.conf
-      sed -i "s/0000/$port/g" /home/web/conf.d/$yuming.conf
+				if nginx_check; then
+					docker restart nginx >/dev/null 2>&1
+				else
+					_red "Nginx配置校验失败,请检查配置文件"
+					return 1
+				fi
 
-      docker restart nginx
+				nginx_display_success
+				;;
+			24)
+				clear
+				webname="反向代理-域名"
 
-      nginx_web_on
+				nginx_install_status
+				ip_address
+				add_domain
+				echo -e "域名格式: ${yellow}http://www.google.com${white}"
+				echo -n "请输入你的反代域名:"
+				read -r proxy_domain
 
-        ;;
+				ldnmp_install_ssltls
+				ldnmp_certs_status
 
-      24)
-      clear
-      webname="反向代理-域名"
-      echo "安装$webname"
-      nginx_install_status
-      ip_address
-      add_domain
-      echo -e "域名格式: ${yellow}http://www.google.com${white}"
-      read -p "请输入你的反代域名: " fandai_yuming
+				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/reverse-proxy-domain.conf"
+				sed -i "s/yuming.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
+				sed -i "s|fandaicom|$proxy_domain|g" "$nginx_dir/conf.d/$domain.conf"
 
-      ldnmp_install_ssltls
-      ldnmp_certs_status
+				if nginx_check; then
+					docker restart nginx >/dev/null 2>&1
+				else
+					_red "Nginx配置校验失败,请检查配置文件"
+					return 1
+				fi
 
-      wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/reverse-proxy-domain.conf
-      sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
-      sed -i "s|fandaicom|$fandai_yuming|g" /home/web/conf.d/$yuming.conf
+				nginx_display_success
+				;;
+			25)
+				clear
+				webname="静态站点"
 
-      docker restart nginx
+				nginx_install_status
+				add_domain
+				ldnmp_install_ssltls
+				ldnmp_certs_status
 
-      nginx_web_on
+				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/html.conf"
+				sed -i "s/yuming.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
 
-        ;;
+				static_dir="$nginx_dir/html/$domain"
+				[ ! -d $static_dir ] && mkdir -p "$static_dir"
+				cd "$static_dir" || { _red "无法进入目录$static_dir"; return 1; }
 
+				clear
+				echo -e "[${yellow}1/2${white}] 上传静态源码"
+				echo "-------------"
+				echo "目前只允许上传zip格式的源码包,请将源码包放到$static_dir目录下"
+				echo -n "也可以输入下载链接远程下载源码包,直接回车将跳过远程下载:"
+				read -r url_download
 
-      25)
-      clear
-      webname="静态站点"
-      echo "安装$webname"
-      nginx_install_status
-      add_domain
-      ldnmp_install_ssltls
-      ldnmp_certs_status
+				if [ -n "$url_download" ]; then
+					wget -q "$url_download"
+				fi
 
-      wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/html.conf
-      sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
+				unzip $(ls -t *.zip | head -n 1)
+				rm -f $(ls -t *.zip | head -n 1)
 
-      cd /home/web/html
-      mkdir $yuming
-      cd $yuming
+				clear
+				echo -e "[${yellow}2/6${white}] index.html所在路径"
+				echo "-------------"
+				find "$(realpath .)" -name "index.html" -print
 
+				echo -n "请输入index.html的路径,如($nginx_dir/html/$domain/index/):"
+				read -r index_path
 
-      clear
-      echo -e "[${yellow}1/2${white}] 上传静态源码"
-      echo "-------------"
-      echo "目前只允许上传zip格式的源码包，请将源码包放到/home/web/html/${yuming}目录下"
-      read -p "也可以输入下载链接，远程下载源码包，直接回车将跳过远程下载： " url_download
+				sed -i "s#root /var/www/html/$domain/#root $index_path#g" "$nginx_dir/conf.d/$domain.conf"
+				sed -i "s#$nginx_dir/#/var/www/#g" "$nginx_dir/conf.d/$domain.conf"
 
-      if [ -n "$url_download" ]; then
-          wget "$url_download"
-      fi
+				docker exec nginx chmod -R 777 /var/www/html
 
-      unzip $(ls -t *.zip | head -n 1)
-      rm -f $(ls -t *.zip | head -n 1)
+				if nginx_check; then
+					docker restart nginx >/dev/null 2>&1
+				else
+					_red "Nginx配置校验失败,请检查配置文件"
+					return 1
+				fi
 
-      clear
-      echo -e "[${yellow}2/2${white}] index.html所在路径"
-      echo "-------------"
-      find "$(realpath .)" -name "index.html" -print
+				nginx_display_success
+				;;
+			26)
+				clear
+				#webname="Bitwarden"
 
-      read -p "请输入index.html的路径，类似（/home/web/html/$yuming/index/）： " index_lujing
+				#nginx_install_status
+				#add_domain
+				#ldnmp_install_ssltls
+				#ldnmp_certs_status
 
-      sed -i "s#root /var/www/html/$yuming/#root $index_lujing#g" /home/web/conf.d/$yuming.conf
-      sed -i "s#/home/web/#/var/www/#g" /home/web/conf.d/$yuming.conf
+				#docker run -d \
+				#	--name bitwarden \
+				#	--restart always \
+				#	-p 3280:80 \
+				#	-v /home/web/html/$yuming/bitwarden/data:/data \
+				#	vaultwarden/server
+				#duankou=3280
+				#reverse_proxy
 
-      docker exec nginx chmod -R 777 /var/www/html
-      docker restart nginx
+				#nginx_display_success
+				;;
 
-      nginx_web_on
+			27)
+				clear
+				#webname="halo"
 
-        ;;
+				#nginx_install_status
+				#add_domain
+				#ldnmp_install_ssltls
+				#ldnmp_certs_status
 
+				#docker run -d --name halo --restart always -p 8010:8090 -v /home/web/html/$yuming/.halo2:/root/.halo2 halohub/halo:2
+				#duankou=8010
+				#reverse_proxy
 
-      26)
-      clear
-      webname="Bitwarden"
-      echo "安装$webname"
-      nginx_install_status
-      add_domain
-      ldnmp_install_ssltls
-      ldnmp_certs_status
-
-      docker run -d \
-        --name bitwarden \
-        --restart always \
-        -p 3280:80 \
-        -v /home/web/html/$yuming/bitwarden/data:/data \
-        vaultwarden/server
-      duankou=3280
-      reverse_proxy
-
-      nginx_web_on
-
-        ;;
-
-      27)
-      clear
-      webname="halo"
-      echo "安装$webname"
-      nginx_install_status
-      add_domain
-      ldnmp_install_ssltls
-      ldnmp_certs_status
-
-      docker run -d --name halo --restart always -p 8010:8090 -v /home/web/html/$yuming/.halo2:/root/.halo2 halohub/halo:2
-      duankou=8010
-      reverse_proxy
-
-      nginx_web_on
-
-        ;;
-
-
-
+				#nginx_display_success
+				;;
 			31)
 				need_root
 				while true; do
