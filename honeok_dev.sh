@@ -4249,61 +4249,42 @@ rollbak_dns() {
 }
 
 reinstall_system(){
-	MollyLau_script(){
+	dd_xitong_MollyLau() {
 		wget --no-check-certificate -qO InstallNET.sh 'https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh' && chmod a+x InstallNET.sh
 	}
 
-	bin456789_script(){
+	dd_xitong_bin456789() {
 		curl -O https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh
 	}
 
-	dd_linux_mollyLau(){
-		echo -e "重装后初始用户名:${yellow}root${white} 初始密码:${yellow}LeitboGi0ro${white} 初始端口:${yellow}22${white}"
-		echo "详细参数参考Github 项目地址：https://github.com/leitbogioro/Tools"
+	dd_xitong_1() {
+		echo -e "重装后初始用户名:${yellow}root${white}  初始密码:${yellow}LeitboGi0ro${white}  初始端口: ${gl_huang}22${white}"
 		_yellow "按任意键继续"
 		read -n 1 -s -r -p ""
 		install wget
-		MollyLau_script
+		dd_xitong_MollyLau
 	}
 
-	dd_windows_mollyLau() {
+	dd_xitong_2() {
 		echo -e "重装后初始用户名:${yellow}Administrator${white} 初始密码:${yellow}Teddysun.com${white} 初始端口:${yellow}3389${white}"
-		echo "详细参数参考Github 项目地址：https://github.com/leitbogioro/Tools"
 		_yellow "按任意键继续"
 		read -n 1 -s -r -p ""
 		install wget
-		MollyLau_script
+		dd_xitong_MollyLau
 	}
 
-	dd_linux_bin456789() {
+	dd_xitong_3() {
 		echo -e "重装后初始用户名:${yellow}root${white} 初始密码:${yellow}123@@@${white} 初始端口:${yellow}22${white}"
-		echo "详细参数参考Github 项目地址：https://github.com/bin456789/reinstall"
 		_yellow "按任意键继续"
 		read -n 1 -s -r -p ""
-		bin456789_script
+		dd_xitong_bin456789
 	}
 
-	dd_windows_bin456789() {
+	dd_xitong_4() {
 		echo -e "重装后初始用户名:${yellow}Administrator${white} 初始密码:${yellow}123@@@${white} 初始端口:${yellow}3389${white}"
-		echo "详细参数参考Github项目地址：https://github.com/bin456789/reinstall"
 		_yellow "按任意键继续"
 		read -n 1 -s -r -p ""
-		bin456789_script
-	}
-
-	# 简单判断是否为lxc和openvz容器,随后调用酒神脚本
-	dd_openvz_lxc_LloydAsp() {
-		if grep -q 'container=lxc' /proc/1/environ || [ -f /proc/vz/veinfo ]; then
-			_green "虚拟化环境校验通过"
-			install wget
-			wget -qO OsMutation.sh https://raw.githubusercontent.com/LloydAsp/OsMutation/main/OsMutation.sh && chmod u+x OsMutation.sh
-			bash OsMutation.sh
-		else
-			clear
-			_red "未检测到支持的虚拟化环境(Lxc或OpenVZ)"
-			sleep 2
-			return 1
-		fi
+		dd_xitong_bin456789
 	}
 
 	# 重装系统
@@ -4332,8 +4313,6 @@ reinstall_system(){
 		echo "44. Windows Server 2022"
 		echo "45. Windows Server 2019       46. Windows Server 2016"
 		echo "-------------------------"
-		echo "100. OpenVZ/LXC 重装Debian/CentOS/Alpine"
-		echo "-------------------------"
 		echo "0. 返回上一级菜单"
 		echo "-------------------------"
 
@@ -4342,144 +4321,169 @@ reinstall_system(){
 
 		case "$choice" in
 			1)
-				dd_linux_mollyLau
-				bash InstallNET.sh -debian 12 && reboot || reboot
+				dd_xitong_1
+				bash InstallNET.sh -debian 12
+				reboot
 				exit
 				;;
 			2)
-				dd_linux_mollyLau
-				bash InstallNET.sh -debian 11 && reboot || reboot
+				dd_xitong_1
+				bash InstallNET.sh -debian 11
+				reboot
 				exit
 				;;
 			3)
-				dd_linux_mollyLau
-				bash InstallNET.sh -debian 10 && reboot || reboot
+				dd_xitong_1
+				bash InstallNET.sh -debian 10
+				reboot
 				exit
 				;;
 			4)
-				dd_linux_mollyLau
-				bash InstallNET.sh -debian 9 && reboot || reboot
+				dd_xitong_1
+				bash InstallNET.sh -debian 9
+				reboot
 				exit
 				;;
 			11)
-				dd_linux_mollyLau
-				bash InstallNET.sh -ubuntu 24.04 && reboot || reboot
+				dd_xitong_1
+				bash InstallNET.sh -ubuntu 24.04
+				reboot
 				exit
 				;;
 			12)
-				dd_linux_mollyLau
-				bash InstallNET.sh -ubuntu 22.04 && reboot || reboot
+				dd_xitong_1
+				bash InstallNET.sh -ubuntu 22.04
+				reboot
 				exit
 				;;
 			13)
-				dd_linux_mollyLau
-				bash InstallNET.sh -ubuntu 20.04 && reboot || reboot
+				dd_xitong_1
+				bash InstallNET.sh -ubuntu 20.04
+				reboot
 				exit
 				;;
 			14)
-				dd_linux_mollyLau
-				bash InstallNET.sh -ubuntu 18.04 && reboot || reboot
+				dd_xitong_1
+				bash InstallNET.sh -ubuntu 18.04
+				reboot
 				exit
 				;;
 			21)
-				dd_linux_bin456789
-				bash reinstall.sh rocky && reboot || reboot
+				dd_xitong_3
+				bash reinstall.sh rocky
+				reboot
 				exit
 				;;
 			22)
-				dd_linux_bin456789
-				bash reinstall.sh rocky 8 && reboot || reboot
+				dd_xitong_3
+				bash reinstall.sh rocky 8
+				reboot
 				exit
 				;;
 			23)
-				dd_linux_bin456789
-				bash reinstall.sh alma && reboot || reboot
+				dd_xitong_3
+				bash reinstall.sh alma
+				reboot
 				exit
 				;;
 			24)
-				dd_linux_bin456789
-				bash reinstall.sh alma 8 && reboot || reboot
+				dd_xitong_3
+				bash reinstall.sh alma 8
+				reboot
 				exit
 				;;
 			25)
-				dd_linux_bin456789
-				bash reinstall.sh oracle && reboot || reboot
+				dd_xitong_3
+				bash reinstall.sh oracle
+				reboot
 				exit
 				;;
 			26)
-				dd_linux_bin456789
-				bash reinstall.sh oracle 8 && reboot || reboot
+				dd_xitong_3
+				bash reinstall.sh oracle 8
+				reboot
 				exit
 				;;
 			27)
-				dd_linux_bin456789
-				bash reinstall.sh fedora && reboot || reboot
+				dd_xitong_3
+				bash reinstall.sh fedora
+				reboot
 				exit
 				;;
 			28)
-				dd_linux_bin456789
-				bash reinstall.sh fedora 39 && reboot || reboot
+				dd_xitong_3
+				bash reinstall.sh fedora 39
+				reboot
 				exit
 				;;
 			29)
-				dd_linux_mollyLau
-				bash InstallNET.sh -centos 7 && reboot || reboot
+				dd_xitong_1
+				bash InstallNET.sh -centos 7
+				reboot
 				exit
 				;;
 			31)
-				dd_linux_mollyLau
-				bash InstallNET.sh -alpine && reboot || reboot
+				dd_xitong_1
+				bash InstallNET.sh -alpine
+				reboot
 				exit
 				;;
 			32)
-				dd_linux_bin456789
-				bash reinstall.sh arch && reboot || reboot
+				dd_xitong_3
+				bash reinstall.sh arch
+				reboot
 				exit
 				;;
 			33)
-				dd_linux_bin456789
-				bash reinstall.sh kali && reboot || reboot
+				dd_xitong_3
+				bash reinstall.sh kali
+				reboot
 				exit
 				;;
 			34)
-				dd_linux_bin456789
-				bash reinstall.sh openeuler && reboot || reboot
+				dd_xitong_3
+				bash reinstall.sh openeuler
+				reboot
 				exit
 				;;
 			35)
-				dd_linux_bin456789
-				bash reinstall.sh opensuse && reboot || reboot
+				dd_xitong_3
+				bash reinstall.sh opensuse
+				reboot
 				exit
 				;;
 			41)
-				dd_windows_mollyLau
-				bash InstallNET.sh -windows 11 -lang "cn" && reboot || reboot
+				dd_xitong_2
+				bash InstallNET.sh -windows 11 -lang "cn"
+				reboot
 				exit
 				;;
 			42)
-				dd_windows_mollyLau
-				bash InstallNET.sh -windows 10 -lang "cn" && reboot || reboot
+				dd_xitong_2
+				bash InstallNET.sh -windows 10 -lang "cn"
+				reboot
 				exit
 				;;
 			44)
-				dd_windows_bin456789
+				dd_xitong_4
 				URL="https://massgrave.dev/windows_server_links"
-				iso_link=$(wget -q -O - "$URL" | grep -oP '(?<=href=")[^"]*cn[^"]*windows_server[^"]*2022[^"]*x64[^"]*\.iso')
-				bash reinstall.sh windows --iso="$iso_link" --image-name='Windows Server 2022 SERVERDATACENTER' && reboot || reboot
+				web_content=$(wget -q -O - "$URL")
+				iso_link=$(echo "$web_content" | grep -oP '(?<=href=")[^"]*cn[^"]*windows_server[^"]*2022[^"]*x64[^"]*\.iso')
+				bash reinstall.sh windows --iso="$iso_link" --image-name='Windows Server 2022 SERVERDATACENTER'
+				reboot
 				exit
 				;;
 			45)
-				dd_windows_mollyLau
-				bash InstallNET.sh -windows 2019 -lang "cn" && reboot || reboot
+				dd_xitong_2
+				bash InstallNET.sh -windows 2019 -lang "cn"
+				reboot
 				exit
 				;;
 			46)
-				dd_windows_mollyLau
-				bash InstallNET.sh -windows 2016 -lang "cn" && reboot || reboot
+				dd_xitong_2
+				bash InstallNET.sh -windows 2016 -lang "cn"
+				reboot
 				exit
-				;;
-			100)
-				dd_openvz_lxc_LloydAsp
 				;;
 			0)
 				break
