@@ -1928,10 +1928,11 @@ linux_ldnmp() {
 
 							#cp "$web_dir/docker-compose.yml" "$web_dir/docker-compose1.yml"
 							sed -i "s/image: mysql/image: mysql:${version}/" "$web_dir/docker-compose.yml"
-							docker rm -f "$ldnmp_pods" > /dev/null 2>&1
-							docker images --filter=reference="$ldnmp_pods*" -q | xargs docker rmi > /dev/null 2>&1
+							docker stop "$ldnmp_pods"
+							docker rm "$ldnmp_pods" > /dev/null 2>&1
+							docker images --filter=reference="mysql*" -q | xargs docker rmi > /dev/null 2>&1
 							docker compose up -d --force-recreate "$ldnmp_pods"
-							docker restart "$ldnmp_pods"
+							docker restart "$ldnmp_pods" > /dev/null 2>&1
 							#cp "$web_dir/docker-compose.yml" "$web_dir/docker-compose.yml"
 							_green "更新${ldnmp_pods}完成"
 							;;
