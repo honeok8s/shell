@@ -2030,7 +2030,7 @@ linux_ldnmp() {
 					echo "更新LDNMP环境"
 					echo "------------------------"
 					ldnmp_version
-					echo "1. 更新Nginx     2. 更新MySQL     3. 更新PHP     4. 更新Redis"
+					echo "1. 更新Nginx     2. 更新MySQL(建议不做更新)     3. 更新PHP     4. 更新Redis"
 					echo "------------------------"
 					echo "5. 更新完整环境"
 					echo "------------------------"
