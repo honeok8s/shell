@@ -265,6 +265,14 @@ ldnmp_install_status() {
 	fi
 }
 
+ldnmp_restore_check(){
+	if docker inspect "ldnmp" &>/dev/null; then
+		_yellow "LDNMP环境已安装,无法还原LDNMP环境,请先卸载现有环境再次尝试还原"
+		end_of
+		linux_ldnmp
+	fi
+}
+
 nginx_install_status() {
 	if docker inspect "nginx" &>/dev/null; then
 		_yellow "Nginx环境已安装,开始部署$webname"
@@ -1569,16 +1577,25 @@ linux_ldnmp() {
 			34)
 				need_root
 
-				ldnmp_install_status_two
-				echo "请确认home目录中已经放置网站备份的gz压缩包，按任意键继续……"
+				ldnmp_restore_check
+				echo "请确认/opt目录中已经放置网站备份的gz压缩包,按任意键继续"
 				read -n 1 -s -r -p ""
 				_yellow "正在解压"
-				cd /opt && ls -t /home/*.tar.gz | head -1 | xargs -I {} tar -xzf {}
+				cd /opt && ls -t /opt/*.tar.gz | head -1 | xargs -I {} tar -xzf {}
+
+				# 清理并创建必要的目录
+				web_dir=""
+				web_dir="/data/docker_data"
+				[ -d "$web_dir" ] && rm -fr "$web_dir"
+				mkdir -p $web_dir
+
+				cd "$web_dir" || { _red "无法进入目录 $web_dir"; return 1; }
+				mv /opt/web .
+
 				ldnmp_check_port
 				ldnmp_install_deps
 				#install_docker
 				ldnmp_install_certbot
-
 				install_ldnmp
 				;;
 
