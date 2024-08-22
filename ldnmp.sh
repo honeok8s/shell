@@ -1939,22 +1939,23 @@ linux_ldnmp() {
 							read -r version
 							version=${version:-8.3}
 							cd $web_dir
-							cp $web_dir/docker-compose.yml $web_dir/docker-compose.yml
-							sed -i "s/image: php:fpm-alpine/image: php:${version}-fpm-alpine/" $web_dir/docker-compose.yml
+
+							cp "$web_dir/docker-compose.yml" "$web_dir/docker-compose1.yml"
+							sed -i "s/image: php:fpm-alpine/image: php:${version}-fpm-alpine/" "$web_dir/docker-compose.yml"
 							docker rm -f $ldnmp_pods
-							docker images --filter=reference="$ldnmp_pods*" -q | xargs docker rmi > /dev/null 2>&1
-							docker compose up -d --force-recreate $ldnmp_pods
-							docker exec $ldnmp_pods chmod -R 777 /var/www/html
+							docker images --filter=reference="${ldnmp_pods}*" -q | xargs docker rmi > /dev/null 2>&1
+							docker compose up -d --force-recreate "$ldnmp_pods"
+							docker exec "$ldnmp_pods" chmod -R 777 /var/www/html
 
 							# docker exec php sed -i "s/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g" /etc/apk/repositories > /dev/null 2>&1
 
-							docker exec php apk update
+							docker exec "$ldnmp_pods" apk update
 							curl -sL https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions -o /usr/local/bin/install-php-extensions
-							docker exec php mkdir -p /usr/local/bin/
-							docker cp /usr/local/bin/install-php-extensions php:/usr/local/bin/
-							docker exec php chmod +x /usr/local/bin/install-php-extensions
+							docker exec "$ldnmp_pods" mkdir -p /usr/local/bin/
+							docker cp /usr/local/bin/install-php-extensions "$ldnmp_pods":/usr/local/bin/
+							docker exec "$ldnmp_pods" chmod +x /usr/local/bin/install-php-extensions
 
-							docker exec php sh -c "\
+							docker exec "$ldnmp_pods" sh -c "\
 								apk add --no-cache imagemagick imagemagick-dev \
 								&& apk add --no-cache git autoconf gcc g++ make pkgconfig \
 								&& rm -rf /tmp/imagick \
@@ -1967,16 +1968,16 @@ linux_ldnmp() {
 								&& echo 'extension=imagick.so' > /usr/local/etc/php/conf.d/imagick.ini \
 								&& rm -rf /tmp/imagick"
 
-							docker exec php install-php-extensions mysqli pdo_mysql gd intl zip exif bcmath opcache redis
+							docker exec "$ldnmp_pods" install-php-extensions mysqli pdo_mysql gd intl zip exif bcmath opcache redis
 
-							docker exec php sh -c 'echo "upload_max_filesize=50M " > /usr/local/etc/php/conf.d/uploads.ini' > /dev/null 2>&1
-							docker exec php sh -c 'echo "post_max_size=50M " > /usr/local/etc/php/conf.d/post.ini' > /dev/null 2>&1
-							docker exec php sh -c 'echo "memory_limit=256M" > /usr/local/etc/php/conf.d/memory.ini' > /dev/null 2>&1
-							docker exec php sh -c 'echo "max_execution_time=1200" > /usr/local/etc/php/conf.d/max_execution_time.ini' > /dev/null 2>&1
-							docker exec php sh -c 'echo "max_input_time=600" > /usr/local/etc/php/conf.d/max_input_time.ini' > /dev/null 2>&1
+							docker exec "$ldnmp_pods" sh -c 'echo "upload_max_filesize=50M" > /usr/local/etc/php/conf.d/uploads.ini' > /dev/null 2>&1
+							docker exec "$ldnmp_pods" sh -c 'echo "post_max_size=50M" > /usr/local/etc/php/conf.d/post.ini' > /dev/null 2>&1
+							docker exec "$ldnmp_pods" sh -c 'echo "memory_limit=256M" > /usr/local/etc/php/conf.d/memory.ini' > /dev/null 2>&1
+							docker exec "$ldnmp_pods" sh -c 'echo "max_execution_time=1200" > /usr/local/etc/php/conf.d/max_execution_time.ini' > /dev/null 2>&1
+							docker exec "$ldnmp_pods" sh -c 'echo "max_input_time=600" > /usr/local/etc/php/conf.d/max_input_time.ini' > /dev/null 2>&1
 
-							docker restart $ldnmp_pods > /dev/null 2>&1
-							cp $web_dir/docker-compose.yml $web_dir/docker-compose.yml
+							docker restart "$ldnmp_pods" > /dev/null 2>&1
+							cp "$web_dir/docker-compose1.yml" "$web_dir/docker-compose.yml"
 							_green "更新${ldnmp_pods}完成"
 							;;
 						4)
