@@ -2074,22 +2074,9 @@ linux_ldnmp() {
 							echo -n "请输入${ldnmp_pods}版本号(如: 7.4 8.0 8.1 8.2 8.3)(回车获取最新版):"
 							read -r version
 
+							version=${version:-8.3}
 							cd "$web_dir"
-
-							current_image=$(sed -n '25p' "$web_dir/docker-compose.yml" | awk '{print $2}')
-							if [ -z "$version" ]; then
-								# 用户未输入版本号使用最新版本
-								if [ "$current_image" != "php:fpm-alpine" ]; then
-									sed -i '25s|image: php:[0-9.]*-fpm-alpine|image: php:fpm-alpine|' "$web_dir/docker-compose.yml"
-								fi
-							else
-								# 用户输入了版本号更新为指定版本
-								new_image="php:${version}-fpm-alpine"
-								if [ "$current_image" != "$new_image" ]; then
-									sed -i "25s|image: php:[0-9.]*-fpm-alpine|image: $new_image|" "$web_dir/docker-compose.yml"
-								fi
-							fi
-
+							sed -i "s/image: php:fpm-alpine/image: php:${version}-fpm-alpine/" "$web_dir/docker-compose.yml"
 							docker rm -f "$ldnmp_pods" > /dev/null 2>&1
 							docker images --filter=reference="php:*" -q | xargs -r docker rmi > /dev/null 2>&1
 							docker compose up -d --force-recreate "$ldnmp_pods"
