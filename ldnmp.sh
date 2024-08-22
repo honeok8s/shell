@@ -1396,7 +1396,12 @@ linux_ldnmp() {
 							fi
 							;;
 						3)
-							docker restart nginx
+							if docker ps --format '{{.Names}}' | grep -q '^nginx$'; then
+								docker restart nginx >/dev/null 2>&1
+							else
+								_red "未发现Nginx容器或未运行"
+								return 1
+							fi
 							docker exec php php -r 'opcache_reset();'
 							docker restart php
 							docker exec php74 php -r 'opcache_reset();'
