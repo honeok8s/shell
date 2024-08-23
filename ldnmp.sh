@@ -871,7 +871,6 @@ linux_ldnmp() {
 		echo "24. 站点反向代理-域名"
 		echo "25. 自定义静态站点"
 		echo "26. 安装Bitwarden密码管理平台"
-		echo "27. 安装Halo博客网站"
 		echo "------------------------"
 		echo "31. 站点数据管理"
 		echo "32. 备份全站数据"
@@ -1254,7 +1253,7 @@ linux_ldnmp() {
 						echo -n "也可以输入下载链接,远程下载备份数据,直接回车将跳过远程下载:" 
 						read -r url_download_db
 
-						cd /opt/
+						cd /opt
 						if [ -n "$url_download_db" ]; then
 							wget -q "$url_download_db"
 						fi
@@ -1494,7 +1493,7 @@ linux_ldnmp() {
 					echo ""
 					echo "站点目录"
 					echo "------------------------"
-					echo "数据目录: /data/docker_data/web/nginx/html     证书目录: /data/docker_data/web/nginx/certs     配置文件目录: /data/docker_data/web/nginx/conf.d"
+					echo "数据目录: $nginx_dir/html     证书目录: $nginx_dir/certs     配置文件目录: $nginx_dir/conf.d"
 					echo "------------------------"
 					echo ""
 					echo "操作"
@@ -1683,11 +1682,11 @@ linux_ldnmp() {
 
 				[ ! -d /data/script ] && mkdir -p /data/script
 				cd /data/script || { _red "进入目录/data/script失败"; return 1; }
-				wget -qO "${useip}_beifen.sh" "https://raw.githubusercontent.com/kejilion/sh/main/beifen.sh"
-				chmod +x ${useip}_beifen.sh
+				wget -qO "${useip}_backup.sh" "https://raw.githubusercontent.com/honeok8s/shell/main/callscript/web_backup.sh"
+				chmod +x ${useip}_backup.sh
 
-				sed -i "s/0.0.0.0/$useip/g" ${useip}_beifen.sh
-				sed -i "s/123456/$usepasswd/g" ${useip}_beifen.sh
+				sed -i "s/0.0.0.0/$useip/g" ${useip}_backup.sh
+				sed -i "s/123456/$usepasswd/g" ${useip}_backup.sh
 
 				echo "------------------------"
 				echo "1. 每周备份                 2. 每天备份"
@@ -1698,12 +1697,12 @@ linux_ldnmp() {
 					1)
 						check_crontab_installed
 						echo -n "选择每周备份的星期几(0-6,0代表星期日):" weekday
-						(crontab -l ; echo "0 0 * * $weekday ./${useip}_beifen.sh > /dev/null 2>&1") | crontab -
+						(crontab -l ; echo "0 0 * * $weekday /data/script/${useip}_backup.sh > /dev/null 2>&1") | crontab -
 						;;
 					2)
 						check_crontab_installed
-						read -p "选择每天备份的时间（小时，0-23）: " hour
-						(crontab -l ; echo "0 $hour * * * ./${useip}_beifen.sh") | crontab - > /dev/null 2>&1
+						read -p "选择每天备份的时间(小时,0-23):" hour
+						(crontab -l ; echo "0 $hour * * * /data/script/${useip}_backup.sh") | crontab - > /dev/null 2>&1
 						;;
 					*)
 						break  # 跳出
