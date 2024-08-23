@@ -806,7 +806,7 @@ install_docker_official() {
 }
 
 install_add_docker() {
-    _yellow "正在安装docker环境"
+    _yellow "正在安装docker"
 
 	if [ -f /etc/os-release ] && grep -q "Fedora" /etc/os-release; then
 		install_docker_official
