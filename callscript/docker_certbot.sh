@@ -59,11 +59,13 @@ for cert_dir in $certs_directory*; do
 
 		if version_ge "$certbot_version" "1.17.0"; then
 			docker run -it --rm --name certbot \
+				-p 80:80 -p 443:443 \
 				-v "/data/docker_data/certbot/cert:/etc/letsencrypt" \
 				-v "/data/docker_data/certbot/data:/var/lib/letsencrypt" \
 				certbot/certbot certonly --standalone -d $domain --email your@email.com --agree-tos --no-eff-email --force-renewal --key-type ecdsa
 		else
 			docker run -it --rm --name certbot \
+				-p 80:80 -p 443:443 \
 				-v "/data/docker_data/certbot/cert:/etc/letsencrypt" \
 				-v "/data/docker_data/certbot/data:/var/lib/letsencrypt" \
 				certbot/certbot certonly --standalone -d $domain --email your@email.com --agree-tos --no-eff-email --force-renewal

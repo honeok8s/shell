@@ -672,6 +672,7 @@ ldnmp_install_ssltls() {
 	iptables_open > /dev/null 2>&1
 
 	docker run --rm --name certbot \
+		-p 80:80 -p 443:443 \
 		-v "/data/docker_data/certbot/cert:/etc/letsencrypt" \
 		-v "/data/docker_data/certbot/data:/var/lib/letsencrypt" \
 		certbot/certbot delete --cert-name $domain > /dev/null 2>&1
@@ -684,18 +685,27 @@ ldnmp_install_ssltls() {
 
 	if version_ge "$certbot_version" "1.17.0"; then
 		docker run --rm --name certbot \
+			-p 80:80 -p 443:443 \
 			-v "/data/docker_data/certbot/cert:/etc/letsencrypt" \
 			-v "/data/docker_data/certbot/data:/var/lib/letsencrypt" \
 			certbot/certbot certonly --standalone -d $domain --email your@email.com --agree-tos --no-eff-email --force-renewal --key-type ecdsa
 	else
 		docker run --rm --name certbot \
+			-p 80:80 -p 443:443 \
 			-v "/data/docker_data/certbot/cert:/etc/letsencrypt" \
 			-v "/data/docker_data/certbot/data:/var/lib/letsencrypt" \
 			certbot/certbot certonly --standalone -d $domain --email your@email.com --agree-tos --no-eff-email --force-renewal
 	fi
 
-	cp /data/docker_data/certbot/cert/live/$domain/fullchain.pem /data/docker_data/web/nginx/certs/${domain}_cert.pem > /dev/null 2>&1
-	cp /data/docker_data/certbot/cert/live/$domain/privkey.pem /data/docker_data/web/nginx/certs/${domain}_key.pem > /dev/null 2>&1
+	# 检查是否生成了证书
+	if [ -f /data/docker_data/certbot/cert/live/$domain/fullchain.pem ]; then
+		cp /data/docker_data/certbot/cert/live/$domain/fullchain.pem /data/docker_data/web/nginx/certs/${domain}_cert.pem > /dev/null 2>&1
+		cp /data/docker_data/certbot/cert/live/$domain/privkey.pem /data/docker_data/web/nginx/certs/${domain}_key.pem > /dev/null 2>&1
+		_green "证书申请成功"
+	else
+		_red "域名证书申请失败,请检测域名是否正确解析或更换域名重新尝试!"
+		return 1
+	fi
 
 	docker start nginx > /dev/null 2>&1
 }
