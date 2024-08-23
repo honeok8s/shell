@@ -356,11 +356,9 @@ ldnmp_install_certbot() {
 
 ldnmp_uninstall_certbot() {
 	local cron_job existing_cron
+	certbot_dir="/data/docker_data/certbot"
 
-	# 检查并卸载certbot
-	if command -v certbot &> /dev/null; then
-		remove certbot || { _red "卸载certbot失败"; return 1; }
-	fi
+	docker rmi certbot/certbot
 
 	cron_job="0 0 * * * /data/script/auto_cert_renewal.sh >/dev/null 2>&1"
 	# 检查并删除定时任务
@@ -376,6 +374,12 @@ ldnmp_uninstall_certbot() {
 	if [ -f /data/script/auto_cert_renewal.sh ]; then
 		rm /data/script/auto_cert_renewal.sh
 		_green "续签脚本文件已删除"
+	fi
+
+	# 删除certbot目录及其内容
+	if [ -d "$certbot_dir" ]; then
+		rm -fr "$certbot_dir"
+		_green "Certbot目录及其内容已删除"
 	fi
 }
 
@@ -649,37 +653,56 @@ iptables_open(){
 }
 
 ldnmp_install_ssltls() {
+	certbot_dir="/data/docker_data/certbot"
+	local certbot_version
+
+	docker pull certbot/certbot
+
+	# 创建Certbot工作目录
+	[ ! -d "$certbot_dir" ] && mkdir -p "$certbot_dir"
+	mkdir -p "$certbot_dir/cert" "$certbot_dir/data"
+
 	if docker ps --format '{{.Names}}' | grep -q '^nginx$'; then
 		docker stop nginx > /dev/null 2>&1
 	else
 		_red "未发现Nginx容器或未运行"
 		return 1
 	fi
+
 	iptables_open > /dev/null 2>&1
 
-	yes | certbot delete --cert-name $domain > /dev/null 2>&1
+	docker run --rm --name certbot \
+		-v "/data/docker_data/certbot/cert:/etc/letsencrypt" \
+		-v "/data/docker_data/certbot/data:/var/lib/letsencrypt" \
+		certbot/certbot delete --cert-name $domain > /dev/null 2>&1
 
-	certbot_version=$(certbot --version 2>&1 | grep -oP "\d+\.\d+\.\d+")
+	certbot_version=$(docker run --rm certbot/certbot --version | grep -oP "\d+\.\d+\.\d+")
 
 	version_ge() {
 		[ "$(printf '%s\n' "$1" "$2" | sort -V | head -n1)" != "$1" ]
 	}
 
 	if version_ge "$certbot_version" "1.17.0"; then
-		certbot certonly --standalone -d $domain --email your@email.com --agree-tos --no-eff-email --force-renewal --key-type ecdsa
+		docker run --rm --name certbot \
+			-v "/data/docker_data/certbot/cert:/etc/letsencrypt" \
+			-v "/data/docker_data/certbot/data:/var/lib/letsencrypt" \
+			certbot/certbot certonly --standalone -d $domain --email your@email.com --agree-tos --no-eff-email --force-renewal --key-type ecdsa
 	else
-		certbot certonly --standalone -d $domain --email your@email.com --agree-tos --no-eff-email --force-renewal
+		docker run --rm --name certbot \
+			-v "/data/docker_data/certbot/cert:/etc/letsencrypt" \
+			-v "/data/docker_data/certbot/data:/var/lib/letsencrypt" \
+			certbot/certbot certonly --standalone -d $domain --email your@email.com --agree-tos --no-eff-email --force-renewal
 	fi
 
-	cp /etc/letsencrypt/live/$domain/fullchain.pem /data/docker_data/web/nginx/certs/${domain}_cert.pem > /dev/null 2>&1
-	cp /etc/letsencrypt/live/$domain/privkey.pem /data/docker_data/web/nginx/certs/${domain}_key.pem > /dev/null 2>&1
+	cp /data/docker_data/certbot/cert/live/$domain/fullchain.pem /data/docker_data/web/nginx/certs/${domain}_cert.pem > /dev/null 2>&1
+	cp /data/docker_data/certbot/cert/live/$domain/privkey.pem /data/docker_data/web/nginx/certs/${domain}_key.pem > /dev/null 2>&1
 
 	docker start nginx > /dev/null 2>&1
 }
 
 ldnmp_certs_status() {
 	sleep 1
-	file_path="/etc/letsencrypt/live/$domain/fullchain.pem"
+	file_path="/data/docker_data/certbot/cert/live/$domain/fullchain.pem"
 
 	if [ ! -f "$file_path" ]; then
 		_red "域名证书申请失败,请检测域名是否正确解析或更换域名重新尝试!"
