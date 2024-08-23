@@ -3735,7 +3735,9 @@ linux_ldnmp() {
 		echo "------------------------"
 		echo "0. 返回主菜单"
 		echo "------------------------"
-		read -p "请输入你的选择: " choice
+
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read -r choice
 
 		case $choice in
 			1)
@@ -4542,7 +4544,8 @@ linux_ldnmp() {
 
 				echo "------------------------"
 				echo "1. 每周备份                 2. 每天备份"
-				echo -n "请输入你的选择: "
+
+				echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
 				read -r choice
 
 				case $choice in
@@ -4840,7 +4843,8 @@ linux_ldnmp() {
 					echo "------------------------"
 					echo "0. 退出"
 					echo "------------------------"
-					echo -n "请输入你的选择:"
+
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
 					read -r choice
 
 					case $choice in
@@ -4925,7 +4929,8 @@ linux_ldnmp() {
 					echo "------------------------"
 					echo "0. 返回上一级"
 					echo "------------------------"
-					echo -n "请输入你的选择:"
+
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
 					read -r choice
 
 					case $choice in
