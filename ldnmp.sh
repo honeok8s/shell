@@ -544,7 +544,7 @@ ldnmp_install_nginx(){
 
 		default_server_ssl
 
-		wget -qO "/data/docker_data/web/docker-compose.yml" "https://raw.githubusercontent.com/honeok8s/conf/main/nginx/ldnmp-docker-compose.yml"
+		wget -qO "/data/docker_data/web/docker-compose.yml" "https://raw.githubusercontent.com/honeok8s/conf/main/nginx/ldnmp-nginx-docker-compose.yml"
 
 		cd /data/docker_data/web || { _red "无法进入目录/data/docker_data/web"; return 1; }
 		manage_compose start
