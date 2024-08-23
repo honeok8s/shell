@@ -321,13 +321,16 @@ ldnmp_uninstall_deps(){
 }
 
 ldnmp_install_certbot() {
-	local cron_job existing_cron
+	local cron_job existing_cron certbot_dir
+	certbot_dir="/data/docker_data/certbot"
 
-	# 检查并安装certbot
-	if ! command -v certbot &> /dev/null; then
-		install certbot || { _red "安装certbot失败"; return 1; }
-	fi
+	docker pull certbot/certbot
 
+	# 创建Certbot工作目录
+	[ ! -d "$certbot_dir" ] && mkdir -p "$certbot_dir"
+	mkdir -p "$certbot_dir/cert" "$certbot_dir/data"
+
+	# 创建并进入脚本目录
 	[ ! -d /data/script ] && mkdir -p /data/script
 	cd /data/script || { _red "进入目录/data/script失败"; return 1; }
 
@@ -340,7 +343,7 @@ ldnmp_install_certbot() {
 
 	if [ -z "$existing_cron" ]; then
 		# 下载并使脚本可执行
-		curl -sS -o ./auto_cert_renewal.sh https://raw.githubusercontent.com/honeok8s/shell/main/callscript/autocert_certbot.sh
+		curl -sS -o ./auto_cert_renewal.sh https://raw.githubusercontent.com/honeok8s/shell/main/callscript/docker_certbot.sh
 		chmod a+x auto_cert_renewal.sh
 
 		# 添加定时任务
