@@ -358,7 +358,12 @@ ldnmp_uninstall_certbot() {
 	local cron_job existing_cron
 	certbot_dir="/data/docker_data/certbot"
 
-	docker rmi certbot/certbot
+	certbot_image_ids=$(docker images --format "{{.ID}}" --filter=reference='certbot/*')
+	if [ -n "$certbot_image_ids" ]; then
+		while IFS= read -r image_id; do
+			docker rmi "$image_id" > /dev/null 2>&1
+		done <<< "$certbot_image_ids"
+	fi
 
 	cron_job="0 0 * * * /data/script/auto_cert_renewal.sh >/dev/null 2>&1"
 	# 检查并删除定时任务
