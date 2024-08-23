@@ -3023,6 +3023,13 @@ manage_compose() {
 				docker-compose up -d
 			fi
 			;;
+		restart)
+			if docker compose version >/dev/null 2>&1; then
+				docker compose restart
+			elif command -v docker-compose >/dev/null 2>&1; then
+				docker-compose restart
+			fi
+			;;
 		stop)	# 停止容器
 			if docker compose version >/dev/null 2>&1; then
 				docker compose stop
@@ -3608,13 +3615,11 @@ ldnmp_restart() {
 	docker exec php74 chmod -R 777 /var/www/html
 
 	if nginx_check; then
-		docker restart nginx >/dev/null 2>&1
+		cd "web_dir" && manage_compose restart
 	else
 		_red "Nginx配置校验失败,请检查配置文件"
 		return 1
 	fi
-	docker restart php >/dev/null 2>&1
-	docker restart php74 >/dev/null 2>&1
 }
 
 ldnmp_display_success() {
