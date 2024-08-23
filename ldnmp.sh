@@ -526,7 +526,7 @@ ldnmp_install_nginx(){
 	fi
 
 	if docker inspect "nginx" &>/dev/null; then
-		if curl -s https://raw.githubusercontent.com/honeok8s/conf/main/nginx/ldnmp-docker-compose.yml | head -n 20 | diff - "/data/docker_data/web/docker-compose.yml" &>/dev/null; then
+		if curl -s https://raw.githubusercontent.com/honeok8s/conf/main/nginx/ldnmp-nginx-docker-compose.yml | head -n 20 | diff - "/data/docker_data/web/docker-compose.yml" &>/dev/null; then
 			_yellow "检测到通过本脚本已安装Nginx"
 			return 0
 		else
