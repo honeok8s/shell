@@ -3726,7 +3726,6 @@ linux_ldnmp() {
 				ldnmp_install_deps
 				install_docker
 				ldnmp_install_certbot
-				nginx_logrotate
 
 				# 清理并创建必要的目录
 				[ -d "$web_dir" ] && rm -fr "$web_dir"
@@ -3752,6 +3751,7 @@ linux_ldnmp() {
 				sed -i "s#HONEOK_PASSWD#$DB_USER_PASSWD#g" "$web_dir/docker-compose.yml"
 
 				install_ldnmp
+				nginx_logrotate
 				;;
 			2)
 				clear
