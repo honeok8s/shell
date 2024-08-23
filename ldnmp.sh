@@ -733,12 +733,12 @@ ldnmp_add_db() {
 }
 
 reverse_proxy() {
-      ip_address
-      wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/reverse-proxy.conf
-      sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
-      sed -i "s/0.0.0.0/$ipv4_address/g" /home/web/conf.d/$yuming.conf
-      sed -i "s/0000/$duankou/g" /home/web/conf.d/$yuming.conf
-      docker restart nginx
+	ip_address
+	wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/reverse-proxy.conf
+	sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
+	sed -i "s/0.0.0.0/$ipv4_address/g" /home/web/conf.d/$yuming.conf
+	sed -i "s/0000/$duankou/g" /home/web/conf.d/$yuming.conf
+	docker restart nginx
 }
 
 nginx_check() {
@@ -1578,9 +1578,9 @@ linux_ldnmp() {
 							fi
 							;;
 						7)
-							cert_live_dir="/etc/letsencrypt/live"
-							cert_archive_dir="/etc/letsencrypt/archive"
-							cert_renewal_dir="/etc/letsencrypt/renewal"
+							cert_live_dir="/data/docker_data/certbot/cert/live"
+							cert_archive_dir="/data/docker_data/certbot/cert/archive"
+							cert_renewal_dir="/data/docker_data/certbot/cert/renewal"
 							echo -n "删除站点数据目录,请输入你的域名:"
 							read -r del_domain
 
@@ -1597,8 +1597,8 @@ linux_ldnmp() {
 								rm -fr "$cert_archive_dir/del_domain"
 							fi
 
-							if [ -d "$cert_renewal_dir/$del_domain" ];then
-								rm -fr "$cert_renewal_dir/$del_domain"
+							if [ -f "$cert_renewal_dir/$del_domain.conf" ]; then
+								rm -f "$cert_renewal_dir/$del_domain.conf"
 							fi
 
 							# 检查Nginx配置并重启Nginx
