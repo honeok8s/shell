@@ -3724,7 +3724,7 @@ linux_ldnmp() {
 
 				ldnmp_check_port
 				ldnmp_install_deps
-				#install_docker
+				install_docker
 				ldnmp_install_certbot
 				nginx_logrotate
 
@@ -4557,7 +4557,7 @@ linux_ldnmp() {
 
 				ldnmp_check_port
 				ldnmp_install_deps
-				#install_docker
+				install_docker
 				ldnmp_install_certbot
 				install_ldnmp
 				;;
@@ -4791,7 +4791,7 @@ linux_ldnmp() {
 					esac
 				else
 					clear
-					#install_docker
+					install_docker
 					ldnmp_install_nginx
 					fail2ban_install_sshd
 
@@ -4997,7 +4997,7 @@ linux_ldnmp() {
 
 									ldnmp_check_port
 									ldnmp_install_deps
-									#install_docker
+									install_docker
 									ldnmp_install_certbot
 									install_ldnmp
 									;;
