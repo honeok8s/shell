@@ -3200,7 +3200,7 @@ default_server_ssl() {
 }
 
 # Nginx日志轮转
-nginx_logrotate(){
+ldnmp_install_ngx_logrotate(){
 	web_dir="/data/docker_data/web"
 	nginx_dir="$web_dir/nginx"
 
@@ -3751,7 +3751,7 @@ linux_ldnmp() {
 				sed -i "s#HONEOK_PASSWD#$DB_USER_PASSWD#g" "$web_dir/docker-compose.yml"
 
 				install_ldnmp
-				nginx_logrotate
+				ldnmp_install_ngx_logrotate
 				;;
 			2)
 				clear
@@ -4113,7 +4113,7 @@ linux_ldnmp() {
 				;;
 			21)
 				ldnmp_install_nginx
-				nginx_logrotate
+				ldnmp_install_ngx_logrotate
 				;;
 			22)
 				clear
