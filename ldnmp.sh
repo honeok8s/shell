@@ -697,15 +697,8 @@ ldnmp_install_ssltls() {
 			certbot/certbot certonly --standalone -d $domain --email your@email.com --agree-tos --no-eff-email --force-renewal
 	fi
 
-	# 检查是否生成了证书
-	if [ -f /data/docker_data/certbot/cert/live/$domain/fullchain.pem ]; then
-		cp /data/docker_data/certbot/cert/live/$domain/fullchain.pem /data/docker_data/web/nginx/certs/${domain}_cert.pem > /dev/null 2>&1
-		cp /data/docker_data/certbot/cert/live/$domain/privkey.pem /data/docker_data/web/nginx/certs/${domain}_key.pem > /dev/null 2>&1
-		_green "证书申请成功"
-	else
-		_red "域名证书申请失败,请检测域名是否正确解析或更换域名重新尝试!"
-		return 1
-	fi
+	cp /data/docker_data/certbot/cert/live/$domain/fullchain.pem /data/docker_data/web/nginx/certs/${domain}_cert.pem > /dev/null 2>&1
+	cp /data/docker_data/certbot/cert/live/$domain/privkey.pem /data/docker_data/web/nginx/certs/${domain}_key.pem > /dev/null 2>&1
 
 	docker start nginx > /dev/null 2>&1
 }
