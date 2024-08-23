@@ -3230,6 +3230,31 @@ ldnmp_install_ngx_logrotate(){
 	fi
 }
 
+ldnmp_uninstall_ngx_logrotate() {
+	web_dir="/data/docker_data/web"
+	nginx_dir="$web_dir/nginx"
+
+	# 定义日志截断文件脚本路径
+	logrotate_script="$nginx_dir/logrotate.sh"
+
+	if [[ -d $nginx_dir ]]; then
+		if [[ -f $logrotate_script ]]; then
+			rm -f "$logrotate_script"
+			_green "日志截断脚本已删除"
+		else
+			_yellow "日志截断脚本不存在"
+		fi
+	fi
+
+	crontab_entry="0 0 * * 0 $logrotate_script >/dev/null 2>&1"
+	if crontab -l | grep -q "$logrotate_script"; then
+		crontab -l | grep -v "$logrotate_script" | crontab -
+		_green "Nginx日志轮转任务已卸载"
+	else
+		_yellow "Nginx日志轮转任务不存在"
+	fi
+}
+
 install_ldnmp() {
 	check_swap
 	cd "$web_dir" || { _red "无法进入目录$web_dir"; return 1; }
@@ -5029,6 +5054,7 @@ linux_ldnmp() {
 							manage_compose clean_down
 							ldnmp_uninstall_deps
 							ldnmp_uninstall_certbot
+							ldnmp_uninstall_ngx_logrotate
 							rm -fr "$web_dir"
 							_green "LDNMP环境已卸载并清除相关依赖"
 						elif docker inspect "nginx" &>/dev/null && [ -d "$nginx_dir" ]; then
@@ -5036,6 +5062,7 @@ linux_ldnmp() {
 							manage_compose clean_down
 							ldnmp_uninstall_deps
 							ldnmp_uninstall_certbot
+							ldnmp_uninstall_ngx_logrotate
 							rm -fr "$web_dir"
 							_green "Nginx环境已卸载并清除相关依赖"
 						else
