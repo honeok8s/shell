@@ -3170,10 +3170,10 @@ default_server_ssl() {
 	install openssl
 
 	if command -v dnf &>/dev/null || command -v yum &>/dev/null; then
-		openssl req -x509 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -keyout /data/docker_data/web/nginx/certs/default_server.key -out /data/docker_data/web/nginx/certs/default_server.crt -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
+		openssl req -x509 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -keyout "$nginx_dir/certs/default_server.key" -out "$nginx_dir/certs/default_server.crt" -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
 	else
-		openssl genpkey -algorithm Ed25519 -out /data/docker_data/web/nginx/certs/default_server.key
-		openssl req -x509 -key /data/docker_data/web/nginx/certs/default_server.key -out /data/docker_data/web/nginx/certs/default_server.crt -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
+		openssl genpkey -algorithm Ed25519 -out "$nginx_dir/certs/default_server.key"
+		openssl req -x509 -key "$nginx_dir/certs/default_server.key" -out "$nginx_dir/certs/default_server.crt" -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
 	fi
 }
 
