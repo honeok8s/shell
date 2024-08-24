@@ -2396,11 +2396,7 @@ EOF
 							;;
 						4)
 							cd /data/safeline
-							if docker compose version >/dev/null 2>&1; then
-								docker compose down --rmi all --volumes
-							elif command -v docker-compose >/dev/null 2>&1; then
-								docker-compose down --rmi all --volumes
-							fi
+							manage_compose down_all
 							echo "如果你是默认安装目录那现在项目已经卸载,如果你是自定义安装目录你需要到安装目录下自行执行:"
 							echo "docker compose down --rmi all --volumes"
 							;;
