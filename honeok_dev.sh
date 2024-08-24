@@ -3018,6 +3018,7 @@ manage_compose() {
 			;;
 		recreate)
 			$compose_cmd up -d --force-recreate
+			;;
 		down)	# 停止并删除容器
 			$compose_cmd down
 			;;
@@ -3026,6 +3027,7 @@ manage_compose() {
 			;;
 		version)
 			$compose_cmd version
+			;;
 	esac
 }
 
