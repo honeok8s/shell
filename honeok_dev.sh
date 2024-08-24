@@ -3190,11 +3190,11 @@ ldnmp_install_ngx_logrotate(){
 		return 1
 	else
 		wget -qO "$logrotate_script" "https://raw.githubusercontent.com/honeok8s/shell/main/nginx/LDNMP_ngx_logrotate.sh"
-		chmod a+x "$logrotate_script"
 		if [[ $? -ne 0 ]]; then
 			_red "脚本下载失败,请检查网络连接或脚本URL"
 			return 1
 		fi
+		chmod a+x "$logrotate_script"
 	fi
 
 	# 检查crontab中是否存在相关任务
