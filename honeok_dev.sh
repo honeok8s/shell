@@ -148,8 +148,7 @@ system_info(){
 	local congestion_algorithm=$(sysctl -n net.ipv4.tcp_congestion_control)
 	local queue_algorithm=$(sysctl -n net.core.default_qdisc)
 
-	local ipv4_address=$(curl -s ipv4.ip.sb)
-	local ipv6_address=$(curl -s --max-time 1 ipv6.ip.sb)
+	ip_address
 
 	# 获取地理位置,系统时区,系统时间和运行时长
 	local location=$(curl -s ipinfo.io/city)
