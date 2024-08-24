@@ -6424,11 +6424,36 @@ EOF
 					linux_system_tools
 				fi
 
-				useradd -m -s /bin/bash "$new_username"
-				passwd "$new_username"
+				if id "$new_username" &>/dev/null; then
+					_red "用户$new_username已存在"
+					end_of
+					linux_system_tools
+				fi
+				# 创建用户
+				useradd -m -s /bin/bash "$new_username" || {
+					_red "创建用户失败"
+					end_of
+					linux_system_tools
+				}
+				# 设置用户密码
+				passwd "$new_username" || {
+					_red "设置用户密码失败"
+					end_of
+					linux_system_tools
+				}
+				# 更新sudoers文件
+				echo "$new_username ALL=(ALL:ALL) ALL" | tee -a /etc/sudoers || {
+					_red "更新sudoers文件失败"
+					end_of
+					linux_system_tools
+				}
+				# 锁定root用户
+				passwd -l root || {
+					_red "锁定root用户失败"
+					end_of
+					linux_system_tools
+				}
 
-				echo "$new_username ALL=(ALL:ALL) ALL" | tee -a /etc/sudoers
-				passwd -l root
 				_green "操作完成"
 				;;
 			10)
@@ -6500,7 +6525,7 @@ EOF
 							_green "已设置2G虚拟内存"
 							;;
 						3)
-							echo -n -e "${yellow}请输入虚拟内存大小MB:${white}" new_swap
+							echo -n "请输入虚拟内存大小MB:"
 							read -r new_swap
 							if [[ "$new_swap" =~ ^[0-9]+$ ]] && [ "$new_swap" -gt 0 ]; then
 								add_swap $new_swap
@@ -6550,42 +6575,43 @@ EOF
 							echo -n "请输入新用户名:"
 							read -r new_username
 
-							useradd -m -s /bin/bash "$new_username"
-							passwd "$new_username"
-
-							_green "操作完成"
+							useradd -m -s /bin/bash "$new_username" && \
+							passwd "$new_username" && \
+							_green "普通账户创建完成"
 							;;
 						2)
 							echo -n "请输入新用户名:"
 							read -r new_username
 
-							useradd -m -s /bin/bash "$new_username"
-							passwd "$new_username"
-
-							# 赋予新用户sudo权限
-							echo "$new_username ALL=(ALL:ALL) ALL" | sudo tee -a /etc/sudoers
-
-							_green "操作完成"
+							useradd -m -s /bin/bash "$new_username" && \
+							passwd "$new_username" && \
+							echo "$new_username ALL=(ALL:ALL) ALL" | sudo tee -a /etc/sudoers && \
+							_green "高级账户创建完成"
 							;;
 						3)
 							echo -n "请输入新用户名:"
 							read -r username
 
-							# 赋予新用户sudo权限
-							echo "$username ALL=(ALL:ALL) ALL" | sudo tee -a /etc/sudoers
+							echo "$username ALL=(ALL:ALL) ALL" | sudo tee -a /etc/sudoers && \
+							_green "已赋予$username Sudo权限"
 							;;
 						4)
 							echo -n "请输入新用户名:"
 							read -r username
 							# 从sudoers文件中移除用户的sudo权限
-							sed -i "/^$username\sALL=(ALL:ALL)\sALL/d" /etc/sudoers
+							if sudo sed -i "/^$username\sALL=(ALL:ALL)\sALL/d" /etc/sudoers; then
+								_green "已取消 $username的Sudo权限"
+							else
+								_red "取消Sudo权限失败"
+							fi
 							;;
 						5)
 							echo -n "请输入要删除的用户名:"
 							read -r username
 
 							# 删除用户及其主目录
-							userdel -r "$username"
+							userdel -r "$username" && \
+							_green "$username账号已删除"
 							;;
 						0)
 							break
