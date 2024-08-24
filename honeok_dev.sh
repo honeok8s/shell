@@ -4045,7 +4045,7 @@ linux_ldnmp() {
 						PHP_Version="php74"
 						;;
 					*)
-						echo "无效的选择，请重新输入。"
+						_red "无效选项,请重新输入"
 						;;
 				esac
 
@@ -6217,11 +6217,14 @@ linux_system_tools(){
 		echo "------------------------"
 		echo "2. 修改登录密码"
 		echo "3. root密码登录模式                    4. 安装Python指定版本"
-		echo "6. 修改SSH连接端口"
+		echo "5. 开放所有端口                        6. 修改SSH连接端口"
 		echo "7. 优化DNS地址                         8. 一键重装系统"
+		echo "9. 禁用root账户创建新账户              10. 切换IPV4/IPV6优先"
 		echo "------------------------"
-		echo "12. 修改虚拟内存大小"
+		echo "11. 查看端口占用状态                   12. 修改虚拟内存大小"
+		echo "13. 用户管理                           14. 用户/密码生成器"
 		echo "15. 系统时区调整                       16. 设置XanMod BBR3"
+		echo "18. 修改主机名"
 		echo "19. 切换系统更新源                     20. 定时任务管理"
 		echo "------------------------"
 		echo "25. TG-bot系统监控预警"
@@ -6323,6 +6326,11 @@ EOF
 				VERSION=$(python -V 2>&1 | awk '{print $2}')
 				echo -e "当前python版本号: ${yellow}$VERSION${white}"
 				;;
+			5)
+				iptables_open
+				remove iptables-persistent ufw firewalld iptables-services > /dev/null 2>&1
+				_green "端口已全部开放"
+				;;
 			6)
 				need_root
 
@@ -6402,6 +6410,61 @@ EOF
 			8)
 				reinstall_system
 				;;
+			9)
+				need_root
+				echo -n "请输入新用户名(0退出):"
+				read -r new_username
+
+				if [ "$new_username" == "0" ]; then
+					end_of
+					linux_system_tools
+				fi
+
+				useradd -m -s /bin/bash "$new_username"
+				passwd "$new_username"
+
+				echo "$new_username ALL=(ALL:ALL) ALL" | tee -a /etc/sudoers
+				passwd -l root
+				_green "操作完成"
+				;;
+			10)
+				while true; do
+					clear
+					echo "设置v4/v6优先级"
+					echo "------------------------"
+					ipv6_disabled=$(sysctl -n net.ipv6.conf.all.disable_ipv6)
+
+					if [ "$ipv6_disabled" -eq 1 ]; then
+						echo -e "当前网络优先级设置:${yellow}IPv4${white}优先"
+					else
+						echo -e "当前网络优先级设置:${yellow}IPv6${white}优先"
+					fi
+					echo ""
+					echo "------------------------"
+					echo "1. IPv4 优先     2. IPv6 优先     0. 退出"
+					echo "------------------------"
+					echo -n "选择优先的网络:"
+					read -r choice
+
+					case $choice in
+						1)
+							sysctl -w net.ipv6.conf.all.disable_ipv6=1 > /dev/null 2>&1
+							_green "已切换为IPv4优先"
+							;;
+						2)
+							sysctl -w net.ipv6.conf.all.disable_ipv6=0 > /dev/null 2>&1
+							_green "已切换为IPv6优先"
+							;;
+						*)
+							break
+							;;
+					esac
+				done
+				;;
+			11)
+				clear
+				ss -tulnape
+				;;
 			12)
 				need_root
 				echo "设置虚拟内存"
@@ -6450,6 +6513,132 @@ EOF
 							;;
 					esac
 				done
+				;;
+			13)
+				while true; do
+					need_root
+					echo "用户列表"
+					echo "----------------------------------------------------------------------------"
+					printf "%-24s %-34s %-20s %-10s\n" "用户名" "用户权限" "用户组" "sudo权限"
+					while IFS=: read -r username _ userid groupid _ _ homedir shell; do
+						groups=$(groups "$username" | cut -d : -f 2)
+						sudo_status=$(sudo -n -lU "$username" 2>/dev/null | grep -q '(ALL : ALL)' && echo "Yes" || echo "No")
+						printf "%-20s %-30s %-20s %-10s\n" "$username" "$homedir" "$groups" "$sudo_status"
+					done < /etc/passwd
+
+					echo ""
+					echo "账户操作"
+					echo "------------------------"
+					echo "1. 创建普通账户             2. 创建高级账户"
+					echo "------------------------"
+					echo "3. 赋予最高权限             4. 取消最高权限"
+					echo "------------------------"
+					echo "5. 删除账号"
+					echo "------------------------"
+					echo "0. 返回上一级选单"
+					echo "------------------------"
+
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					read -r choice
+
+					case $choice in
+						1)
+							echo -n "请输入新用户名:"
+							read -r new_username
+
+							useradd -m -s /bin/bash "$new_username"
+							passwd "$new_username"
+
+							_green "操作完成"
+							;;
+						2)
+							echo -n "请输入新用户名:"
+							read -r new_username
+
+							useradd -m -s /bin/bash "$new_username"
+							passwd "$new_username"
+
+							# 赋予新用户sudo权限
+							echo "$new_username ALL=(ALL:ALL) ALL" | sudo tee -a /etc/sudoers
+
+							_green "操作完成"
+							;;
+						3)
+							echo -n "请输入新用户名:"
+							read -r username
+
+							# 赋予新用户sudo权限
+							echo "$username ALL=(ALL:ALL) ALL" | sudo tee -a /etc/sudoers
+							;;
+						4)
+							echo -n "请输入新用户名:"
+							read -r username
+							# 从sudoers文件中移除用户的sudo权限
+							sed -i "/^$username\sALL=(ALL:ALL)\sALL/d" /etc/sudoers
+							;;
+						5)
+							echo -n "请输入要删除的用户名:"
+							read -r username
+
+							# 删除用户及其主目录
+							userdel -r "$username"
+							;;
+						0)
+							break
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac
+				done
+				;;
+			14)
+				clear
+				echo "随机用户名"
+				echo "------------------------"
+				for i in {1..5}; do
+					username="user$(< /dev/urandom tr -dc _a-z0-9 | head -c6)"
+					echo "随机用户名 $i: $username"
+				done
+
+				echo ""
+				echo "随机姓名"
+				echo "------------------------"
+				first_names=("John" "Jane" "Michael" "Emily" "David" "Sophia" "William" "Olivia" "James" "Emma" "Ava" "Liam" "Mia" "Noah" "Isabella")
+				last_names=("Smith" "Johnson" "Brown" "Davis" "Wilson" "Miller" "Jones" "Garcia" "Martinez" "Williams" "Lee" "Gonzalez" "Rodriguez" "Hernandez")
+
+				# 生成5个随机用户姓名
+				for i in {1..5}; do
+					first_name_index=$((RANDOM % ${#first_names[@]}))
+					last_name_index=$((RANDOM % ${#last_names[@]}))
+					user_name="${first_names[$first_name_index]} ${last_names[$last_name_index]}"
+					echo "随机用户姓名 $i: $user_name"
+				done
+
+				echo ""
+				echo "随机UUID"
+				echo "------------------------"
+				for i in {1..5}; do
+					uuid=$(cat /proc/sys/kernel/random/uuid)
+					echo "随机UUID $i: $uuid"
+				done
+
+				echo ""
+				echo "16位随机密码"
+				echo "------------------------"
+				for i in {1..5}; do
+					password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
+					echo "随机密码 $i: $password"
+				done
+
+				echo ""
+				echo "32位随机密码"
+				echo "------------------------"
+				for i in {1..5}; do
+					password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c32)
+					echo "随机密码 $i: $password"
+				done
+				echo ""
 				;;
 			15)
 				need_root
@@ -6533,6 +6722,35 @@ EOF
 				;;
 			16)
 				xanmod_bbr3
+				;;
+			18)
+				need_root
+				while true; do
+					clear
+					current_hostname=$(hostname)
+					echo -e "当前主机名:$current_hostname"
+					echo "------------------------"
+					echo -n "请输入新的主机名(输入0退出):"
+					read -r new_hostname
+
+					if [ -n "$new_hostname" ] && [ "$new_hostname" != "0" ]; then
+						if [ -f /etc/alpine-release ]; then
+							# Alpine
+							echo "$new_hostname" > /etc/hostname
+							hostname "$new_hostname"
+						else
+							# 其他系统，如 Debian, Ubuntu, CentOS 等
+							hostnamectl set-hostname "$new_hostname"
+							sed -i "s/$current_hostname/$new_hostname/g" /etc/hostname
+							systemctl restart systemd-hostnamed
+						fi
+						echo "主机名已更改为:$new_hostname"
+						sleep 1
+					else
+						_yellow "未更改主机名已退出"
+						break
+					fi
+				done
 				;;
 			19)
 				linux_mirror
