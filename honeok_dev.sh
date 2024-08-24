@@ -5187,7 +5187,7 @@ reinstall_system(){
 	}
 
 	dd_xitong_1() {
-		echo -e "重装后初始用户名:${yellow}root${white}  初始密码:${yellow}LeitboGi0ro${white}  初始端口: ${gl_huang}22${white}"
+		echo -e "重装后初始用户名:${yellow}root${white}  初始密码:${yellow}LeitboGi0ro${white}  初始端口: ${yellow}22${white}"
 		_yellow "按任意键继续"
 		read -n 1 -s -r -p ""
 		install wget
@@ -6863,6 +6863,180 @@ EOF
 
 #################### 系统工具END ####################
 
+#################### 工作区START ####################
+tmux_run() {
+	# 检查会话是否已经存在
+	tmux has-session -t $session_name 2>/dev/null
+	# $?是一个特殊变量,保存上一个命令的退出状态
+	if [ $? != 0 ]; then
+		# 会话不存在,创建一个新的会话
+		tmux new -s $session_name
+	else
+		# 会话存在附加到这个会话
+		tmux attach-session -t $session_name
+	fi
+}
+
+tmux_run_d() {
+	base_name="tmuxd"
+	tmuxd_ID=1
+
+	# 检查会话是否存在的函数
+	session_exists() {
+		tmux has-session -t $1 2>/dev/null
+	}
+
+	# 循环直到找到一个不存在的会话名称
+	while session_exists "$base_name-$tmuxd_ID"; do
+		tmuxd_ID=$((tmuxd_ID + 1))
+	done
+
+	# 创建新的tmux会话
+	tmux new -d -s "$base_name-$tmuxd_ID" "$tmuxd"
+}
+
+linux_workspace() {
+	while true; do
+		clear
+		echo "▶ 我的工作区"
+		echo "系统将为你提供可以后台常驻运行的工作区,你可以用来执行长时间的任务"
+		echo "即使你断开SSH,工作区中的任务也不会中断,后台常驻任务"
+		echo "提示: 进入工作区后使用Ctrl+b再单独按d,退出工作区!"
+		echo "------------------------"
+		echo "1. 1号工作区"
+		echo "2. 2号工作区"
+		echo "3. 3号工作区"
+		echo "4. 4号工作区"
+		echo "5. 5号工作区"
+		echo "6. 6号工作区"
+		echo "7. 7号工作区"
+		echo "8. 8号工作区"
+		echo "9. 9号工作区"
+		echo "10. 10号工作区"
+		echo "------------------------"
+		echo "99. 工作区管理"
+		echo "------------------------"
+		echo "0. 返回主菜单"
+		echo "------------------------"
+
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read -r choice
+
+		case $choice in
+			1)
+				clear
+				install tmux
+				session_name="work1"
+				tmux_run
+				;;
+			2)
+				clear
+				install tmux
+				session_name="work2"
+				tmux_run
+				;;
+			3)
+				clear
+				install tmux
+				session_name="work3"
+				tmux_run
+				;;
+			4)
+				clear
+				install tmux
+				session_name="work4"
+				tmux_run
+				;;
+			5)
+				clear
+				install tmux
+				session_name="work5"
+				tmux_run
+				;;
+			6)
+				clear
+				install tmux
+				session_name="work6"
+				tmux_run
+				;;
+			7)
+				clear
+				install tmux
+				session_name="work7"
+				tmux_run
+				;;
+			8)
+				clear
+				install tmux
+				session_name="work8"
+				tmux_run
+				;;
+			9)
+				clear
+				install tmux
+				session_name="work9"
+				tmux_run
+				;;
+			10)
+				clear
+				install tmux
+				session_name="work10"
+				tmux_run
+				;;
+			99)
+				while true; do
+					clear
+					echo "当前已存在的工作区列表"
+					echo "------------------------"
+					tmux list-sessions
+					echo "------------------------"
+					echo "1. 创建/进入工作区"
+					echo "2. 注入命令到后台工作区"
+					echo "3. 删除指定工作区"
+					echo "------------------------"
+					echo "0. 返回上一级"
+					echo "------------------------"
+
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					read -r gongzuoqu_del
+
+					case "$gongzuoqu_del" in
+						1)
+							echo -n "请输入你创建或进入的工作区名称,如1001 honeok work1:"
+							read -r session_name
+							tmux_run
+							;;
+						2)
+							echo -n "请输入你要后台执行的命令,如:curl -fsSL https://get.docker.com | sh:"
+							read -r tmuxd
+							tmux_run_d
+							;;
+						3)
+							echo -n "请输入要删除的工作区名称:"
+							read -r workspace_name
+							tmux kill-window -t $workspace_name
+							;;
+						0)
+							break
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac
+				done
+				;;
+			0)
+				honeok
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+		end_of
+	done
+}
+#################### 工作区END ####################
+
 #################### VPS测试脚本START ####################
 servertest_script(){
 	local choice
@@ -7415,7 +7589,7 @@ honeok(){
 				linux_system_tools
 				;;
 			14)
-				echo "敬请期待"
+				linux_workspace
 				;;
 			15)
 				servertest_script
