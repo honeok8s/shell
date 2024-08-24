@@ -3014,48 +3014,31 @@ EOF
 
 #################### LDNMP建站START ####################
 manage_compose() {
+	local compose_cmd
+	# 检查docker compose版本
+	if docker compose version >/dev/null 2>&1; then
+		compose_cmd="docker compose"
+	elif command -v docker-compose >/dev/null 2>&1; then
+		compose_cmd="docker-compose"
+	fi
+
 	case "$1" in
 		start)	# 启动容器
-			if docker compose version >/dev/null 2>&1; then
-				docker compose up -d
-			elif command -v docker-compose >/dev/null 2>&1; then
-				docker-compose up -d
-			fi
+			$compose_cmd up -d
 			;;
 		restart)
-			if docker compose version >/dev/null 2>&1; then
-				docker compose restart
-			elif command -v docker-compose >/dev/null 2>&1; then
-				docker-compose restart
-			fi
+			$compose_cmd restart
 			;;
 		stop)	# 停止容器
-			if docker compose version >/dev/null 2>&1; then
-				docker compose stop
-			elif command -v docker-compose >/dev/null 2>&1; then
-				docker-compose stop
-			fi
+			$compose_cmd stop
 			;;
+		recreate)
+			$compose_cmd up -d --force-recreate
 		down)	# 停止并删除容器
-			if docker compose version >/dev/null 2>&1; then
-				docker compose down
-			elif command -v docker-compose >/dev/null 2>&1; then
-				docker-compose down
-			fi
+			$compose_cmd down
 			;;
-		down_all)
-			if docker compose version >/dev/null 2>&1; then
-				docker compose down --rmi all
-			elif command -v docker-compose >/dev/null 2>&1; then
-				docker-compose down --rmi all
-			fi
-			;;
-		clean_down)	# 停止容器并删除镜像和卷
-			if docker compose version >/dev/null 2>&1; then
-				docker compose down --rmi all --volumes
-			elif command -v docker-compose >/dev/null 2>&1; then
-				docker-compose down --rmi all --volumes
-			fi
+		down_all) # 停止并删除容器,镜像,卷,未使用的网络
+			$compose_cmd down --rmi all --volumes --remove-orphans
 			;;
 	esac
 }
@@ -4672,7 +4655,7 @@ linux_ldnmp() {
 								;;
 							9)
 								cd /data/docker_data/fail2ban || { _red "无法进入目录/data/docker_data/fail2ban"; return 1; }
-								manage_compose clean_down
+								manage_compose down_all
 
 								[ -d /data/docker_data/fail2ban ] && rm -fr /data/docker_data/fail2ban
 								crontab -l | grep -v "CF-Under-Attack.sh" | crontab - 2>/dev/null
@@ -4944,7 +4927,7 @@ linux_ldnmp() {
 
 							docker rm -f "$ldnmp_pods" > /dev/null 2>&1
 							docker images --filter=reference="$ldnmp_pods*" -q | xargs docker rmi > /dev/null 2>&1
-							docker compose up -d --force-recreate "$ldnmp_pods"
+							manage_compose recreate "$ldnmp_pods"
 							docker exec "$ldnmp_pods" chmod -R 777 /var/www/html
 							docker restart "$ldnmp_pods" > /dev/null 2>&1
 							_green "更新${ldnmp_pods}完成"
@@ -4959,7 +4942,7 @@ linux_ldnmp() {
 							sed -i "s/image: mysql/image: mysql:$version/" "$web_dir/docker-compose.yml"
 							docker rm -f "$ldnmp_pods"
 							docker images --filter=reference="$ldnmp_pods*" -q | xargs docker rmi > /dev/null 2>&1
-							docker compose up -d --force-recreate "$ldnmp_pods"
+							manage_compose recreate "$ldnmp_pods"
 							docker restart "$ldnmp_pods" > /dev/null 2>&1
 							_green "更新${ldnmp_pods}完成"
 							;;
@@ -4973,7 +4956,7 @@ linux_ldnmp() {
 							sed -i "s/image: php:fpm-alpine/image: php:${version}-fpm-alpine/" "$web_dir/docker-compose.yml"
 							docker rm -f "$ldnmp_pods" > /dev/null 2>&1
 							docker images --filter=reference="php:*" -q | xargs -r docker rmi > /dev/null 2>&1
-							docker compose up -d --force-recreate "$ldnmp_pods"
+							manage_compose recreate "$ldnmp_pods"
 							docker exec "$ldnmp_pods" chmod -R 777 /var/www/html
 
 							docker exec "$ldnmp_pods" apk update
@@ -5013,7 +4996,7 @@ linux_ldnmp() {
 							cd "$web_dir"
 							docker rm -f "$ldnmp_pods" > /dev/null 2>&1
 							docker images --filter=reference="$ldnmp_pods*" -q | xargs docker rmi > /dev/null 2>&1
-							docker compose up -d --force-recreate "$ldnmp_pods"
+							manage_compose recreate "$ldnmp_pods"
 							docker exec -it "$ldnmp_pods" redis-cli CONFIG SET maxmemory 512mb
 							docker exec -it "$ldnmp_pods" redis-cli CONFIG SET maxmemory-policy allkeys-lru
 							docker restart "$ldnmp_pods" > /dev/null 2>&1
@@ -5060,7 +5043,7 @@ linux_ldnmp() {
 					[Yy])
 						if docker inspect "ldnmp" &>/dev/null; then
 							cd "$web_dir" || { _red "无法进入目录 $web_dir"; return 1; }
-							manage_compose clean_down
+							manage_compose down_all
 							ldnmp_uninstall_deps
 							ldnmp_uninstall_certbot
 							ldnmp_uninstall_ngx_logrotate
@@ -5068,7 +5051,7 @@ linux_ldnmp() {
 							_green "LDNMP环境已卸载并清除相关依赖"
 						elif docker inspect "nginx" &>/dev/null && [ -d "$nginx_dir" ]; then
 							cd "$web_dir" || { _red "无法进入目录 $web_dir"; return 1; }
-							manage_compose clean_down
+							manage_compose down_all
 							ldnmp_uninstall_deps
 							ldnmp_uninstall_certbot
 							ldnmp_uninstall_ngx_logrotate
