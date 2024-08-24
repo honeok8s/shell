@@ -1932,7 +1932,7 @@ linux_panel() {
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="如果您已经安装了其他面板工具或者LDNMP建站环境,建议先卸载,再安装npm!"
 				docker_url="官网介绍: https://nginxproxymanager.com/"
-				default_port_1=81
+				docker_port_1=81
 
 				if ! docker inspect "$docker_name" >/dev/null 2>&1; then
 					while true;do
