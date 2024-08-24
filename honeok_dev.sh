@@ -3507,8 +3507,8 @@ ldnmp_install_ssltls() {
 
 	docker run --rm --name certbot \
 		-p 80:80 -p 443:443 \
-		-v "/data/docker_data/certbot/cert:/etc/letsencrypt" \
-		-v "/data/docker_data/certbot/data:/var/lib/letsencrypt" \
+		-v "$certbot_dir/cert:/etc/letsencrypt" \
+		-v "$certbot_dir/data:/var/lib/letsencrypt" \
 		certbot/certbot delete --cert-name $domain > /dev/null 2>&1
 
 	certbot_version=$(docker run --rm certbot/certbot --version | grep -oP "\d+\.\d+\.\d+")
@@ -3520,19 +3520,19 @@ ldnmp_install_ssltls() {
 	if version_ge "$certbot_version" "1.17.0"; then
 		docker run --rm --name certbot \
 			-p 80:80 -p 443:443 \
-			-v "/data/docker_data/certbot/cert:/etc/letsencrypt" \
-			-v "/data/docker_data/certbot/data:/var/lib/letsencrypt" \
+			-v "$certbot_dir/cert:/etc/letsencrypt" \
+			-v "$certbot_dir/data:/var/lib/letsencrypt" \
 			certbot/certbot certonly --standalone -d $domain --email your@email.com --agree-tos --no-eff-email --force-renewal --key-type ecdsa
 	else
 		docker run --rm --name certbot \
 			-p 80:80 -p 443:443 \
-			-v "/data/docker_data/certbot/cert:/etc/letsencrypt" \
-			-v "/data/docker_data/certbot/data:/var/lib/letsencrypt" \
+			-v "$certbot_dir/cert:/etc/letsencrypt" \
+			-v "$certbot_dir/data:/var/lib/letsencrypt" \
 			certbot/certbot certonly --standalone -d $domain --email your@email.com --agree-tos --no-eff-email --force-renewal
 	fi
 
-	cp /data/docker_data/certbot/cert/live/$domain/fullchain.pem /data/docker_data/web/nginx/certs/${domain}_cert.pem > /dev/null 2>&1
-	cp /data/docker_data/certbot/cert/live/$domain/privkey.pem /data/docker_data/web/nginx/certs/${domain}_key.pem > /dev/null 2>&1
+	cp "$certbot_dir/cert/live/$domain/fullchain.pem" "$nginx_dir/certs/${domain}_cert.pem" > /dev/null 2>&1
+	cp "$certbot_dir/cert/live/$domain/privkey.pem" "$nginx_dir/certs/${domain}_key.pem" > /dev/null 2>&1
 
 	docker start nginx > /dev/null 2>&1
 }
