@@ -6232,7 +6232,8 @@ linux_system_tools(){
 		echo "18. 修改主机名"
 		echo "19. 切换系统更新源                     20. 定时任务管理"
 		echo "------------------------"
-		echo "25. TG-bot系统监控预警"
+		echo "21. 本机host解析"
+		echo "25. TG-bot系统监控预警                 26. 修复OpenSSH高危漏洞(岫源)"
 		echo "------------------------"
 		echo "50. Cloudflare ddns解析"
 		echo "------------------------"
@@ -6788,8 +6789,56 @@ EOF
 			20)
 				cron_manager
 				;;
+			21)
+				need_root
+				while true; do
+					clear
+					echo "本机host解析列表"
+					echo "如果你在这里添加解析匹配,将不再使用动态解析了"
+					cat /etc/hosts
+					echo ""
+					echo "操作"
+					echo "------------------------"
+					echo "1. 添加新的解析              2. 删除解析地址"
+					echo "------------------------"
+					echo "0. 返回上一级选单"
+					echo "------------------------"
+
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					read -r host_dns
+
+					case $host_dns in
+						1)
+							echo -n "请输入新的解析记录,格式:110.25.5.33 honeok.com:"
+							read -r addhost
+
+							echo "$addhost" >> /etc/hosts
+							;;
+						2)
+							echo -n "请输入需要删除的解析内容关键字:"
+							read -r delhost
+
+							sed -i "/$delhost/d" /etc/hosts
+							;;
+						0)
+							break
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac
+				done
+				;;
 			25)
 				telegram_bot
+				;;
+			26)
+				need_root
+				cd ~
+				curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/upgrade_openssh9.8p1.sh
+				chmod +x ~/upgrade_openssh9.8p1.sh
+				~/upgrade_openssh9.8p1.sh
+				rm ~/upgrade_openssh9.8p1.sh
 				;;
 			50)
 				cloudflare_ddns
