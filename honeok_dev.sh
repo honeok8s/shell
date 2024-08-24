@@ -5824,7 +5824,12 @@ new_ssh_port() {
 	fi
 
 	# 清理不再使用的配置文件
-	rm -fr /etc/ssh/sshd_config.d/* /etc/ssh/ssh_config.d/*
+	if [[ -d /etc/ssh/sshd_config.d ]]; then
+		rm -f /etc/ssh/sshd_config.d/*
+	fi
+	if [[ -d /etc/ssh/ssh_config.d ]]; then
+		rm -f /etc/ssh/ssh_config.d/*
+	fi
 
 	# 重启SSH服务
 	restart_ssh
@@ -6341,9 +6346,8 @@ EOF
 
 					# 打印当前的SSH端口号
 					echo -e "当前的SSH端口号是:${yellow}$current_port${white}"
-
 					echo "------------------------"
-					echo "端口号范围30000到65535之间的数字(按0退出)"
+					echo "端口号范围10000到65535之间的数字(按0退出)"
 
 					# 提示用户输入新的SSH端口号
 					echo -n "请输入新的SSH端口号:"
@@ -6351,12 +6355,12 @@ EOF
 
 					# 判断端口号是否在有效范围内
 					if [[ $new_port =~ ^[0-9]+$ ]]; then  # 检查输入是否为数字
-						if [[ $new_port -ge 30000 && $new_port -le 65535 ]]; then
+						if [[ $new_port -ge 10000 && $new_port -le 65535 ]]; then
 							new_ssh_port
 						elif [[ $new_port -eq 0 ]]; then
 							break
 						else
-							_red "端口号无效,请输入30000到65535之间的数字"
+							_red "端口号无效,请输入10000到65535之间的数字"
 							end_of
 						fi
 					else
