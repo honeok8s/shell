@@ -1732,6 +1732,7 @@ docker_app() {
 				;;
 			3)
 				cd $docker_workdir || { _red "无法进入目录$docker_workdir"; return 1; }
+
 				manage_compose down
 				vim docker-compose.yml
 				manage_compose start
