@@ -1363,11 +1363,7 @@ docker_manager(){
 				clear
 				echo "Docker版本"
 				docker -v
-				if docker compose version >/dev/null 2>&1; then
-					docker compose version
-				elif command -v docker-compose >/dev/null 2>&1; then
-					docker-compose version
-				fi
+				manage_compose version
 				echo ""
 				echo "Docker镜像列表"
 				docker image ls
@@ -1709,11 +1705,7 @@ docker_app() {
 				# 生成compose文件
 				echo "$docker_compose_content" > docker-compose.yml
 
-				if docker compose version >/dev/null 2>&1; then
-					docker compose up -d
-				elif command -v docker-compose >/dev/null 2>&1; then
-					docker-compose up -d
-				fi
+				manage_compose start
 
 				clear
 				_green "${docker_name}安装完成"
@@ -1742,11 +1734,7 @@ docker_app() {
 				cd $docker_workdir || { _red "无法进入目录$docker_workdir"; return 1; }
 				vim docker-compose.yml
 
-				if docker compose version >/dev/null 2>&1; then
-					docker compose restart
-				elif command -v docker-compose >/dev/null 2>&1; then
-					docker-compose restart
-				fi
+				manage_compose restart
 
 				if [ $? -eq 0 ]; then
 					_green "$docker_name重启成功"
@@ -1757,11 +1745,7 @@ docker_app() {
 			4)
 				cd $docker_workdir || { _red "无法进入目录$docker_workdir"; return 1; }
 
-				if docker compose version >/dev/null 2>&1; then
-					docker compose down --rmi all --volumes
-				elif command -v docker-compose >/dev/null 2>&1; then
-					docker-compose down --rmi all --volumes
-				fi
+				manage_compose down_all
 
 				[ -d $docker_workdir ] && rm -fr "${docker_workdir}"
 				_green "${docker_name}应用已卸载"
@@ -3040,6 +3024,8 @@ manage_compose() {
 		down_all) # 停止并删除容器,镜像,卷,未使用的网络
 			$compose_cmd down --rmi all --volumes --remove-orphans
 			;;
+		version)
+			$compose_cmd version
 	esac
 }
 
