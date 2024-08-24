@@ -148,7 +148,8 @@ system_info(){
 	local congestion_algorithm=$(sysctl -n net.ipv4.tcp_congestion_control)
 	local queue_algorithm=$(sysctl -n net.core.default_qdisc)
 
-	ip_address
+	local ipv4_address=$(curl -s ipv4.ip.sb)
+	local ipv6_address=$(curl -s --max-time 1 ipv6.ip.sb)
 
 	# 获取地理位置,系统时区,系统时间和运行时长
 	local location=$(curl -s ipinfo.io/city)
@@ -389,8 +390,8 @@ need_root(){
 
 # 获取公网IP地址
 ip_address() {
-	local ipv4_services=("ipv4.ip.sb" "api.ipify.org" "checkip.amazonaws.com" "ipinfo.io/ip")
-	local ipv6_services=("ipv6.ip.sb" "api6.ipify.org" "v6.ident.me" "ipv6.icanhazip.com")
+	local ipv4_services=("http://ifconfig.me" "https://api.ipify.org" "https://checkip.amazonaws.com")
+	local ipv6_services=("https://ipv6.ip.sb" "https://api6.ipify.org" "https://v6.ident.me")
 
 	# 获取IPv4地址
 	for service in "${ipv4_services[@]}"; do
@@ -402,7 +403,7 @@ ip_address() {
 
 	# 获取IPv6地址
 	for service in "${ipv6_services[@]}"; do
-		ipv6_address=$(curl -s --max-time 1 "$service")
+		ipv6_address=$(curl -s "$service")
 		if [[ $ipv6_address =~ ^[0-9a-fA-F:]+$ ]]; then
 			break
 		else
@@ -1363,7 +1364,11 @@ docker_manager(){
 				clear
 				echo "Docker版本"
 				docker -v
-				manage_compose version
+				if docker compose version >/dev/null 2>&1; then
+					docker compose version
+				elif command -v docker-compose >/dev/null 2>&1; then
+					docker-compose version
+				fi
 				echo ""
 				echo "Docker镜像列表"
 				docker image ls
@@ -1705,7 +1710,11 @@ docker_app() {
 				# 生成compose文件
 				echo "$docker_compose_content" > docker-compose.yml
 
-				manage_compose start
+				if docker compose version >/dev/null 2>&1; then
+					docker compose up -d
+				elif command -v docker-compose >/dev/null 2>&1; then
+					docker-compose up -d
+				fi
 
 				clear
 				_green "${docker_name}安装完成"
@@ -1732,10 +1741,13 @@ docker_app() {
 				;;
 			3)
 				cd $docker_workdir || { _red "无法进入目录$docker_workdir"; return 1; }
-
-				manage_compose down
 				vim docker-compose.yml
-				manage_compose start
+
+				if docker compose version >/dev/null 2>&1; then
+					docker compose restart
+				elif command -v docker-compose >/dev/null 2>&1; then
+					docker-compose restart
+				fi
 
 				if [ $? -eq 0 ]; then
 					_green "$docker_name重启成功"
@@ -1746,7 +1758,11 @@ docker_app() {
 			4)
 				cd $docker_workdir || { _red "无法进入目录$docker_workdir"; return 1; }
 
-				manage_compose down_all
+				if docker compose version >/dev/null 2>&1; then
+					docker compose down --rmi all --volumes
+				elif command -v docker-compose >/dev/null 2>&1; then
+					docker-compose down --rmi all --volumes
+				fi
 
 				[ -d $docker_workdir ] && rm -fr "${docker_workdir}"
 				_green "${docker_name}应用已卸载"
@@ -1933,7 +1949,7 @@ linux_panel() {
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="如果您已经安装了其他面板工具或者LDNMP建站环境,建议先卸载,再安装npm!"
 				docker_url="官网介绍: https://nginxproxymanager.com/"
-				docker_port_1=81
+				default_port_1=81
 
 				if ! docker inspect "$docker_name" >/dev/null 2>&1; then
 					while true;do
@@ -2999,35 +3015,48 @@ EOF
 
 #################### LDNMP建站START ####################
 manage_compose() {
-	local compose_cmd
-	# 检查docker compose版本
-	if docker compose version >/dev/null 2>&1; then
-		compose_cmd="docker compose"
-	elif command -v docker-compose >/dev/null 2>&1; then
-		compose_cmd="docker-compose"
-	fi
-
 	case "$1" in
 		start)	# 启动容器
-			$compose_cmd up -d
+			if docker compose version >/dev/null 2>&1; then
+				docker compose up -d
+			elif command -v docker-compose >/dev/null 2>&1; then
+				docker-compose up -d
+			fi
 			;;
 		restart)
-			$compose_cmd restart
+			if docker compose version >/dev/null 2>&1; then
+				docker compose restart
+			elif command -v docker-compose >/dev/null 2>&1; then
+				docker-compose restart
+			fi
 			;;
 		stop)	# 停止容器
-			$compose_cmd stop
-			;;
-		recreate)
-			$compose_cmd up -d --force-recreate
+			if docker compose version >/dev/null 2>&1; then
+				docker compose stop
+			elif command -v docker-compose >/dev/null 2>&1; then
+				docker-compose stop
+			fi
 			;;
 		down)	# 停止并删除容器
-			$compose_cmd down
+			if docker compose version >/dev/null 2>&1; then
+				docker compose down
+			elif command -v docker-compose >/dev/null 2>&1; then
+				docker-compose down
+			fi
 			;;
-		down_all) # 停止并删除容器,镜像,卷,未使用的网络
-			$compose_cmd down --rmi all --volumes --remove-orphans
+		down_all)
+			if docker compose version >/dev/null 2>&1; then
+				docker compose down --rmi all
+			elif command -v docker-compose >/dev/null 2>&1; then
+				docker-compose down --rmi all
+			fi
 			;;
-		version)
-			$compose_cmd version
+		clean_down)	# 停止容器并删除镜像和卷
+			if docker compose version >/dev/null 2>&1; then
+				docker compose down --rmi all --volumes
+			elif command -v docker-compose >/dev/null 2>&1; then
+				docker-compose down --rmi all --volumes
+			fi
 			;;
 	esac
 }
@@ -3170,10 +3199,10 @@ default_server_ssl() {
 	install openssl
 
 	if command -v dnf &>/dev/null || command -v yum &>/dev/null; then
-		openssl req -x509 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -keyout "$nginx_dir/certs/default_server.key" -out "$nginx_dir/certs/default_server.crt" -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
+		openssl req -x509 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -keyout /data/docker_data/web/nginx/certs/default_server.key -out /data/docker_data/web/nginx/certs/default_server.crt -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
 	else
-		openssl genpkey -algorithm Ed25519 -out "$nginx_dir/certs/default_server.key"
-		openssl req -x509 -key "$nginx_dir/certs/default_server.key" -out "$nginx_dir/certs/default_server.crt" -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
+		openssl genpkey -algorithm Ed25519 -out /data/docker_data/web/nginx/certs/default_server.key
+		openssl req -x509 -key /data/docker_data/web/nginx/certs/default_server.key -out /data/docker_data/web/nginx/certs/default_server.crt -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
 	fi
 }
 
@@ -3190,11 +3219,11 @@ ldnmp_install_ngx_logrotate(){
 		return 1
 	else
 		wget -qO "$logrotate_script" "https://raw.githubusercontent.com/honeok8s/shell/main/nginx/LDNMP_ngx_logrotate.sh"
+		chmod a+x "$logrotate_script"
 		if [[ $? -ne 0 ]]; then
 			_red "脚本下载失败,请检查网络连接或脚本URL"
 			return 1
 		fi
-		chmod a+x "$logrotate_script"
 	fi
 
 	# 检查crontab中是否存在相关任务
@@ -3507,8 +3536,8 @@ ldnmp_install_ssltls() {
 
 	docker run --rm --name certbot \
 		-p 80:80 -p 443:443 \
-		-v "$certbot_dir/cert:/etc/letsencrypt" \
-		-v "$certbot_dir/data:/var/lib/letsencrypt" \
+		-v "/data/docker_data/certbot/cert:/etc/letsencrypt" \
+		-v "/data/docker_data/certbot/data:/var/lib/letsencrypt" \
 		certbot/certbot delete --cert-name $domain > /dev/null 2>&1
 
 	certbot_version=$(docker run --rm certbot/certbot --version | grep -oP "\d+\.\d+\.\d+")
@@ -3520,19 +3549,19 @@ ldnmp_install_ssltls() {
 	if version_ge "$certbot_version" "1.17.0"; then
 		docker run --rm --name certbot \
 			-p 80:80 -p 443:443 \
-			-v "$certbot_dir/cert:/etc/letsencrypt" \
-			-v "$certbot_dir/data:/var/lib/letsencrypt" \
+			-v "/data/docker_data/certbot/cert:/etc/letsencrypt" \
+			-v "/data/docker_data/certbot/data:/var/lib/letsencrypt" \
 			certbot/certbot certonly --standalone -d $domain --email your@email.com --agree-tos --no-eff-email --force-renewal --key-type ecdsa
 	else
 		docker run --rm --name certbot \
 			-p 80:80 -p 443:443 \
-			-v "$certbot_dir/cert:/etc/letsencrypt" \
-			-v "$certbot_dir/data:/var/lib/letsencrypt" \
+			-v "/data/docker_data/certbot/cert:/etc/letsencrypt" \
+			-v "/data/docker_data/certbot/data:/var/lib/letsencrypt" \
 			certbot/certbot certonly --standalone -d $domain --email your@email.com --agree-tos --no-eff-email --force-renewal
 	fi
 
-	cp "$certbot_dir/cert/live/$domain/fullchain.pem" "$nginx_dir/certs/${domain}_cert.pem" > /dev/null 2>&1
-	cp "$certbot_dir/cert/live/$domain/privkey.pem" "$nginx_dir/certs/${domain}_key.pem" > /dev/null 2>&1
+	cp /data/docker_data/certbot/cert/live/$domain/fullchain.pem /data/docker_data/web/nginx/certs/${domain}_cert.pem > /dev/null 2>&1
+	cp /data/docker_data/certbot/cert/live/$domain/privkey.pem /data/docker_data/web/nginx/certs/${domain}_key.pem > /dev/null 2>&1
 
 	docker start nginx > /dev/null 2>&1
 }
@@ -4045,7 +4074,7 @@ linux_ldnmp() {
 						PHP_Version="php74"
 						;;
 					*)
-						_red "无效选项,请重新输入"
+						echo "无效的选择，请重新输入。"
 						;;
 				esac
 
@@ -4644,7 +4673,7 @@ linux_ldnmp() {
 								;;
 							9)
 								cd /data/docker_data/fail2ban || { _red "无法进入目录/data/docker_data/fail2ban"; return 1; }
-								manage_compose down_all
+								manage_compose clean_down
 
 								[ -d /data/docker_data/fail2ban ] && rm -fr /data/docker_data/fail2ban
 								crontab -l | grep -v "CF-Under-Attack.sh" | crontab - 2>/dev/null
@@ -4916,7 +4945,7 @@ linux_ldnmp() {
 
 							docker rm -f "$ldnmp_pods" > /dev/null 2>&1
 							docker images --filter=reference="$ldnmp_pods*" -q | xargs docker rmi > /dev/null 2>&1
-							manage_compose recreate "$ldnmp_pods"
+							docker compose up -d --force-recreate "$ldnmp_pods"
 							docker exec "$ldnmp_pods" chmod -R 777 /var/www/html
 							docker restart "$ldnmp_pods" > /dev/null 2>&1
 							_green "更新${ldnmp_pods}完成"
@@ -4931,7 +4960,7 @@ linux_ldnmp() {
 							sed -i "s/image: mysql/image: mysql:$version/" "$web_dir/docker-compose.yml"
 							docker rm -f "$ldnmp_pods"
 							docker images --filter=reference="$ldnmp_pods*" -q | xargs docker rmi > /dev/null 2>&1
-							manage_compose recreate "$ldnmp_pods"
+							docker compose up -d --force-recreate "$ldnmp_pods"
 							docker restart "$ldnmp_pods" > /dev/null 2>&1
 							_green "更新${ldnmp_pods}完成"
 							;;
@@ -4945,7 +4974,7 @@ linux_ldnmp() {
 							sed -i "s/image: php:fpm-alpine/image: php:${version}-fpm-alpine/" "$web_dir/docker-compose.yml"
 							docker rm -f "$ldnmp_pods" > /dev/null 2>&1
 							docker images --filter=reference="php:*" -q | xargs -r docker rmi > /dev/null 2>&1
-							manage_compose recreate "$ldnmp_pods"
+							docker compose up -d --force-recreate "$ldnmp_pods"
 							docker exec "$ldnmp_pods" chmod -R 777 /var/www/html
 
 							docker exec "$ldnmp_pods" apk update
@@ -4985,7 +5014,7 @@ linux_ldnmp() {
 							cd "$web_dir"
 							docker rm -f "$ldnmp_pods" > /dev/null 2>&1
 							docker images --filter=reference="$ldnmp_pods*" -q | xargs docker rmi > /dev/null 2>&1
-							manage_compose recreate "$ldnmp_pods"
+							docker compose up -d --force-recreate "$ldnmp_pods"
 							docker exec -it "$ldnmp_pods" redis-cli CONFIG SET maxmemory 512mb
 							docker exec -it "$ldnmp_pods" redis-cli CONFIG SET maxmemory-policy allkeys-lru
 							docker restart "$ldnmp_pods" > /dev/null 2>&1
@@ -5032,7 +5061,7 @@ linux_ldnmp() {
 					[Yy])
 						if docker inspect "ldnmp" &>/dev/null; then
 							cd "$web_dir" || { _red "无法进入目录 $web_dir"; return 1; }
-							manage_compose down_all
+							manage_compose clean_down
 							ldnmp_uninstall_deps
 							ldnmp_uninstall_certbot
 							ldnmp_uninstall_ngx_logrotate
@@ -5040,7 +5069,7 @@ linux_ldnmp() {
 							_green "LDNMP环境已卸载并清除相关依赖"
 						elif docker inspect "nginx" &>/dev/null && [ -d "$nginx_dir" ]; then
 							cd "$web_dir" || { _red "无法进入目录 $web_dir"; return 1; }
-							manage_compose down_all
+							manage_compose clean_down
 							ldnmp_uninstall_deps
 							ldnmp_uninstall_certbot
 							ldnmp_uninstall_ngx_logrotate
@@ -5187,7 +5216,7 @@ reinstall_system(){
 	}
 
 	dd_xitong_1() {
-		echo -e "重装后初始用户名:${yellow}root${white}  初始密码:${yellow}LeitboGi0ro${white}  初始端口: ${yellow}22${white}"
+		echo -e "重装后初始用户名:${yellow}root${white}  初始密码:${yellow}LeitboGi0ro${white}  初始端口: ${gl_huang}22${white}"
 		_yellow "按任意键继续"
 		read -n 1 -s -r -p ""
 		install wget
@@ -5824,12 +5853,7 @@ new_ssh_port() {
 	fi
 
 	# 清理不再使用的配置文件
-	if [[ -d /etc/ssh/sshd_config.d ]]; then
-		rm -f /etc/ssh/sshd_config.d/*
-	fi
-	if [[ -d /etc/ssh/ssh_config.d ]]; then
-		rm -f /etc/ssh/ssh_config.d/*
-	fi
+	rm -fr /etc/ssh/sshd_config.d/* /etc/ssh/ssh_config.d/*
 
 	# 重启SSH服务
 	restart_ssh
@@ -6222,18 +6246,14 @@ linux_system_tools(){
 		echo "------------------------"
 		echo "2. 修改登录密码"
 		echo "3. root密码登录模式                    4. 安装Python指定版本"
-		echo "5. 开放所有端口                        6. 修改SSH连接端口"
+		echo "6. 修改SSH连接端口"
 		echo "7. 优化DNS地址                         8. 一键重装系统"
-		echo "9. 禁用root账户创建新账户              10. 切换IPV4/IPV6优先"
 		echo "------------------------"
-		echo "11. 查看端口占用状态                   12. 修改虚拟内存大小"
-		echo "13. 用户管理                           14. 用户/密码生成器"
+		echo "12. 修改虚拟内存大小"
 		echo "15. 系统时区调整                       16. 设置XanMod BBR3"
-		echo "18. 修改主机名"
 		echo "19. 切换系统更新源                     20. 定时任务管理"
 		echo "------------------------"
-		echo "21. 本机host解析"
-		echo "25. TG-bot系统监控预警                 26. 修复OpenSSH高危漏洞(岫源)"
+		echo "25. TG-bot系统监控预警"
 		echo "------------------------"
 		echo "50. Cloudflare ddns解析"
 		echo "------------------------"
@@ -6332,11 +6352,6 @@ EOF
 				VERSION=$(python -V 2>&1 | awk '{print $2}')
 				echo -e "当前python版本号: ${yellow}$VERSION${white}"
 				;;
-			5)
-				iptables_open
-				remove iptables-persistent ufw firewalld iptables-services > /dev/null 2>&1
-				_green "端口已全部开放"
-				;;
 			6)
 				need_root
 
@@ -6347,8 +6362,9 @@ EOF
 
 					# 打印当前的SSH端口号
 					echo -e "当前的SSH端口号是:${yellow}$current_port${white}"
+
 					echo "------------------------"
-					echo "端口号范围10000到65535之间的数字(按0退出)"
+					echo "端口号范围30000到65535之间的数字(按0退出)"
 
 					# 提示用户输入新的SSH端口号
 					echo -n "请输入新的SSH端口号:"
@@ -6356,12 +6372,12 @@ EOF
 
 					# 判断端口号是否在有效范围内
 					if [[ $new_port =~ ^[0-9]+$ ]]; then  # 检查输入是否为数字
-						if [[ $new_port -ge 10000 && $new_port -le 65535 ]]; then
+						if [[ $new_port -ge 30000 && $new_port -le 65535 ]]; then
 							new_ssh_port
 						elif [[ $new_port -eq 0 ]]; then
 							break
 						else
-							_red "端口号无效,请输入10000到65535之间的数字"
+							_red "端口号无效,请输入30000到65535之间的数字"
 							end_of
 						fi
 					else
@@ -6415,86 +6431,6 @@ EOF
 			8)
 				reinstall_system
 				;;
-			9)
-				need_root
-				echo -n "请输入新用户名(0退出):"
-				read -r new_username
-
-				if [ "$new_username" == "0" ]; then
-					end_of
-					linux_system_tools
-				fi
-
-				if id "$new_username" &>/dev/null; then
-					_red "用户$new_username已存在"
-					end_of
-					linux_system_tools
-				fi
-				# 创建用户
-				useradd -m -s /bin/bash "$new_username" || {
-					_red "创建用户失败"
-					end_of
-					linux_system_tools
-				}
-				# 设置用户密码
-				passwd "$new_username" || {
-					_red "设置用户密码失败"
-					end_of
-					linux_system_tools
-				}
-				# 更新sudoers文件
-				echo "$new_username ALL=(ALL:ALL) ALL" | tee -a /etc/sudoers || {
-					_red "更新sudoers文件失败"
-					end_of
-					linux_system_tools
-				}
-				# 锁定root用户
-				passwd -l root || {
-					_red "锁定root用户失败"
-					end_of
-					linux_system_tools
-				}
-
-				_green "操作完成"
-				;;
-			10)
-				while true; do
-					clear
-					echo "设置v4/v6优先级"
-					echo "------------------------"
-					ipv6_disabled=$(sysctl -n net.ipv6.conf.all.disable_ipv6)
-
-					if [ "$ipv6_disabled" -eq 1 ]; then
-						echo -e "当前网络优先级设置:${yellow}IPv4${white}优先"
-					else
-						echo -e "当前网络优先级设置:${yellow}IPv6${white}优先"
-					fi
-					echo ""
-					echo "------------------------"
-					echo "1. IPv4 优先     2. IPv6 优先     0. 退出"
-					echo "------------------------"
-					echo -n "选择优先的网络:"
-					read -r choice
-
-					case $choice in
-						1)
-							sysctl -w net.ipv6.conf.all.disable_ipv6=1 > /dev/null 2>&1
-							_green "已切换为IPv4优先"
-							;;
-						2)
-							sysctl -w net.ipv6.conf.all.disable_ipv6=0 > /dev/null 2>&1
-							_green "已切换为IPv6优先"
-							;;
-						*)
-							break
-							;;
-					esac
-				done
-				;;
-			11)
-				clear
-				ss -tulnape
-				;;
 			12)
 				need_root
 				echo "设置虚拟内存"
@@ -6526,7 +6462,7 @@ EOF
 							_green "已设置2G虚拟内存"
 							;;
 						3)
-							echo -n "请输入虚拟内存大小MB:"
+							echo -n -e "${yellow}请输入虚拟内存大小MB:${white}" new_swap
 							read -r new_swap
 							if [[ "$new_swap" =~ ^[0-9]+$ ]] && [ "$new_swap" -gt 0 ]; then
 								add_swap $new_swap
@@ -6543,133 +6479,6 @@ EOF
 							;;
 					esac
 				done
-				;;
-			13)
-				while true; do
-					need_root
-					echo "用户列表"
-					echo "----------------------------------------------------------------------------"
-					printf "%-24s %-34s %-20s %-10s\n" "用户名" "用户权限" "用户组" "sudo权限"
-					while IFS=: read -r username _ userid groupid _ _ homedir shell; do
-						groups=$(groups "$username" | cut -d : -f 2)
-						sudo_status=$(sudo -n -lU "$username" 2>/dev/null | grep -q '(ALL : ALL)' && echo "Yes" || echo "No")
-						printf "%-20s %-30s %-20s %-10s\n" "$username" "$homedir" "$groups" "$sudo_status"
-					done < /etc/passwd
-
-					echo ""
-					echo "账户操作"
-					echo "------------------------"
-					echo "1. 创建普通账户             2. 创建高级账户"
-					echo "------------------------"
-					echo "3. 赋予最高权限             4. 取消最高权限"
-					echo "------------------------"
-					echo "5. 删除账号"
-					echo "------------------------"
-					echo "0. 返回上一级选单"
-					echo "------------------------"
-
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-					read -r choice
-
-					case $choice in
-						1)
-							echo -n "请输入新用户名:"
-							read -r new_username
-
-							useradd -m -s /bin/bash "$new_username" && \
-							passwd "$new_username" && \
-							_green "普通账户创建完成"
-							;;
-						2)
-							echo -n "请输入新用户名:"
-							read -r new_username
-
-							useradd -m -s /bin/bash "$new_username" && \
-							passwd "$new_username" && \
-							echo "$new_username ALL=(ALL:ALL) ALL" | sudo tee -a /etc/sudoers && \
-							_green "高级账户创建完成"
-							;;
-						3)
-							echo -n "请输入新用户名:"
-							read -r username
-
-							echo "$username ALL=(ALL:ALL) ALL" | sudo tee -a /etc/sudoers && \
-							_green "已赋予$username Sudo权限"
-							;;
-						4)
-							echo -n "请输入新用户名:"
-							read -r username
-							# 从sudoers文件中移除用户的sudo权限
-							if sudo sed -i "/^$username\sALL=(ALL:ALL)\sALL/d" /etc/sudoers; then
-								_green "已取消 $username的Sudo权限"
-							else
-								_red "取消Sudo权限失败"
-							fi
-							;;
-						5)
-							echo -n "请输入要删除的用户名:"
-							read -r username
-
-							# 删除用户及其主目录
-							userdel -r "$username" && \
-							_green "$username账号已删除"
-							;;
-						0)
-							break
-							;;
-						*)
-							_red "无效选项,请重新输入"
-							;;
-					esac
-				done
-				;;
-			14)
-				clear
-				echo "随机用户名"
-				echo "------------------------"
-				for i in {1..5}; do
-					username="user$(< /dev/urandom tr -dc _a-z0-9 | head -c6)"
-					echo "随机用户名 $i: $username"
-				done
-
-				echo ""
-				echo "随机姓名"
-				echo "------------------------"
-				first_names=("John" "Jane" "Michael" "Emily" "David" "Sophia" "William" "Olivia" "James" "Emma" "Ava" "Liam" "Mia" "Noah" "Isabella")
-				last_names=("Smith" "Johnson" "Brown" "Davis" "Wilson" "Miller" "Jones" "Garcia" "Martinez" "Williams" "Lee" "Gonzalez" "Rodriguez" "Hernandez")
-
-				# 生成5个随机用户姓名
-				for i in {1..5}; do
-					first_name_index=$((RANDOM % ${#first_names[@]}))
-					last_name_index=$((RANDOM % ${#last_names[@]}))
-					user_name="${first_names[$first_name_index]} ${last_names[$last_name_index]}"
-					echo "随机用户姓名 $i: $user_name"
-				done
-
-				echo ""
-				echo "随机UUID"
-				echo "------------------------"
-				for i in {1..5}; do
-					uuid=$(cat /proc/sys/kernel/random/uuid)
-					echo "随机UUID $i: $uuid"
-				done
-
-				echo ""
-				echo "16位随机密码"
-				echo "------------------------"
-				for i in {1..5}; do
-					password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
-					echo "随机密码 $i: $password"
-				done
-
-				echo ""
-				echo "32位随机密码"
-				echo "------------------------"
-				for i in {1..5}; do
-					password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c32)
-					echo "随机密码 $i: $password"
-				done
-				echo ""
 				;;
 			15)
 				need_root
@@ -6754,91 +6563,14 @@ EOF
 			16)
 				xanmod_bbr3
 				;;
-			18)
-				need_root
-				while true; do
-					clear
-					current_hostname=$(hostname)
-					echo -e "当前主机名:$current_hostname"
-					echo "------------------------"
-					echo -n "请输入新的主机名(输入0退出):"
-					read -r new_hostname
-
-					if [ -n "$new_hostname" ] && [ "$new_hostname" != "0" ]; then
-						if [ -f /etc/alpine-release ]; then
-							# Alpine
-							echo "$new_hostname" > /etc/hostname
-							hostname "$new_hostname"
-						else
-							# 其他系统，如 Debian, Ubuntu, CentOS 等
-							hostnamectl set-hostname "$new_hostname"
-							sed -i "s/$current_hostname/$new_hostname/g" /etc/hostname
-							systemctl restart systemd-hostnamed
-						fi
-						echo "主机名已更改为:$new_hostname"
-						sleep 1
-					else
-						_yellow "未更改主机名已退出"
-						break
-					fi
-				done
-				;;
 			19)
 				linux_mirror
 				;;
 			20)
 				cron_manager
 				;;
-			21)
-				need_root
-				while true; do
-					clear
-					echo "本机host解析列表"
-					echo "如果你在这里添加解析匹配,将不再使用动态解析了"
-					cat /etc/hosts
-					echo ""
-					echo "操作"
-					echo "------------------------"
-					echo "1. 添加新的解析              2. 删除解析地址"
-					echo "------------------------"
-					echo "0. 返回上一级选单"
-					echo "------------------------"
-
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-					read -r host_dns
-
-					case $host_dns in
-						1)
-							echo -n "请输入新的解析记录,格式:110.25.5.33 honeok.com:"
-							read -r addhost
-
-							echo "$addhost" >> /etc/hosts
-							;;
-						2)
-							echo -n "请输入需要删除的解析内容关键字:"
-							read -r delhost
-
-							sed -i "/$delhost/d" /etc/hosts
-							;;
-						0)
-							break
-							;;
-						*)
-							_red "无效选项,请重新输入"
-							;;
-					esac
-				done
-				;;
 			25)
 				telegram_bot
-				;;
-			26)
-				need_root
-				cd ~
-				curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/upgrade_openssh9.8p1.sh
-				chmod +x ~/upgrade_openssh9.8p1.sh
-				~/upgrade_openssh9.8p1.sh
-				rm ~/upgrade_openssh9.8p1.sh
 				;;
 			50)
 				cloudflare_ddns
@@ -6862,180 +6594,6 @@ EOF
 }
 
 #################### 系统工具END ####################
-
-#################### 工作区START ####################
-tmux_run() {
-	# 检查会话是否已经存在
-	tmux has-session -t $session_name 2>/dev/null
-	# $?是一个特殊变量,保存上一个命令的退出状态
-	if [ $? != 0 ]; then
-		# 会话不存在,创建一个新的会话
-		tmux new -s $session_name
-	else
-		# 会话存在附加到这个会话
-		tmux attach-session -t $session_name
-	fi
-}
-
-tmux_run_d() {
-	base_name="tmuxd"
-	tmuxd_ID=1
-
-	# 检查会话是否存在的函数
-	session_exists() {
-		tmux has-session -t $1 2>/dev/null
-	}
-
-	# 循环直到找到一个不存在的会话名称
-	while session_exists "$base_name-$tmuxd_ID"; do
-		tmuxd_ID=$((tmuxd_ID + 1))
-	done
-
-	# 创建新的tmux会话
-	tmux new -d -s "$base_name-$tmuxd_ID" "$tmuxd"
-}
-
-linux_workspace() {
-	while true; do
-		clear
-		echo "▶ 我的工作区"
-		echo "系统将为你提供可以后台常驻运行的工作区,你可以用来执行长时间的任务"
-		echo "即使你断开SSH,工作区中的任务也不会中断,后台常驻任务"
-		echo "提示: 进入工作区后使用Ctrl+b再单独按d,退出工作区!"
-		echo "------------------------"
-		echo "1. 1号工作区"
-		echo "2. 2号工作区"
-		echo "3. 3号工作区"
-		echo "4. 4号工作区"
-		echo "5. 5号工作区"
-		echo "6. 6号工作区"
-		echo "7. 7号工作区"
-		echo "8. 8号工作区"
-		echo "9. 9号工作区"
-		echo "10. 10号工作区"
-		echo "------------------------"
-		echo "99. 工作区管理"
-		echo "------------------------"
-		echo "0. 返回主菜单"
-		echo "------------------------"
-
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-		read -r choice
-
-		case $choice in
-			1)
-				clear
-				install tmux
-				session_name="work1"
-				tmux_run
-				;;
-			2)
-				clear
-				install tmux
-				session_name="work2"
-				tmux_run
-				;;
-			3)
-				clear
-				install tmux
-				session_name="work3"
-				tmux_run
-				;;
-			4)
-				clear
-				install tmux
-				session_name="work4"
-				tmux_run
-				;;
-			5)
-				clear
-				install tmux
-				session_name="work5"
-				tmux_run
-				;;
-			6)
-				clear
-				install tmux
-				session_name="work6"
-				tmux_run
-				;;
-			7)
-				clear
-				install tmux
-				session_name="work7"
-				tmux_run
-				;;
-			8)
-				clear
-				install tmux
-				session_name="work8"
-				tmux_run
-				;;
-			9)
-				clear
-				install tmux
-				session_name="work9"
-				tmux_run
-				;;
-			10)
-				clear
-				install tmux
-				session_name="work10"
-				tmux_run
-				;;
-			99)
-				while true; do
-					clear
-					echo "当前已存在的工作区列表"
-					echo "------------------------"
-					tmux list-sessions
-					echo "------------------------"
-					echo "1. 创建/进入工作区"
-					echo "2. 注入命令到后台工作区"
-					echo "3. 删除指定工作区"
-					echo "------------------------"
-					echo "0. 返回上一级"
-					echo "------------------------"
-
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
-					read -r gongzuoqu_del
-
-					case "$gongzuoqu_del" in
-						1)
-							echo -n "请输入你创建或进入的工作区名称,如1001 honeok work1:"
-							read -r session_name
-							tmux_run
-							;;
-						2)
-							echo -n "请输入你要后台执行的命令,如:curl -fsSL https://get.docker.com | sh:"
-							read -r tmuxd
-							tmux_run_d
-							;;
-						3)
-							echo -n "请输入要删除的工作区名称:"
-							read -r workspace_name
-							tmux kill-window -t $workspace_name
-							;;
-						0)
-							break
-							;;
-						*)
-							_red "无效选项,请重新输入"
-							;;
-					esac
-				done
-				;;
-			0)
-				honeok
-				;;
-			*)
-				_red "无效选项,请重新输入"
-				;;
-		esac
-		end_of
-	done
-}
-#################### 工作区END ####################
 
 #################### VPS测试脚本START ####################
 servertest_script(){
@@ -7589,7 +7147,7 @@ honeok(){
 				linux_system_tools
 				;;
 			14)
-				linux_workspace
+				echo "敬请期待"
 				;;
 			15)
 				servertest_script
