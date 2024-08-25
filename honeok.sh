@@ -7199,12 +7199,13 @@ node_create(){
 		echo "-------------------------------"
 		echo "1. Fscarmen Sing-box一键脚本"
 		echo "2. Fscarmen ArgoX一键脚本"
+		echo "3. FranzKafkaYu Sing-box一键脚本"
 		echo "5. 233boy Sing-box一键脚本"
 		echo "7. WL一键Argo哪吒脚本"
 		echo "-------------------------------"
 		echo "     单协议/XRAY面板及其他"
 		echo "-------------------------------"
-		echo "22. Brutal-Reality一键脚本"
+		echo "22. Brutal Reality一键脚本"
 		echo "23. Vaxilu X-UI面板一键脚本"
 		echo "24. FranzKafkaYu X-UI面板一键脚本"
 		echo "25. Alireza0 X-UI面板一键脚本"
@@ -7230,6 +7231,10 @@ node_create(){
 				clear
 				install wget
 				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/argox/main/argox.sh)
+				;;
+			3)
+				clear
+				bash <(curl -Ls https://raw.githubusercontent.com/FranzKafkaYu/sing-box-yes/master/install.sh)
 				;;
 			5)
 				clear
