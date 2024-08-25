@@ -7202,6 +7202,7 @@ node_create(){
 		echo "5. 233boy Sing-box一键脚本"
 		echo "6. Fscarmen ArgoX一键脚本"
 		echo "7. WL一键Argo哪吒脚本"
+		echo "20. Multi EasyGost一键脚本"
 		echo "-------------------------------"
 		echo "     单协议/XRAY面板及其他"
 		echo "-------------------------------"
@@ -7240,10 +7241,15 @@ node_create(){
 				clear
 				install wget
 				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/argox/main/argox.sh)
-				;;				
+				;;
 			7)
 				clear
 				bash <(curl -sL https://raw.githubusercontent.com/dsadsadsss/vps-argo/main/install.sh)
+				;;
+			20)
+				clear
+				install wget
+				wget --no-check-certificate -O gost.sh https://raw.githubusercontent.com/KANIKIG/Multi-EasyGost/master/gost.sh && chmod +x gost.sh && ./gost.sh
 				;;
 			22)
 				clear
