@@ -26,7 +26,7 @@ _purple() { echo -e ${purple}$@${white}; }
 _gray() { echo -e ${gray}$@${white}; }
 _orange() { echo -e ${orange}$@${white}; }
 
-honeok_v="v2.0.0"
+honeok_v="v2.0.1"
 
 print_logo(){
 	local cyan=$(tput setaf 6)
@@ -870,6 +870,7 @@ docker_main_version() {
 # Docker调优
 generate_docker_config() {
 	local config_file="/etc/docker/daemon.json"
+	local registry_url="https://raw.githubusercontent.com/honeok8s/conf/main/docker/registry_mirrors.txt"
 	local is_china_server='false'
 
 	if ! command -v docker &> /dev/null; then
@@ -889,20 +890,26 @@ generate_docker_config() {
 
 	# 检查服务器是否在中国
 	if [[ "$(curl -s ipinfo.io/country)" == "CN" ]]; then
+		# 如果服务器在中国，使用registry_url
 		is_china_server='true'
 	fi
 
 	# Python脚本
 	python3 - <<EOF
 import json
-import sys
+import requests
 
-registry_mirrors = [
-	"https://registry.honeok.com",
-	"https://docker.ima.cm",
-	"https://hub.littlediary.cn",
-	"https://h.ysicing.net"
-]
+registry_mirrors = []
+
+# 从远程URL获取registry mirrors
+try:
+	response = requests.get("$registry_url")
+	if response.status_code == 200:
+		registry_mirrors = [line.strip() for line in response.text.splitlines() if line.strip()]
+	else:
+		print("无法获取远程镜像列表, HTTP状态码:", response.status_code)
+except requests.RequestException as e:
+	print("请求远程镜像列表时发生错误:", e)
 
 base_config = {
 	"exec-opts": [
@@ -919,8 +926,8 @@ base_config = {
 	"ipv6": False
 }
 
-# 如果是中国服务器，将 registry-mirrors 放在前面
-if "$is_china_server" == "true":
+# 如果是中国服务器,并且有镜像地址,将registry-mirrors添加
+if "$is_china_server" == "true" and registry_mirrors:
 	config = {
 		"registry-mirrors": registry_mirrors,
 		**base_config
@@ -930,7 +937,6 @@ else:
 
 with open("/etc/docker/daemon.json", "w") as f:
 	json.dump(config, f, indent=4)
-
 EOF
 
 	# 校验和重新加载Docker守护进程
@@ -1455,7 +1461,7 @@ docker_manager(){
 							docker network rm $dockernetwork
 							;;
 						0)
-							break  # 跳出循环，退出菜单
+							break  # 跳出循环,退出菜单
 							;;
 						*)
 							_red "无效选项,请重新输入"
@@ -1520,7 +1526,7 @@ docker_manager(){
 				;;
 			7)
 				clear
-				echo -n "将清理无用的镜像容器网络，包括停止的容器，确定清理吗?(y/n):"
+				echo -n "将清理无用的镜像容器网络,包括停止的容器,确定清理吗?(y/n):"
 				read -r choice
 
 				case "$choice" in
@@ -5011,7 +5017,7 @@ linux_ldnmp() {
 							break
 							;;
 						*)
-							echo "无效的选择，请重新输入。"
+							_red "无效选项,请重新输入"
 							;;
 					esac
 					end_of
@@ -6766,7 +6772,7 @@ EOF
 							echo "$new_hostname" > /etc/hostname
 							hostname "$new_hostname"
 						else
-							# 其他系统，如 Debian, Ubuntu, CentOS 等
+							# 其他系统如Debian,Ubuntu,CentOS等
 							hostnamectl set-hostname "$new_hostname"
 							sed -i "s/$current_hostname/$new_hostname/g" /etc/hostname
 							systemctl restart systemd-hostnamed
