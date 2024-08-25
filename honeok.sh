@@ -111,6 +111,9 @@ system_info(){
 		disk_output+="${disk} ${used}/${size} (${percent})  "
 	done <<< "$disk_info"
 
+	# 启动盘路径
+	local boot_partition=$(findmnt -n -o SOURCE /)
+
 	# 将字节数转换为GB(获取出网入网数据)
 	bytes_to_gb() {
 		local bytes=$1
@@ -174,6 +177,7 @@ system_info(){
 	echo "物理内存: ${mem_usage}"
 	echo "虚拟内存: ${swap_usage}"
 	echo "硬盘空间: ${disk_output}"
+	echo "启动盘路径: ${boot_partition}"
 	echo "-------------------------"
 	echo "网络接收数据量: $(bytes_to_gb $total_recv_bytes)"
 	echo "网络发送数据量: $(bytes_to_gb $total_sent_bytes)"
