@@ -794,61 +794,6 @@ install_docker() {
 	fi
 }
 
-install_docker_official() {
-	if [[ "$(curl -s ipinfo.io/country)" == "CN" ]]; then
-		cd ~
-		curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/docker/get-docker-official.sh && chmod a+x get-docker-official.sh
-		bash get-docker-official.sh --mirror Aliyun
-		[ -f ~/get-docker-official.sh ] && rm -f get-docker-official.sh
-	else
-		curl -fsSL https://get.docker.com | sh
-	fi
-
-	enable docker
-	start docker
-}
-
-install_add_docker() {
-    _yellow "正在安装docker"
-
-	if [ -f /etc/os-release ] && grep -q "Fedora" /etc/os-release; then
-		install_docker_official
-		enable docker && start docker
-		generate_docker_config
-		docker_main_version
-	elif command -v dnf &>/dev/null; then
-		install yum-utils device-mapper-persistent-data lvm2
-		[ -f /etc/yum.repos.d/docker*.repo ] && rm -f /etc/yum.repos.d/docker*.repo > /dev/null
-
-		# 判断地区安装
-		if [[ "$(curl -s ipinfo.io/country)" == "CN" ]]; then
-			yum-config-manager --add-repo https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo > /dev/null
-		else
-			yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo > /dev/null
-		fi
-
-		install docker-ce docker-ce-cli containerd.io
-		enable docker
-		start docker
-		generate_docker_config
-		docker_main_version
-	elif command -v apt &>/dev/null || command -v yum &>/dev/null; then
-		install_docker_official
-		enable docker
-		start docker
-		generate_docker_config
-		docker_main_version
-	else
-		install docker docker-compose
-		enable docker
-		start docker
-		generate_docker_config
-		docker_main_version
-	fi
-
-	sleep 2
-}
-
 docker_main_version() {
 	local docker_version=""
 	local docker_compose_version=""
@@ -869,6 +814,57 @@ docker_main_version() {
 
 	echo -e "${white}已安装Docker版本: ${yellow}v$docker_version${white}"
 	echo -e "${white}已安装Docker Compose版本: ${yellow}v$docker_compose_version${white}"
+}
+
+install_docker_official() {
+	if [[ "$(curl -s ipinfo.io/country)" == "CN" ]]; then
+		cd ~
+		curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/docker/get-docker-official.sh && chmod a+x get-docker-official.sh
+		bash get-docker-official.sh --mirror Aliyun
+		[ -f ~/get-docker-official.sh ] && rm -f get-docker-official.sh
+	else
+		curl -fsSL https://get.docker.com | sh
+	fi
+
+	enable docker && start docker
+}
+
+install_add_docker() {
+    _yellow "正在安装docker"
+
+	if [ -f /etc/os-release ] && grep -q "Fedora" /etc/os-release; then
+		install_docker_official
+		generate_docker_config
+		docker_main_version
+	elif command -v dnf &>/dev/null; then
+		install yum-utils device-mapper-persistent-data lvm2
+		[ -f /etc/yum.repos.d/docker*.repo ] && rm -f /etc/yum.repos.d/docker*.repo > /dev/null
+
+		# 判断地区安装
+		if [[ "$(curl -s ipinfo.io/country)" == "CN" ]]; then
+			yum-config-manager --add-repo https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo > /dev/null
+		else
+			yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo > /dev/null
+		fi
+
+		install docker-ce docker-ce-cli containerd.io
+		enable docker
+		start docker
+		generate_docker_config
+		docker_main_version
+	elif command -v apt &>/dev/null || command -v yum &>/dev/null; then
+		install_docker_official
+		generate_docker_config
+		docker_main_version
+	else
+		install docker docker-compose
+		enable docker
+		start docker
+		generate_docker_config
+		docker_main_version
+	fi
+
+	sleep 2
 }
 
 # Docker调优
