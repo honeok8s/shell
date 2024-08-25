@@ -7198,9 +7198,9 @@ node_create(){
 		echo "  Sing-box多合一/Argo-tunnel"
 		echo "-------------------------------"
 		echo "1. Fscarmen Sing-box一键脚本"
-		echo "2. Fscarmen ArgoX一键脚本"
 		echo "3. FranzKafkaYu Sing-box一键脚本"
 		echo "5. 233boy Sing-box一键脚本"
+		echo "6. Fscarmen ArgoX一键脚本"
 		echo "7. WL一键Argo哪吒脚本"
 		echo "-------------------------------"
 		echo "     单协议/XRAY面板及其他"
@@ -7227,11 +7227,6 @@ node_create(){
 				install wget
 				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/sing-box/main/sing-box.sh)
 				;;
-			2)
-				clear
-				install wget
-				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/argox/main/argox.sh)
-				;;
 			3)
 				clear
 				bash <(curl -Ls https://raw.githubusercontent.com/FranzKafkaYu/sing-box-yes/master/install.sh)
@@ -7240,7 +7235,12 @@ node_create(){
 				clear
 				install wget
 				bash <(wget -qO- -o- https://github.com/233boy/sing-box/raw/main/install.sh)
-				;;          
+				;;
+			6)
+				clear
+				install wget
+				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/argox/main/argox.sh)
+				;;				
 			7)
 				clear
 				bash <(curl -sL https://raw.githubusercontent.com/dsadsadsss/vps-argo/main/install.sh)
