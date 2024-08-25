@@ -6046,8 +6046,8 @@ cloudflare_ddns() {
 
 	local choice CFKEY CFUSER CFZONE_NAME CFRECORD_NAME CFRECORD_TYPE CFTTL
 	local EXPECTED_HASH="81d3d4528a99069c81f1150bb9fa798684b27f5a0248cd4c227200055ecfa8a9"
-	local ipv4_address=$(curl -s ipv4.ip.sb)
-	local ipv6_address=$(curl -s --max-time 1 ipv6.ip.sb)
+
+	ip_address
 
 	while true; do
 		clear
