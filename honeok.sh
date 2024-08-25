@@ -7627,6 +7627,7 @@ honeok(){
 				honeok_update
 				;;
 			0)
+				_orange "Bye!" && sleep 1
 				clear
 				exit 0
 				;;
