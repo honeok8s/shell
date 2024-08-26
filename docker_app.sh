@@ -349,6 +349,9 @@ manage_docker_application() {
 					if [ -n "$docker_port_3" ]; then
 						sed_commands+="s/\$default_port_3/$docker_port_3/g;"
 					fi
+					if [ -n "$random_password" ];then
+						sed_commands+="s/\$random_password/$random_password/g;"
+					fi
 					echo "$docker_compose_content" | sed "$sed_commands" > docker-compose.yml
 				fi
 
@@ -1024,31 +1027,12 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="Nextcloud拥有超过400,000个部署,是您可以下载的最受欢迎的本地内容协作平台"
 				docker_url="官网介绍: https://nextcloud.com/"
-				rootpasswd=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
-
 				default_port_1=8080
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  nextcloud:
-    image: nextcloud:latest
-    container_name: nextcloud
-    restart: unless-stopped
-    ports:
-      - "$docker_port_1:80"
-    environment:
-      - NEXTCLOUD_ADMIN_USER=nextcloud
-      - NEXTCLOUD_ADMIN_PASSWORD=$rootpasswd
-    volumes:
-      - ./nextcloud:/var/www/html
-EOF
-)
-				docker_use="echo \"账号: nextcloud  密码: $rootpasswd\""
-				docker_passwd=""
-				docker_app
+				random_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/nextcloud-simple-docker-compose.yml)
+				docker_exec_command="echo 账号: nextcloud  密码: $random_password"
+				docker_password=""
+				manage_docker_application
 				;;
 			26)
 				docker_name="qd"
