@@ -702,30 +702,10 @@ linux_panel() {
 				docker_describe="简单图床是一个简单的图床程序"
 				docker_url="官网介绍: https://github.com/icret/EasyImages2.0"
 				default_port_1=8080
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  easyimage:
-    image: ddsderek/easyimage:latest
-    container_name: easyimage
-    ports:
-      - "$docker_port_1:80"
-    environment:
-      - TZ=Asia/Shanghai
-      - PUID=1000
-      - PGID=1000
-    volumes:
-      - ./config:/app/web/config
-      - ./i:/app/web/i
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/easyimage-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			15)
 				docker_name="emby"
@@ -734,33 +714,10 @@ EOF
 				docker_url="官网介绍: https://emby.media/"
 				default_port_1=8096
 				default_port_2=8920
-
-				# 检查HTTP端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  emby:
-    image: linuxserver/emby:latest
-    container_name: emby
-    ports:
-      - "$docker_port_1:8096"
-      - "$docker_port_2:8920"
-    environment:
-      - UID=1000
-      - GID=100
-      - GIDLIST=100
-    volumes:
-      - ./config:/config
-      - ./share1:/mnt/share1
-      - ./share2:/mnt/share2
-      - ./notify:/mnt/notify
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/emby-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			16)
 				docker_name="looking-glass"
@@ -769,64 +726,10 @@ EOF
 				docker_url="官网介绍: https://github.com/wikihost-opensource/als"
 				default_port_1=8080
 				default_port_2=30000
-
-				if docker inspect "$docker_name" >/dev/null 2>&1; then
-					# 如果容器已存在,获取当前映射的端口
-					docker_port_1=$(docker inspect "$docker_name" --format '{{ range $p, $conf := .NetworkSettings.Ports }}{{ range $conf }}{{ $p }}:{{ .HostPort }}{{ end }}{{ end }}' | grep -oP '(\d+)$')
-				else
-					while true; do
-						if ss -tuln | grep -q ":$default_port_1 "; then
-							# 查找可用的端口
-							docker_port_1=$(find_available_port 30000 50000)
-							_yellow "默认端口$default_port_1被占用,端口跳跃为$docker_port_1"
-							sleep 1
-							break
-						else
-							docker_port_1=$default_port_1
-							_yellow "使用默认端口$docker_port_1"
-							sleep 1
-							break
-						fi
-					done
-				fi
-
-				if ! docker inspect "$docker_name" >/dev/null 2>&1; then
-					if [[ "$docker_port_1" -eq "$default_port_2" ]];then
-						docker_port_2=$(find_available_port 30500 31000)
-						_yellow "默认端口$default_iperf_port被占用,端口跳跃为$docker_port_2"
-						sleep 1
-					else
-						docker_port_2=$default_port_2
-						_yellow "使用默认端口$docker_port_2"
-						sleep 1
-					fi
-				else
-					docker_port_2=$(docker ps --filter "name=$docker_name" --format "{{.Ports}}" | grep -oP '(\d+)->\1/tcp' | grep -oP '^\d+' | grep -v '80')
-				fi
-
-							docker_compose_content=$(cat <<EOF
-services:
-  looking-glass:
-    image: wikihostinc/looking-glass-server
-    container_name: looking-glass
-    ports:
-      - "$docker_port_1:80"
-      - "$docker_port_2:$docker_port_2"
-    environment:
-      - DISPLAY_TRAFFIC=true
-      - ENABLE_SPEEDTEST=true
-      - UTILITIES_PING=true
-      - UTILITIES_SPEEDTESTDOTNET=true
-      - UTILITIES_FAKESHELL=true
-      - UTILITIES_IPERF3=true
-      - UTILITIES_IPERF3_PORT_MIN=$docker_port_2
-      - UTILITIES_IPERF3_PORT_MAX=$docker_port_2
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/looking-glass-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			17)
 				docker_name="adguardhome"
@@ -834,28 +737,10 @@ EOF
 				docker_describe="AdGuardHome是一款全网广告拦截与反跟踪软件,未来将不止是一个DNS服务器"
 				docker_url="官网介绍: https://hub.docker.com/r/adguard/adguardhome"
 				default_port_1=3000
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  adguardhome:
-    image: adguard/adguardhome
-    container_name: adguardhome
-    ports:
-      - "53:53/tcp"
-      - "53:53/udp"
-      - "$docker_port_1:3000/tcp"
-    volumes:
-      - ./work:/opt/adguardhome/work
-      - ./conf:/opt/adguardhome/conf
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/adguardhome-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			18)
 				docker_name="onlyoffice"
@@ -863,26 +748,10 @@ EOF
 				docker_describe="onlyoffice是一款开源的在线office工具,太强大了!"
 				docker_url="官网介绍: https://www.onlyoffice.com/"
 				default_port_1=8080
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  onlyoffice:
-    image: onlyoffice/documentserver:latest
-    container_name: onlyoffice
-    ports:
-      - "$docker_port_1:80"
-    volumes:
-      - ./logs:/var/log/onlyoffice
-      - ./data:/var/www/onlyoffice/Data
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/onlyoffice-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			19)
 				check_network_protocols
@@ -950,26 +819,10 @@ EOF
 				docker_describe="portainer是一个轻量级的docker容器管理面板"
 				docker_url="官网介绍: https://www.portainer.io/"
 				default_port_1=9000
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  portainer:
-    image: portainer/portainer
-    container_name: portainer
-    ports:
-      - "$docker_port_1:9000"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./data:/data
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/portainer-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			21)
 				docker_name="vscode-web"
