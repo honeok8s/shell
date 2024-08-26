@@ -376,7 +376,6 @@ manage_docker_application() {
 			3)
 				cd "$docker_workdir" || { _red "无法进入目录$docker_workdir"; return 1; }
 
-				manage_compose down
 				vim docker-compose.yml
 				manage_compose start
 
@@ -669,33 +668,10 @@ linux_panel() {
 				docker_describe="qbittorrent离线BT磁力下载服务"
 				docker_url="官网介绍: https://hub.docker.com/r/linuxserver/qbittorrent"
 				default_port_1=8081
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  qbittorrent:
-    image: linuxserver/qbittorrent:latest
-    container_name: qbittorrent
-    ports:
-      - "$docker_port_1:8081"
-      - "6881:6881"
-      - "6881:6881/udp"
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Asia/Shanghai
-      - WEBUI_PORT=8081
-    volumes:
-      - ./config:/config
-      - ./downloads:/downloads
-    restart: unless-stopped
-EOF
-)	
-				docker_use="sleep 3"
-				docker_passwd="docker logs qbittorrent"
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/qbittorrent-docker-compose.yml)
+				docker_exec_command="sleep 3"
+				docker_password="docker logs qbittorrent"
+				manage_docker_application
 				;;
 			11)
 				docker_name="zentao-server"
@@ -715,26 +691,10 @@ EOF
 				docker_describe="青龙面板是一个定时任务管理平台"
 				docker_url="官网介绍: https://github.com/whyour/qinglong"
 				default_port_1=5700
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  qinglong:
-    image: whyour/qinglong:latest
-    container_name: qinglong
-    hostname: qinglong
-    ports:
-      - "$docker_port_1:5700"
-    volumes:
-      - ./data:/ql/data
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/qinglong-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			14)
 				docker_name="easyimage"
