@@ -268,6 +268,9 @@ manage_compose() {
 		down)	# 停止并删除容器
 			$compose_cmd down
 			;;
+		pull)
+			$compose_cmd pull
+			;;
 		down_all) # 停止并删除容器,镜像,卷,未使用的网络
 			$compose_cmd down --rmi all --volumes --remove-orphans
 			;;
@@ -359,12 +362,7 @@ manage_docker_application() {
 				;;
 			2)
 				cd "$docker_workdir" || { _red "无法进入目录$docker_workdir"; return 1; }
-
-				if docker compose version >/dev/null 2>&1; then
-					docker compose pull && docker compose up -d
-				elif command -v docker-compose >/dev/null 2>&1; then
-					docker-compose pull && docker-compose up -d
-				fi
+				manage_compose pull && manage_compose start
 
 				clear
 				_green "$docker_name更新完成"
