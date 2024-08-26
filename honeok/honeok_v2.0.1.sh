@@ -872,7 +872,6 @@ generate_docker_config() {
 	local config_file="/etc/docker/daemon.json"
 	local registry_url="https://raw.githubusercontent.com/honeok8s/conf/main/docker/registry_mirrors.txt"
 	local is_china_server='false'
-	local registry_mirrors=""
 
 	if ! command -v docker &> /dev/null; then
 		_red "Docker未安装在系统上,无法优化"
@@ -895,12 +894,22 @@ generate_docker_config() {
 		is_china_server='true'
 	fi
 
-	# 使用curl获取registry mirrors
-	registry_mirrors=$(curl -s "$registry_url" | grep -v '^#' | awk NF | sed ':a;N;$!ba;s/\n/","/g')
-
 	# Python脚本
 	python3 - <<EOF
 import json
+import requests
+
+registry_mirrors = []
+
+# 从远程URL获取registry mirrors
+try:
+	response = requests.get("$registry_url")
+	if response.status_code == 200:
+		registry_mirrors = [line.strip() for line in response.text.splitlines() if line.strip()]
+	else:
+		print("无法获取远程镜像列表, HTTP状态码:", response.status_code)
+except requests.RequestException as e:
+	print("请求远程镜像列表时发生错误:", e)
 
 base_config = {
 	"exec-opts": [
@@ -917,14 +926,14 @@ base_config = {
 	"ipv6": False
 }
 
-config = base_config
-
 # 如果是中国服务器,并且有镜像地址,将registry-mirrors添加
-if "$is_china_server" == "true" and "$registry_mirrors":
+if "$is_china_server" == "true" and registry_mirrors:
 	config = {
-		"registry-mirrors": ["$registry_mirrors"],
+		"registry-mirrors": registry_mirrors,
 		**base_config
 	}
+else:
+	config = base_config
 
 with open("/etc/docker/daemon.json", "w") as f:
 	json.dump(config, f, indent=4)
