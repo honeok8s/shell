@@ -872,7 +872,6 @@ generate_docker_config() {
 	local config_file="/etc/docker/daemon.json"
 	local registry_url="https://raw.githubusercontent.com/honeok8s/conf/main/docker/registry_mirrors.txt"
 	local is_china_server='false'
-	local registry_mirrors=""
 
 	if ! command -v docker &> /dev/null; then
 		_red "Docker未安装在系统上,无法优化"
@@ -891,43 +890,44 @@ generate_docker_config() {
 
 	# 检查服务器是否在中国
 	if [[ "$(curl -s ipinfo.io/country)" == "CN" ]]; then
-		# 如果服务器在中国，使用registry_url
 		is_china_server='true'
 	fi
 
-	# 使用curl获取registry mirrors
-	registry_mirrors=$(curl -s "$registry_url" | grep -v '^#' | awk NF | sed ':a;N;$!ba;s/\n/","/g')
+	# 获取 registry mirrors 内容
+	registry_mirrors=$(curl -s "$registry_url" | grep -v '^#' | sed '/^$/d')
 
 	# Python脚本
 	python3 - <<EOF
 import json
 
+registry_mirrors = """$registry_mirrors""".splitlines()
+
 base_config = {
-	"exec-opts": [
-		"native.cgroupdriver=systemd"
-	],
-	"max-concurrent-downloads": 10,
-	"max-concurrent-uploads": 5,
-	"log-driver": "json-file",
-	"log-opts": {
-		"max-size": "30m",
-		"max-file": "3"
-	},
-	"storage-driver": "overlay2",
-	"ipv6": False
+    "exec-opts": [
+        "native.cgroupdriver=systemd"
+    ],
+    "max-concurrent-downloads": 10,
+    "max-concurrent-uploads": 5,
+    "log-driver": "json-file",
+    "log-opts": {
+        "max-size": "30m",
+        "max-file": "3"
+    },
+    "storage-driver": "overlay2",
+    "ipv6": False
 }
 
-config = base_config
-
-# 如果是中国服务器,并且有镜像地址,将registry-mirrors添加
-if "$is_china_server" == "true" and "$registry_mirrors":
-	config = {
-		"registry-mirrors": ["$registry_mirrors"],
-		**base_config
-	}
+# 如果是中国服务器,将 registry-mirrors 放在前面
+if "$is_china_server" == "true" and registry_mirrors:
+    config = {
+        "registry-mirrors": registry_mirrors,
+        **base_config
+    }
+else:
+    config = base_config
 
 with open("/etc/docker/daemon.json", "w") as f:
-	json.dump(config, f, indent=4)
+    json.dump(config, f, indent=4)
 EOF
 
 	# 校验和重新加载Docker守护进程
