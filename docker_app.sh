@@ -370,9 +370,8 @@ manage_docker_application() {
 				_green "$docker_name更新完成"
 				display_docker_access
 				echo ""
-				if [ -n "$docker_credentials" ]; then
-					echo "$docker_credentials"
-				fi
+				$docker_exec_command
+				$docker_password
 				;;
 			3)
 				cd "$docker_workdir" || { _red "无法进入目录$docker_workdir"; return 1; }
