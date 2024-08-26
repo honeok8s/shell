@@ -342,7 +342,7 @@ manage_docker_application() {
 
 		case $choice in
 			1)
-				#install_docker
+				install_docker
 				[ ! -d "$docker_workdir" ] && mkdir -p "$docker_workdir"
 				cd "$docker_workdir" || { _red "无法进入目录$docker_workdir"; return 1; }
 
@@ -883,7 +883,7 @@ linux_panel() {
 
 					case $choice in
 						1)
-							#install_docker
+							install_docker
 							bash -c "$(curl -fsSLk https://waf-ce.chaitin.cn/release/latest/setup.sh)"
 							clear
 							_green "雷池WAF面板已经安装完成"
@@ -1119,7 +1119,7 @@ linux_panel() {
 				;;
 			38)
 				clear
-				#install_docker
+				install_docker
 				bash -c "$(curl --insecure -fsSL https://ddsrem.com/xiaoya_install.sh)"
 				;;
 			39)
