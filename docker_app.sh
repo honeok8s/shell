@@ -936,25 +936,10 @@ linux_panel() {
 				docker_describe="uptimekuma易于使用的自托管监控工具"
 				docker_url="官网介绍: https://github.com/louislam/uptime-kuma"
 				default_port_1=3001
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  uptimekuma:
-    image: louislam/uptime-kuma:latest
-    container_name: uptimekuma
-    volumes:
-      - ./uptimekuma:/app/data
-    ports:
-      - "$docker_port_1:3001"
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/uptimekuma-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			23)
 				docker_name="memeos"
@@ -962,26 +947,10 @@ EOF
 				docker_describe="Memos是一款轻量级,自托管的备忘录中心"
 				docker_url="官网介绍: https://github.com/usememos/memos"
 				default_port_1=5230
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  memos:
-    image: neosmemo/memos:latest
-    container_name: memeos
-    hostname: memeos
-    ports:
-      - "$docker_port_1:5230"
-    volumes:
-      - ./memos:/var/opt/memos
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/memeos-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			24)
 				docker_name="webtop"
@@ -989,38 +958,10 @@ EOF
 				docker_describe="webtop基于Alpine,Ubuntu,Fedora和Arch的容器,包含官方支持的完整桌面环境,可通过任何现代Web浏览器访问"
 				docker_url="官网介绍: https://docs.linuxserver.io/images/docker-webtop/"
 				default_port_1=3000
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  webtop:
-    image: lscr.io/linuxserver/webtop:latest
-    container_name: webtop
-    security_opt:
-      - seccomp=unconfined
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Asia/Shanghai
-      - SUBFOLDER=/
-      - TITLE=Webtop
-      - LC_ALL=zh_CN.UTF-8
-      - DOCKER_MODS=linuxserver/mods:universal-package-install
-      - INSTALL_PACKAGES=font-noto-cjk
-    ports:
-      - "$docker_port_1:3000"
-    volumes:
-      - ./config:/config
-      - /var/run/docker.sock:/var/run/docker.sock
-    shm_size: "1gb"
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/webtop-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			25)
 				docker_name="nextcloud"
