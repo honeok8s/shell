@@ -1049,25 +1049,10 @@ linux_panel() {
 				docker_describe="这是一个强大图表绘制软件,思维导图,拓扑图,流程图,都能画"
 				docker_url="官网介绍: https://www.drawio.com/"
 				default_port_1=8080
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  drawio:
-    image: jgraph/drawio:latest
-    container_name: drawio
-    ports:
-      - "$docker_port_1:8080"
-    volumes:
-      - ./drawio:/var/lib/drawio
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/drawio-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			33)
 				docker_name="sun-panel"
@@ -1075,27 +1060,10 @@ EOF
 				docker_describe="Sun-Panel服务器,NAS导航面板,Homepage,浏览器首页"
 				docker_url="官网介绍: https://doc.sun-panel.top/zh_cn/"
 				default_port_1=3002
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  sun-panel:
-    image: hslr/sun-panel:latest
-    container_name: sun-panel
-    ports:
-      - "$docker_port_1:3002"
-    volumes:
-      - ./conf:/app/conf
-      - ./uploads:/app/uploads
-      - ./database:/app/database
-    restart: unless-stopped
-EOF
-)
-				docker_use="echo \"账号: admin@sun.cc  密码: 12345678\""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/sun-panel-docker-compose.yml)
+				docker_exec_command="echo 账号: admin@sun.cc  密码: 12345678"
+				docker_password=""
+				manage_docker_application
 				;;
 			34)
 				docker_name="pingvin-share"
@@ -1103,25 +1071,10 @@ EOF
 				docker_describe="Pingvin Share是一个可自建的文件分享平台,是WeTransfer的一个替代品"
 				docker_url="官网介绍: https://github.com/stonith404/pingvin-share"
 				default_port_1=3000
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  pingvin-share:
-    image: stonith404/pingvin-share
-    container_name: pingvin-share
-    ports:
-      - "$docker_port_1:3000"
-    volumes:
-      - ./data:/opt/app/backend/data
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/pingvin-share-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			35)
 				docker_name="moments"
@@ -1129,27 +1082,10 @@ EOF
 				docker_describe="极简朋友圈,高仿微信朋友圈,记录你的美好生活"
 				docker_url="官网介绍: https://github.com/kingwrcy/moments?tab=readme-ov-file"
 				default_port_1=3000
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  moments:
-    image: kingwrcy/moments:latest
-    container_name: moments
-    ports:
-      - "$docker_port_1:3000"
-    volumes:
-      - ./data:/app/data
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
-    restart: unless-stopped
-EOF
-)
-				docker_use="echo \"账号: admin  密码: a123456\""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/moments-docker-compose.yml)
+				docker_exec_command="echo 账号: admin  密码: a123456"
+				docker_password=""
+				manage_docker_application
 				;;
 			36)
 				docker_name="lobe-chat"
@@ -1157,23 +1093,10 @@ EOF
 				docker_describe="LobeChat聚合市面上主流的AI大模型,ChatGPT/Claude/Gemini/Groq/Ollama"
 				docker_url="官网介绍: https://github.com/lobehub/lobe-chat"
 				default_port_1=3210
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  lobe-chat:
-    image: lobehub/lobe-chat:latest
-    container_name: lobe-chat
-    ports:
-      - "$docker_port_1:3210"
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/lobe-chat-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			37)
 				docker_name="myip"
@@ -1181,23 +1104,10 @@ EOF
 				docker_describe="是一个多功能IP工具箱,可以查看自己IP信息及连通性,用网页面板呈现"
 				docker_url="官网介绍: https://github.com/jason5ng32/MyIP/blob/main/README_ZH.md"
 				default_port_1=18966
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  myip:
-    image: ghcr.io/jason5ng32/myip:latest
-    container_name: myip
-    ports:
-      - "$docker_port_1:18966"
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/myip-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			38)
 				clear
