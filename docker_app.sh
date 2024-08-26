@@ -478,6 +478,7 @@ linux_panel() {
 		echo "3. 1Panel新一代管理面板                4. NginxProxyManager可视化面板"
 		echo "5. AList多存储文件列表程序             6. Ubuntu远程桌面网页版"
 		echo "7. 哪吒探针VPS监控面板                 8. QB离线BT磁力下载面板"
+		echo "9. Poste.io邮件服务器程序"
 		echo "------------------------"
 		echo "11. 禅道项目管理软件                   12. 青龙面板定时任务管理平台"
 		echo "14. 简单图床图片管理程序"
@@ -670,6 +671,99 @@ linux_panel() {
 				docker_exec_command="sleep 3"
 				docker_password="docker logs qbittorrent"
 				manage_docker_application
+				;;
+			9)
+				clear
+				install telnet
+				docker_name="poste"
+				docker_workdir="/data/docker_data/$docker_name"
+				while true; do
+					check_docker_status
+					clear
+					echo "邮局服务$check_docker"
+					echo "poste.io是一个开源的邮件服务器解决方案"
+					echo ""
+					echo "端口检测"
+					if echo "quit" | timeout 3 telnet smtp.qq.com 25 | grep 'Connected'; then
+						echo -e "${green}端口25当前可用${white}"
+					else
+						echo -e "${red}端口25当前不可用${white}"
+					fi
+					echo ""
+					if docker inspect "$docker_name" &>/dev/null; then
+						domain=$(cat $docker_workdir/mail.txt)
+						echo "访问地址:"
+						echo "https://$domain"
+					fi
+
+					echo "------------------------"
+					echo "1. 安装     2. 更新     3. 卸载"
+					echo "------------------------"
+					echo "0. 返回上一级"
+					echo "------------------------"
+
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					read -r choice
+
+					case $choice in
+						1)
+							echo -n "请设置邮箱域名,例如mail.google.com:"
+							read -r domain
+
+							[ ! -d "$docker_workdir" ] && mkdir "$docker_workdir" -p
+							echo "$domain" > "$docker_workdir/mail.txt"
+							cd "$docker_workdir" || { _red "无法进入目录$docker_workdir"; return 1; }
+
+							echo "------------------------"
+							ip_address
+							echo "先解析这些DNS记录"
+							echo "A         mail        $ipv4_address"
+							echo "CNAME     imap        $domain"
+							echo "CNAME     pop         $domain"
+							echo "CNAME     smtp        $domain"
+							echo "MX        @           $domain"
+							echo "TXT       @           v=spf1 mx ~all"
+							echo "TXT       ?           ?"
+							echo ""
+							echo "------------------------"
+							_yellow "按任意键继续"
+							read -n 1 -s -r -p ""
+
+							install_docker
+							docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/poste-docker-compose.yml)
+							echo "$docker_compose_content" > docker-compose.yml
+							sed -i "s/\${domain}/$domain/g" docker-compose.yml
+
+							clear
+							echo "poste.io安装完成"
+							echo "------------------------"
+							echo "您可以使用以下地址访问poste.io:"
+							echo "https://$domain"
+							echo ""
+							;;
+						2)
+							cd "$docker_workdir" || { _red "无法进入目录$docker_workdir"; return 1; }
+							manage_compose pull && manage_compose start
+							echo "poste.io更新完成"
+							echo "------------------------"
+							echo "您可以使用以下地址访问poste.io:"
+							echo "https://$domain"
+							;;
+						3)
+							cd "$docker_workdir" || { _red "无法进入目录$docker_workdir"; return 1; }
+							manage_compose down_all
+							[ -d "$docker_workdir" ] && rm -fr "$docker_workdir"
+							_green "Poste卸载完成"
+							;;
+						0)
+							break
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac
+					end_of
+				done
 				;;
 			11)
 				docker_name="zentao-server"
