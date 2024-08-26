@@ -524,7 +524,7 @@ ldnmp_uninstall_ngx_logrotate() {
 }
 
 install_ldnmp() {
-	check_swap
+	#check_swap
 	cd "$web_dir" || { _red "无法进入目录$web_dir"; return 1; }
 
 	manage_compose start
@@ -671,7 +671,7 @@ ldnmp_install_nginx(){
 	else
 		ldnmp_check_port
 		ldnmp_install_deps
-		install_docker
+		#install_docker
 		ldnmp_install_certbot
 
 		mkdir -p "$nginx_dir" "$nginx_conf_dir" "$nginx_dir/certs"
@@ -1017,7 +1017,7 @@ linux_ldnmp() {
 
 				ldnmp_check_port
 				ldnmp_install_deps
-				install_docker
+				#install_docker
 				ldnmp_install_certbot
 
 				# 清理并创建必要的目录
@@ -1851,7 +1851,7 @@ linux_ldnmp() {
 
 				ldnmp_check_port
 				ldnmp_install_deps
-				install_docker
+				#install_docker
 				ldnmp_install_certbot
 				install_ldnmp
 				;;
@@ -2085,7 +2085,7 @@ linux_ldnmp() {
 					esac
 				else
 					clear
-					install_docker
+					#install_docker
 					ldnmp_install_nginx
 					fail2ban_install_sshd
 
@@ -2293,7 +2293,7 @@ linux_ldnmp() {
 
 									ldnmp_check_port
 									ldnmp_install_deps
-									install_docker
+									#install_docker
 									ldnmp_install_certbot
 									install_ldnmp
 									;;
