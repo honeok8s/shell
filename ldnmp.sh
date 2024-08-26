@@ -24,6 +24,180 @@ _purple() { echo -e ${purple}$@${white}; }
 _gray() { echo -e ${gray}$@${white}; }
 _orange() { echo -e ${orange}$@${white}; }
 
+#################### 通用函数START ####################
+# 安装软件包
+install() {
+	if [ $# -eq 0 ]; then
+		_red "未提供软件包参数"
+		return 1
+	fi
+
+	for package in "$@"; do
+		if ! command -v "$package" &>/dev/null; then
+			_yellow "正在安装$package"
+			if command -v dnf &>/dev/null; then
+				dnf update -y
+				dnf install epel-release -y
+				dnf install "$package" -y
+			elif command -v yum &>/dev/null; then
+				yum update -y
+				yum install epel-release -y
+				yum install "$package" -y
+			elif command -v apt &>/dev/null; then
+				apt update -y
+				apt install "$package" -y
+			elif command -v apk &>/dev/null; then
+				apk update
+				apk add "$package"
+			else
+				_red "未知的包管理器"
+				return 1
+			fi
+		else
+			_green "$package已安装"
+		fi
+	done
+
+	return 0
+}
+
+# 卸载软件包
+remove() {
+	if [ $# -eq 0 ]; then
+		_red "未提供软件包参数"
+		return 1
+	fi
+
+	for package in "$@"; do
+		_yellow "正在卸载$package"
+		if command -v dnf &>/dev/null; then
+			if rpm -q "$package" &>/dev/null; then
+				dnf remove "$package"* -y
+			fi
+		elif command -v yum &>/dev/null; then
+			if rpm -q "${package}" >/dev/null 2>&1; then
+				yum remove "${package}"* -y
+			fi
+		elif command -v apt &>/dev/null; then
+			if dpkg -l | grep -qw "${package}"; then
+				apt purge "${package}"* -y
+			fi
+		elif command -v apk &>/dev/null; then
+			if apk info | grep -qw "${package}"; then
+				apk del "${package}"*
+			fi
+		else
+			_red "未知的包管理器"
+			return 1
+		fi
+	done
+
+	return 0
+}
+
+# 通用systemctl函数,适用于各种发行版
+systemctl() {
+	local cmd="$1"
+	local service_name="$2"
+
+	if command -v apk &>/dev/null; then
+		service "$service_name" "$cmd"
+	else
+		/bin/systemctl "$cmd" "$service_name"
+	fi
+}
+
+# 重载systemd管理的服务
+daemon_reload() {
+	if command -v apk &>/dev/null; then
+		# Alpine使用OpenRC
+		rc-service -a
+	else
+		/bin/systemctl daemon-reload
+	fi
+}
+
+disable() {
+	local service_name="$1"
+	if command -v apk &>/dev/null; then
+		# Alpine使用OpenRC
+		rc-update del "$service_name"
+	else
+		/bin/systemctl disable "$service_name"
+	fi
+}
+
+# 设置服务为开机自启
+enable() {
+	local service_name="$1"
+	if command -v apk &>/dev/null; then
+		rc-update add "$service_name" default
+	else
+		systemctl enable "$service_name"
+	fi
+
+	if [ $? -eq 0 ]; then
+		_green "$service_name已设置为开机自启"
+	else
+		_red "$service_name设置开机自启失败"
+	fi
+}
+
+# 启动服务
+start() {
+	local service_name="$1"
+	systemctl start "$service_name"
+	if [ $? -eq 0 ]; then
+		_green "$service_name已启动"
+	else
+		_red "$service_name启动失败"
+	fi
+}
+
+# 停止服务
+stop() {
+	local service_name="$1"
+	systemctl stop "$service_name"
+	if [ $? -eq 0 ]; then
+		_green "$service_name已停止"
+	else
+		_red "$service_name停止失败"
+	fi
+}
+
+# 重启服务
+restart() {
+	local service_name="$1"
+	systemctl restart "$service_name"
+	if [ $? -eq 0 ]; then
+		_green "$service_name已重启"
+	else
+		_red "$service_name重启失败"
+	fi
+}
+
+# 重载服务
+reload() {
+	local service_name="$1"
+	systemctl reload "$service_name"
+	if [ $? -eq 0 ]; then
+		_green "$service_name已重载"
+	else
+		_red "$service_name重载失败"
+	fi
+}
+
+# 查看服务状态
+status() {
+	local service_name="$1"
+	systemctl status "$service_name"
+	if [ $? -eq 0 ]; then
+		_green "$service_name状态已显示"
+	else
+		_red "$service_name状态显示失败"
+	fi
+}
+
 # 结尾任意键结束
 end_of(){
 	_green "操作完成"
@@ -39,136 +213,35 @@ need_root(){
 	if [ "$(id -u)" -ne "0" ]; then
 		_red "该功能需要root用户才能运行"
 		end_of
+		# 回调主菜单
+		honeok
 	fi
 }
 
-# 安装软件包
-install(){
-	if [ $# -eq 0 ]; then
-		_red "未提供软件包参数"
-		return 1
-	fi
+# 获取公网IP地址
+ip_address() {
+	local ipv4_services=("ipv4.ip.sb" "api.ipify.org" "checkip.amazonaws.com" "ipinfo.io/ip")
+	local ipv6_services=("ipv6.ip.sb" "api6.ipify.org" "v6.ident.me" "ipv6.icanhazip.com")
 
-	for package in "$@"; do
-		if ! command -v "$package" &>/dev/null; then
-			_yellow "正在安装$package"
-			if command -v dnf &>/dev/null; then
-				dnf install -y "$package"
-			elif command -v yum &>/dev/null; then
-				yum -y install "$package"
-			elif command -v apt &>/dev/null; then
-				apt update && apt install -y "$package"
-			elif command -v apk &>/dev/null; then
-				apk add "$package"
-			else
-				_red "未知的包管理器"
-				return 1
-			fi
-		else
-			_green "$package已经安装"
+	# 获取IPv4地址
+	for service in "${ipv4_services[@]}"; do
+		ipv4_address=$(curl -s "$service")
+		if [[ $ipv4_address =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+			break
 		fi
 	done
-	return 0
-}
 
-# 卸载软件包
-remove(){
-	if [ $# -eq 0 ]; then
-		_red "未提供软件包参数"
-		return 1
-	fi
-
-	for package in "$@"; do
-		_yellow "正在卸载$package"
-		if command -v dnf &>/dev/null; then
-			dnf remove -y "${package}"*
-		elif command -v yum &>/dev/null; then
-			yum remove -y "${package}"*
-		elif command -v apt &>/dev/null; then
-			apt purge -y "${package}"*
-		elif command -v apk &>/dev/null; then
-			apk del "${package}"*
+	# 获取IPv6地址
+	for service in "${ipv6_services[@]}"; do
+		ipv6_address=$(curl -s --max-time 1 "$service")
+		if [[ $ipv6_address =~ ^[0-9a-fA-F:]+$ ]]; then
+			break
 		else
-			_red "未知的包管理器"
-			return 1
+			ipv6_address=""
 		fi
 	done
-	return 0
 }
-
-# 通用systemctl函数, 适用于各种发行版
-systemctl() {
-	local COMMAND="$1"
-	local SERVICE_NAME="$2"
-
-	if command -v apk &>/dev/null; then
-		service "$SERVICE_NAME" "$COMMAND"
-	else
-		/bin/systemctl "$COMMAND" "$SERVICE_NAME"
-	fi
-}
-
-# 重启服务
-restart() {
-	systemctl restart "$1"
-	if [ $? -eq 0 ]; then
-		_green "$1服务已重启"
-	else
-		_red "错误:重启$1服务失败"
-	fi
-}
-
-# 重载服务
-reload() {
-	systemctl reload "$1"
-	if [ $? -eq 0 ]; then
-		_green "$1服务已重载"
-	else
-		_red "错误:重载$1服务失败"
-	fi
-}
-
-# 启动服务
-start() {
-	systemctl start "$1"
-	if [ $? -eq 0 ]; then
-		_green "$1服务已启动"
-	else
-		_red "错误:启动$1服务失败"
-	fi
-}
-
-# 停止服务
-stop() {
-	systemctl stop "$1"
-	if [ $? -eq 0 ]; then
-		_green "$1服务已停止"
-	else
-		_red "错误:停止$1服务失败"
-	fi
-}
-
-# 查看服务状态
-status() {
-	systemctl status "$1"
-	if [ $? -eq 0 ]; then
-		_green "$1服务状态已显示"
-	else
-		_red "错误:无法显示$1服务状态"
-	fi
-}
-
-# 设置服务为开机自启
-enable() {
-	local service_name="$1"
-	if command -v apk &>/dev/null; then
-		rc-update add "$service_name" default
-	else
-		/bin/systemctl enable "$service_name"
-	fi
-
-	_green "$service_name已设置为开机自启"
-}
+#################### 通用函数END ####################
 
 check_crontab_installed() {
 	if command -v crontab >/dev/null 2>&1; then
@@ -214,42 +287,37 @@ install_crontab() {
 
 ###############################################################
 
+#################### LDNMP建站START ####################
 manage_compose() {
+	local compose_cmd
+	# 检查docker compose版本
+	if docker compose version >/dev/null 2>&1; then
+		compose_cmd="docker compose"
+	elif command -v docker-compose >/dev/null 2>&1; then
+		compose_cmd="docker-compose"
+	fi
+
 	case "$1" in
 		start)	# 启动容器
-			if docker compose version >/dev/null 2>&1; then
-				docker compose up -d
-			elif command -v docker-compose >/dev/null 2>&1; then
-				docker-compose up -d
-			fi
+			$compose_cmd up -d
+			;;
+		restart)
+			$compose_cmd restart
 			;;
 		stop)	# 停止容器
-			if docker compose version >/dev/null 2>&1; then
-				docker compose stop
-			elif command -v docker-compose >/dev/null 2>&1; then
-				docker-compose stop
-			fi
+			$compose_cmd stop
+			;;
+		recreate)
+			$compose_cmd up -d --force-recreate
 			;;
 		down)	# 停止并删除容器
-			if docker compose version >/dev/null 2>&1; then
-				docker compose down
-			elif command -v docker-compose >/dev/null 2>&1; then
-				docker-compose down
-			fi
+			$compose_cmd down
 			;;
-		down_all)
-			if docker compose version >/dev/null 2>&1; then
-				docker compose down --rmi all
-			elif command -v docker-compose >/dev/null 2>&1; then
-				docker-compose down --rmi all
-			fi
+		down_all) # 停止并删除容器,镜像,卷,未使用的网络
+			$compose_cmd down --rmi all --volumes --remove-orphans
 			;;
-		clean_down)	# 停止容器并删除镜像和卷
-			if docker compose version >/dev/null 2>&1; then
-				docker compose down --rmi all --volumes
-			elif command -v docker-compose >/dev/null 2>&1; then
-				docker-compose down --rmi all --volumes
-			fi
+		version)
+			$compose_cmd version
 			;;
 	esac
 }
@@ -392,15 +460,71 @@ default_server_ssl() {
 	install openssl
 
 	if command -v dnf &>/dev/null || command -v yum &>/dev/null; then
-		openssl req -x509 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -keyout /data/docker_data/web/nginx/certs/default_server.key -out /data/docker_data/web/nginx/certs/default_server.crt -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
+		openssl req -x509 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -keyout "$nginx_dir/certs/default_server.key" -out "$nginx_dir/certs/default_server.crt" -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
 	else
-		openssl genpkey -algorithm Ed25519 -out /data/docker_data/web/nginx/certs/default_server.key
-		openssl req -x509 -key /data/docker_data/web/nginx/certs/default_server.key -out /data/docker_data/web/nginx/certs/default_server.crt -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
+		openssl genpkey -algorithm Ed25519 -out "$nginx_dir/certs/default_server.key"
+		openssl req -x509 -key "$nginx_dir/certs/default_server.key" -out "$nginx_dir/certs/default_server.crt" -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
+	fi
+}
+
+# Nginx日志轮转
+ldnmp_install_ngx_logrotate(){
+	web_dir="/data/docker_data/web"
+	nginx_dir="$web_dir/nginx"
+
+	# 定义日志截断文件脚本路径
+	logrotate_script="$nginx_dir/logrotate.sh"
+
+	if [[ ! -d $nginx_dir ]]; then
+		_red "Nginx目录不存在"
+		return 1
+	else
+		wget -qO "$logrotate_script" "https://raw.githubusercontent.com/honeok8s/shell/main/nginx/LDNMP_ngx_logrotate.sh"
+		if [[ $? -ne 0 ]]; then
+			_red "脚本下载失败,请检查网络连接或脚本URL"
+			return 1
+		fi
+		chmod a+x "$logrotate_script"
+	fi
+
+	# 检查crontab中是否存在相关任务
+	crontab_entry="0 0 * * 0 $logrotate_script >/dev/null 2>&1"
+	if ! crontab -l | grep -q "$logrotate_script"; then
+		# 添加crontab任务
+		(crontab -l; echo "$crontab_entry") | crontab -
+		_green "Nginx日志轮转任务已安装"
+	else
+		_yellow "Nginx日志轮转任务已存在"
+	fi
+}
+
+ldnmp_uninstall_ngx_logrotate() {
+	web_dir="/data/docker_data/web"
+	nginx_dir="$web_dir/nginx"
+
+	# 定义日志截断文件脚本路径
+	logrotate_script="$nginx_dir/logrotate.sh"
+
+	if [[ -d $nginx_dir ]]; then
+		if [[ -f $logrotate_script ]]; then
+			rm -f "$logrotate_script"
+			_green "日志截断脚本已删除"
+		else
+			_yellow "日志截断脚本不存在"
+		fi
+	fi
+
+	crontab_entry="0 0 * * 0 $logrotate_script >/dev/null 2>&1"
+	if crontab -l | grep -q "$logrotate_script"; then
+		crontab -l | grep -v "$logrotate_script" | crontab -
+		_green "Nginx日志轮转任务已卸载"
+	else
+		_yellow "Nginx日志轮转任务不存在"
 	fi
 }
 
 install_ldnmp() {
-	#check_swap
+	check_swap
 	cd "$web_dir" || { _red "无法进入目录$web_dir"; return 1; }
 
 	manage_compose start
@@ -547,7 +671,7 @@ ldnmp_install_nginx(){
 	else
 		ldnmp_check_port
 		ldnmp_install_deps
-		#install_docker
+		install_docker
 		ldnmp_install_certbot
 
 		mkdir -p "$nginx_dir" "$nginx_conf_dir" "$nginx_dir/certs"
@@ -640,11 +764,6 @@ add_domain() {
 	fi
 }
 
-ip_address() {
-ipv4_address=$(curl -s ipv4.ip.sb)
-ipv6_address=$(curl -s --max-time 1 ipv6.ip.sb)
-}
-
 iptables_open(){
 	iptables -P INPUT ACCEPT
 	iptables -P FORWARD ACCEPT
@@ -678,8 +797,8 @@ ldnmp_install_ssltls() {
 
 	docker run --rm --name certbot \
 		-p 80:80 -p 443:443 \
-		-v "/data/docker_data/certbot/cert:/etc/letsencrypt" \
-		-v "/data/docker_data/certbot/data:/var/lib/letsencrypt" \
+		-v "$certbot_dir/cert:/etc/letsencrypt" \
+		-v "$certbot_dir/data:/var/lib/letsencrypt" \
 		certbot/certbot delete --cert-name $domain > /dev/null 2>&1
 
 	certbot_version=$(docker run --rm certbot/certbot --version | grep -oP "\d+\.\d+\.\d+")
@@ -691,19 +810,19 @@ ldnmp_install_ssltls() {
 	if version_ge "$certbot_version" "1.17.0"; then
 		docker run --rm --name certbot \
 			-p 80:80 -p 443:443 \
-			-v "/data/docker_data/certbot/cert:/etc/letsencrypt" \
-			-v "/data/docker_data/certbot/data:/var/lib/letsencrypt" \
+			-v "$certbot_dir/cert:/etc/letsencrypt" \
+			-v "$certbot_dir/data:/var/lib/letsencrypt" \
 			certbot/certbot certonly --standalone -d $domain --email your@email.com --agree-tos --no-eff-email --force-renewal --key-type ecdsa
 	else
 		docker run --rm --name certbot \
 			-p 80:80 -p 443:443 \
-			-v "/data/docker_data/certbot/cert:/etc/letsencrypt" \
-			-v "/data/docker_data/certbot/data:/var/lib/letsencrypt" \
+			-v "$certbot_dir/cert:/etc/letsencrypt" \
+			-v "$certbot_dir/data:/var/lib/letsencrypt" \
 			certbot/certbot certonly --standalone -d $domain --email your@email.com --agree-tos --no-eff-email --force-renewal
 	fi
 
-	cp /data/docker_data/certbot/cert/live/$domain/fullchain.pem /data/docker_data/web/nginx/certs/${domain}_cert.pem > /dev/null 2>&1
-	cp /data/docker_data/certbot/cert/live/$domain/privkey.pem /data/docker_data/web/nginx/certs/${domain}_key.pem > /dev/null 2>&1
+	cp "$certbot_dir/cert/live/$domain/fullchain.pem" "$nginx_dir/certs/${domain}_cert.pem" > /dev/null 2>&1
+	cp "$certbot_dir/cert/live/$domain/privkey.pem" "$nginx_dir/certs/${domain}_key.pem" > /dev/null 2>&1
 
 	docker start nginx > /dev/null 2>&1
 }
@@ -757,13 +876,11 @@ ldnmp_restart() {
 	docker exec php74 chmod -R 777 /var/www/html
 
 	if nginx_check; then
-		docker restart nginx >/dev/null 2>&1
+		cd "web_dir" && manage_compose restart
 	else
 		_red "Nginx配置校验失败,请检查配置文件"
 		return 1
 	fi
-	docker restart php >/dev/null 2>&1
-	docker restart php74 >/dev/null 2>&1
 }
 
 ldnmp_display_success() {
@@ -845,7 +962,6 @@ fail2ban_install_sshd() {
 	fi
 }
 
-############################################################################################################
 linux_ldnmp() {
 	# 定义全局安装路径
 	web_dir="/data/docker_data/web"
@@ -885,7 +1001,9 @@ linux_ldnmp() {
 		echo "------------------------"
 		echo "0. 返回主菜单"
 		echo "------------------------"
-		read -p "请输入你的选择: " choice
+
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read -r choice
 
 		case $choice in
 			1)
@@ -899,7 +1017,7 @@ linux_ldnmp() {
 
 				ldnmp_check_port
 				ldnmp_install_deps
-				#install_docker
+				install_docker
 				ldnmp_install_certbot
 
 				# 清理并创建必要的目录
@@ -926,6 +1044,7 @@ linux_ldnmp() {
 				sed -i "s#HONEOK_PASSWD#$DB_USER_PASSWD#g" "$web_dir/docker-compose.yml"
 
 				install_ldnmp
+				ldnmp_install_ngx_logrotate
 				;;
 			2)
 				clear
@@ -1216,7 +1335,7 @@ linux_ldnmp() {
 						PHP_Version="php74"
 						;;
 					*)
-						echo "无效的选择，请重新输入。"
+						_red "无效选项,请重新输入"
 						;;
 				esac
 
@@ -1287,6 +1406,7 @@ linux_ldnmp() {
 				;;
 			21)
 				ldnmp_install_nginx
+				ldnmp_install_ngx_logrotate
 				;;
 			22)
 				clear
@@ -1690,7 +1810,8 @@ linux_ldnmp() {
 
 				echo "------------------------"
 				echo "1. 每周备份                 2. 每天备份"
-				echo -n "请输入你的选择: "
+
+				echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
 				read -r choice
 
 				case $choice in
@@ -1730,7 +1851,7 @@ linux_ldnmp() {
 
 				ldnmp_check_port
 				ldnmp_install_deps
-				#install_docker
+				install_docker
 				ldnmp_install_certbot
 				install_ldnmp
 				;;
@@ -1813,7 +1934,7 @@ linux_ldnmp() {
 								;;
 							9)
 								cd /data/docker_data/fail2ban || { _red "无法进入目录/data/docker_data/fail2ban"; return 1; }
-								manage_compose clean_down
+								manage_compose down_all
 
 								[ -d /data/docker_data/fail2ban ] && rm -fr /data/docker_data/fail2ban
 								crontab -l | grep -v "CF-Under-Attack.sh" | crontab - 2>/dev/null
@@ -1964,7 +2085,7 @@ linux_ldnmp() {
 					esac
 				else
 					clear
-					#install_docker
+					install_docker
 					ldnmp_install_nginx
 					fail2ban_install_sshd
 
@@ -1988,7 +2109,8 @@ linux_ldnmp() {
 					echo "------------------------"
 					echo "0. 退出"
 					echo "------------------------"
-					echo -n "请输入你的选择:"
+
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
 					read -r choice
 
 					case $choice in
@@ -2073,7 +2195,8 @@ linux_ldnmp() {
 					echo "------------------------"
 					echo "0. 返回上一级"
 					echo "------------------------"
-					echo -n "请输入你的选择:"
+
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
 					read -r choice
 
 					case $choice in
@@ -2083,7 +2206,7 @@ linux_ldnmp() {
 
 							docker rm -f "$ldnmp_pods" > /dev/null 2>&1
 							docker images --filter=reference="$ldnmp_pods*" -q | xargs docker rmi > /dev/null 2>&1
-							docker compose up -d --force-recreate "$ldnmp_pods"
+							manage_compose recreate "$ldnmp_pods"
 							docker exec "$ldnmp_pods" chmod -R 777 /var/www/html
 							docker restart "$ldnmp_pods" > /dev/null 2>&1
 							_green "更新${ldnmp_pods}完成"
@@ -2098,7 +2221,7 @@ linux_ldnmp() {
 							sed -i "s/image: mysql/image: mysql:$version/" "$web_dir/docker-compose.yml"
 							docker rm -f "$ldnmp_pods"
 							docker images --filter=reference="$ldnmp_pods*" -q | xargs docker rmi > /dev/null 2>&1
-							docker compose up -d --force-recreate "$ldnmp_pods"
+							manage_compose recreate "$ldnmp_pods"
 							docker restart "$ldnmp_pods" > /dev/null 2>&1
 							_green "更新${ldnmp_pods}完成"
 							;;
@@ -2112,7 +2235,7 @@ linux_ldnmp() {
 							sed -i "s/image: php:fpm-alpine/image: php:${version}-fpm-alpine/" "$web_dir/docker-compose.yml"
 							docker rm -f "$ldnmp_pods" > /dev/null 2>&1
 							docker images --filter=reference="php:*" -q | xargs -r docker rmi > /dev/null 2>&1
-							docker compose up -d --force-recreate "$ldnmp_pods"
+							manage_compose recreate "$ldnmp_pods"
 							docker exec "$ldnmp_pods" chmod -R 777 /var/www/html
 
 							docker exec "$ldnmp_pods" apk update
@@ -2152,7 +2275,7 @@ linux_ldnmp() {
 							cd "$web_dir"
 							docker rm -f "$ldnmp_pods" > /dev/null 2>&1
 							docker images --filter=reference="$ldnmp_pods*" -q | xargs docker rmi > /dev/null 2>&1
-							docker compose up -d --force-recreate "$ldnmp_pods"
+							manage_compose recreate "$ldnmp_pods"
 							docker exec -it "$ldnmp_pods" redis-cli CONFIG SET maxmemory 512mb
 							docker exec -it "$ldnmp_pods" redis-cli CONFIG SET maxmemory-policy allkeys-lru
 							docker restart "$ldnmp_pods" > /dev/null 2>&1
@@ -2170,7 +2293,7 @@ linux_ldnmp() {
 
 									ldnmp_check_port
 									ldnmp_install_deps
-									#install_docker
+									install_docker
 									ldnmp_install_certbot
 									install_ldnmp
 									;;
@@ -2182,7 +2305,7 @@ linux_ldnmp() {
 							break
 							;;
 						*)
-							echo "无效的选择，请重新输入。"
+							_red "无效选项,请重新输入"
 							;;
 					esac
 					end_of
@@ -2199,16 +2322,18 @@ linux_ldnmp() {
 					[Yy])
 						if docker inspect "ldnmp" &>/dev/null; then
 							cd "$web_dir" || { _red "无法进入目录 $web_dir"; return 1; }
-							manage_compose clean_down
+							manage_compose down_all
 							ldnmp_uninstall_deps
 							ldnmp_uninstall_certbot
+							ldnmp_uninstall_ngx_logrotate
 							rm -fr "$web_dir"
 							_green "LDNMP环境已卸载并清除相关依赖"
 						elif docker inspect "nginx" &>/dev/null && [ -d "$nginx_dir" ]; then
 							cd "$web_dir" || { _red "无法进入目录 $web_dir"; return 1; }
-							manage_compose clean_down
+							manage_compose down_all
 							ldnmp_uninstall_deps
 							ldnmp_uninstall_certbot
+							ldnmp_uninstall_ngx_logrotate
 							rm -fr "$web_dir"
 							_green "Nginx环境已卸载并清除相关依赖"
 						else
@@ -2233,4 +2358,6 @@ linux_ldnmp() {
 		end_of
 	done
 }
+#################### LDNMP建站END ####################
+
 linux_ldnmp
