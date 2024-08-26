@@ -684,8 +684,8 @@ linux_panel() {
 				while true; do
 					check_docker_status
 					clear
-					echo "邮局服务$check_docker"
-					echo "poste.io是一个开源的邮件服务器解决方案"
+					echo -e "邮局服务 $check_docker"
+					echo "Poste.io是一个开源的邮件服务器解决方案"
 					echo ""
 					echo "端口检测"
 					if echo "quit" | timeout 3 telnet smtp.qq.com 25 | grep 'Connected'; then
