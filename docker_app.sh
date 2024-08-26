@@ -609,8 +609,8 @@ linux_panel() {
 					done
 				fi
 
-				docker_exec_command="echo \"初始用户名: admin@example.com\""
-				docker_password="echo \"初始密码: changeme\""
+				docker_exec_command="echo 初始用户名: admin@example.com"
+				docker_password="echo 初始密码: changeme"
 				manage_docker_application
 				;;
 			5)
@@ -704,32 +704,10 @@ EOF
 				docker_url="官网介绍: https://www.zentao.net/"
 				default_port_1=8080
 				default_port_2=3306
-
-				# 处理端口冲突
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  zentao-server:
-    image: idoop/zentao:latest
-    container_name: zentao-server
-    ports:
-      - "$docker_port_1:80"
-      - "$docker_port_2:3306"
-    environment:
-      - ADMINER_USER=root
-      - ADMINER_PASSWD=123456
-      - BIND_ADDRESS=false
-    volumes:
-      - ./zentao-server/:/opt/zbox/
-    extra_hosts:
-      - "smtp.exmail.qq.com:163.177.90.125"
-    restart: unless-stopped
-EOF
-)
-				docker_use="echo \"初始用户名: admin\""
-				docker_passwd="echo \"初始密码: 123456\""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/zentao-server-docker-compose.yml)
+				docker_exec_command="echo 初始用户名: admin"
+				docker_password="echo 初始密码: 123456"
+				manage_docker_application
 				;;
 			12)
 				docker_name="qinglong"
