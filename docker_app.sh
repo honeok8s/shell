@@ -499,7 +499,8 @@ linux_panel() {
 		echo "33. Sun-Panel导航面板                  34. Pingvin-Share文件分享平台"
 		echo "35. 极简朋友圈                         36. LobeChatAI聊天聚合网站"
 		echo "37. MyIP工具箱                         38. 小雅alist全家桶"
-		echo "39. Bililive直播录制工具               40. It-tools工具箱(中文版)"
+		echo "39. Bililive直播录制工具"
+		echo "41. It-tools工具箱(中文版)"
 		echo "------------------------"
 		echo "51. PVE开小鸡面板"
 		echo "------------------------"
@@ -981,25 +982,10 @@ linux_panel() {
 				docker_describe="QD-Today是一个HTTP请求定时任务自动执行框架"
 				docker_url="官网介绍: https://qd-today.github.io/qd/zh_CN/"
 				default_port_1=8080
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  qd:
-    image: qdtoday/qd:latest
-    container_name: qd
-    ports:
-      - "$docker_port_1:80"
-    volumes:
-      - ./config:/usr/src/app/config
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/qd-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			27)
 				docker_name="dockge"
@@ -1007,29 +993,10 @@ EOF
 				docker_describe="dockge是一个可视化的docker-compose容器管理面板"
 				docker_url="官网介绍: https://github.com/louislam/dockge"
 				default_port_1=5001
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  dockge:
-    image: louislam/dockge:latest
-    container_name: dockge
-    ports:
-      - "$docker_port_1:5001"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./data:/app/data
-      - ./stacks:/data/docker_data/dockge/stacks
-    environment:
-      - DOCKGE_STACKS_DIR=/data/docker_data/dockge/stacks
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/dockge-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			28)
 				docker_name="speedtest"
@@ -1037,25 +1004,10 @@ EOF
 				docker_describe="speedtest是用Javascript实现的轻量级速度测试工具,即开即用"
 				docker_url="官网介绍: https://github.com/librespeed/speedtest"
 				default_port_1=8080
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  speedtest:
-    image: ghcr.io/librespeed/speedtest:latest
-    container_name: speedtest
-    environment:
-      - MODE=standalone
-    ports:
-      - "$docker_port_1:80"
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/speedtest-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			29)
 				docker_name="searxng"
@@ -1063,62 +1015,22 @@ EOF
 				docker_describe="searxng是一个私有且隐私的搜索引擎站点"
 				docker_url="官网介绍: https://hub.docker.com/r/alandoyle/searxng"
 				default_port_1=8080
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  searxng:
-    image: alandoyle/searxng:latest
-    container_name: searxng
-    init: true
-    volumes:
-      - ./config:/etc/searxng
-      - ./templates:/usr/local/searxng/searx/templates/simple
-      - ./theme:/usr/local/searxng/searx/static/themes/simple
-    ports:
-      - "$docker_port_1:8080"
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/searxng-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			30)
 				docker_name="photoprism"
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="photoprism非常强大的私有相册系统"
 				docker_url="官网介绍: https://www.photoprism.app/"
-				rootpasswd=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
 				default_port_1=2342
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  photoprism:
-    image: photoprism/photoprism
-    container_name: photoprism
-    security_opt:
-      - seccomp=unconfined
-      - apparmor=unconfined
-    ports:
-      - "$docker_port_1:2342"
-    environment:
-      - PHOTOPRISM_UPLOAD_NSFW=true
-      - PHOTOPRISM_ADMIN_PASSWORD=${rootpasswd}
-    volumes:
-      - ./storage:/photoprism/storage
-      - ./Pictures:/photoprism/originals
-    restart: unless-stopped
-EOF
-)
-				docker_use="echo \"账号: admin  密码: $rootpasswd\""
-				docker_passwd=""
-				docker_app
+				random_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/photoprism-docker-compose.yml)
+				docker_exec_command="echo 账号: admin  密码: $random_password"
+				docker_password=""
+				manage_docker_application
 				;;
 			31)
 				docker_name="s-pdf"
@@ -1126,29 +1038,10 @@ EOF
 				docker_describe="这是一个强大的本地托管基于Web的PDF操作工具使用docker,允许您对PDF文件执行各种操作,例如拆分合并,转换,重新组织,添加图像,旋转,压缩等"
 				docker_url="官网介绍: https://github.com/Stirling-Tools/Stirling-PDF"
 				default_port_1=8080
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  stirling-pdf:
-    image: frooodle/s-pdf:latest
-    container_name: s-pdf
-    restart: unless-stopped
-    ports:
-      - "$docker_port_1:8080"
-    volumes:
-      - ./data:/usr/share/tesseract-ocr/5/tessdata
-      - ./config:/configs
-      - ./logs:/logs
-    environment:
-      - DOCKER_ENABLE_SECURITY=false
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/s-pdf-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			32)
 				docker_name="drawio"
@@ -1316,55 +1209,28 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="Bililive-go是一个支持多种直播平台的直播录制工具"
 				docker_url="官网介绍: https://github.com/hr3lxphr6j/bililive-go"
-				if [ ! -d $docker_workdir ]; then
-					mkdir -p $docker_workdir > /dev/null 2>&1
-					wget -O $docker_workdir/config.yml https://raw.githubusercontent.com/hr3lxphr6j/bililive-go/master/config.yml > /dev/null 2>&1
-				fi
 				default_port_1=8080
 
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
+				if [ ! -d "$docker_workdir" ]; then
+					mkdir -p "$docker_workdir" > /dev/null 2>&1
+					wget -qO "$docker_workdir/config.yml" "https://raw.githubusercontent.com/hr3lxphr6j/bililive-go/master/config.yml"
+				fi
 
-							docker_compose_content=$(cat <<EOF
-services:
-  bililive:
-    image: chigusa/bililive-go:latest
-    container_name: bililive
-    ports:
-      - "$docker_port_1:8080"
-    volumes:
-      - ./config.yml:/etc/bililive-go/config.yml
-      - ./videos:/srv/bililive
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/bililive-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
-			40)
+			41)
 				docker_name="it-tools"
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="为方便开发人员提供的在线工具"
 				docker_url="官网介绍: https://github.com/CorentinTh/it-tools"
 				default_port_1=8080
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  it-tools:
-    image: qingfeng2336/it-tools:latest
-    container_name: it-tools
-    ports:
-      - "$docker_port_1:80"
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/it-tools-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			51)
 				clear
