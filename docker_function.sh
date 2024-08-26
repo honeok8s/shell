@@ -280,21 +280,32 @@ manage_compose() {
 	esac
 }
 
-
 check_network_protocols() {
 	ip_address
-	has_ipv4=false
-	has_ipv6=false
 
-	[ -n "$ipv4_address" ] && has_ipv4=true
-	[ -n "$ipv6_address" ] && has_ipv6=true
+	ipv4_enabled=false
+	ipv6_enabled=false
+
+	if [ -n "$ipv4_address" ]; then
+		ipv4_enabled=true
+	fi
+	if [ -n "$ipv6_address" ]; then
+		ipv6_enabled=true
+	fi
 }
 
 display_docker_access() {
+	local docker_web_port
+	docker_web_port=$(docker inspect "$docker_name" --format '{{ range $p, $conf := .NetworkSettings.Ports }}{{ range $conf }}{{ $p }}:{{ .HostPort }}{{ end }}{{ end }}' | grep -oP '(\d+)$')
+
 	echo "------------------------"
 	echo "访问地址:"
-	$has_ipv4 && echo "http://$ipv4_address:$docker_port_1"
-	$has_ipv6 && echo "http://[$ipv6_address]:$docker_port_1"
+	if [ "$ipv4_enabled" = true ]; then
+		echo -e "http://$ipv4_address:$docker_web_port"
+	fi
+	if [ "$ipv6_enabled" = true ]; then
+		echo -e "http://[$ipv6_address]:$docker_web_port"
+	fi
 }
 
 check_docker_status() {
@@ -420,10 +431,7 @@ find_available_port() {
 
 check_available_port() {
 	# 检查并设置docker_port_1
-	if docker inspect "$docker_name" >/dev/null 2>&1; then
-		# 如果容器已存在,获取当前映射的端口
-		docker_port_1=$(docker inspect "$docker_name" --format '{{ range $p, $conf := .NetworkSettings.Ports }}{{ range $conf }}{{ $p }}:{{ .HostPort }}{{ end }}{{ end }}' | grep -oP '(\d+)$')
-	else
+	if ! docker inspect "$docker_name" >/dev/null 2>&1; then
 		while true; do
 			if ss -tuln | grep -q ":$default_port_1 "; then
 				# 查找可用的端口
