@@ -828,25 +828,10 @@ linux_panel() {
 				docker_describe="VScode是一款强大的在线代码编写工具"
 				docker_url="官网介绍: https://github.com/coder/code-server"
 				default_port_1=8080
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  vscode-web:
-    image: codercom/code-server:latest
-    container_name: vscode-web
-    ports:
-      - "$docker_port_1:8080"
-    volumes:
-      - ./vscode-web:/home/coder/.local/share/code-server
-    restart: unless-stopped
-EOF
-)
-				docker_use="sleep 3"
-				docker_passwd="docker exec vscode-web cat /home/coder/.config/code-server/config.yaml"
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/vscode-web-docker-compose.yml)
+				docker_exec_command="sleep 3"
+				docker_password="docker exec vscode-web cat /home/coder/.config/code-server/config.yaml"
+				manage_docker_application
 				;;
 			22)
 				docker_name="uptimekuma"
