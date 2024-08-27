@@ -26,13 +26,11 @@ _purple() { echo -e ${purple}$@${white}; }
 _gray() { echo -e ${gray}$@${white}; }
 _orange() { echo -e ${orange}$@${white}; }
 
-honeok_v="v2.0.1"
+honeok_v="v2.0.2"
 
 print_logo(){
-	local cyan=$(tput setaf 6)
-	local reset=$(tput sgr0)
-	local yellow=$(tput setaf 3)
-	local bold=$(tput bold)
+	local os_info=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d '"' -f 2)
+	local bold='\033[1m'       # 加粗
 	local logo="
  _                            _    
 | |                          | |   
@@ -41,17 +39,30 @@ print_logo(){
 | | | | (_) | | | |  __| (_) |   < 
 |_| |_|\___/|_| |_|\___|\___/|_|\_\\"
 
-	echo -e "${cyan}${logo}${reset}"
+	# 打印logo
+	echo -e "${cyan}${logo}\\${white}"
 	echo ""
-	local text="Tools: ${honeok_v}"
-	local padding="                                   "
-	echo -e "${padding}${yellow}${bold}${text}${reset}"
+
+	# 设置工具版本文本
+	local text="Version: ${honeok_v}"
+	local os_text="操作系统: ${os_info}"
+	local padding="                                        "
+
+	# 打印操作系统信息和工具版本信息
+	echo -e "${yellow}${bold}${os_text}${while}"
+	echo -e "${padding}${yellow}${bold}${text}${white}"
 }
 
 #################### 系统信息START ####################
 # 查看系统信息
 system_info(){
-	local hostname=$(hostnamectl | sed -n 's/^[[:space:]]*Static hostname:[[:space:]]*\(.*\)$/\1/p')
+	local hostname
+	if [ -f "/etc/alpine-release" ]; then
+		hostname=$(hostname)
+	else
+		hostname=$(hostnamectl | sed -n 's/^[[:space:]]*Static hostname:[[:space:]]*\(.*\)$/\1/p')
+	fi
+
 	# 获取运营商信息
 	local isp_info=$(curl -s https://ipinfo.io | grep '"org":' | awk -F'"' '{print $4}')
 
@@ -62,9 +73,14 @@ system_info(){
 	else
 		os_release=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d '"' -f 2)
 	fi
+
 	# 获取虚拟化类型
 	local virt_type
-	virt_type=$(hostnamectl | awk -F ': ' '/Virtualization/ {print $2}')
+	if [ -f "/etc/alpine-release" ]; then
+		virt_type=$(lscpu | grep Hypervisor | awk '{print $3}')
+	else
+		virt_type=$(hostnamectl | awk -F ': ' '/Virtualization/ {print $2}')
+	fi
 
 	# 获取内核版本信息
 	local kernel_version
@@ -155,7 +171,14 @@ system_info(){
 
 	# 获取地理位置,系统时区,系统时间和运行时长
 	local location=$(curl -s ipinfo.io/city)
-	local system_time=$(timedatectl | grep 'Time zone' | awk '{print $3}' | awk '{gsub(/^[[:space:]]+|[[:space:]]+$/,""); print}')
+
+	local system_time
+	if grep -q 'Alpine' /etc/issue; then
+		system_time=$(date +"%Z %z")
+	else
+		system_time=$(timedatectl | grep 'Time zone' | awk '{print $3}' | awk '{gsub(/^[[:space:]]+|[[:space:]]+$/,""); print}')
+	fi
+
 	local current_time=$(date +"%Y-%m-%d %H:%M:%S")
 	local uptime_str=$(cat /proc/uptime | awk -F. '{run_days=int($1 / 86400);run_hours=int(($1 % 86400) / 3600);run_minutes=int(($1 % 3600) / 60); if (run_days > 0) printf("%d天 ", run_days); if (run_hours > 0) printf("%d时 ", run_hours); printf("%d分\n", run_minutes)}')
 
@@ -282,11 +305,10 @@ systemctl() {
 
 # 重载systemd管理的服务
 daemon_reload() {
-	if command -v apk &>/dev/null; then
-		# Alpine使用OpenRC
-		rc-service -a
-	else
-		/bin/systemctl daemon-reload
+	if ! command -v apk &>/dev/null; then
+		if command -v systemctl &>/dev/null; then
+			/bin/systemctl daemon-reload
+		fi
 	fi
 }
 
@@ -319,7 +341,11 @@ enable() {
 # 启动服务
 start() {
 	local service_name="$1"
-	systemctl start "$service_name"
+	if command -v apk &>/dev/null; then
+		service "$service_name" start
+	else
+		systemctl start "$service_name"
+	fi
 	if [ $? -eq 0 ]; then
 		_green "$service_name已启动"
 	else
@@ -330,7 +356,11 @@ start() {
 # 停止服务
 stop() {
 	local service_name="$1"
-	systemctl stop "$service_name"
+	if command -v apk &>/dev/null; then
+		service "$service_name" stop
+	else
+		systemctl stop "$service_name"
+	fi
 	if [ $? -eq 0 ]; then
 		_green "$service_name已停止"
 	else
@@ -341,7 +371,11 @@ stop() {
 # 重启服务
 restart() {
 	local service_name="$1"
-	systemctl restart "$service_name"
+	if command -v apk &>/dev/null; then
+		service "$service_name" restart
+	else
+		systemctl restart "$service_name"
+	fi
 	if [ $? -eq 0 ]; then
 		_green "$service_name已重启"
 	else
@@ -352,7 +386,11 @@ restart() {
 # 重载服务
 reload() {
 	local service_name="$1"
-	systemctl reload "$service_name"
+	if command -v apk &>/dev/null; then
+		service "$service_name" reload
+	else
+		systemctl reload "$service_name"
+	fi
 	if [ $? -eq 0 ]; then
 		_green "$service_name已重载"
 	else
@@ -363,7 +401,11 @@ reload() {
 # 查看服务状态
 status() {
 	local service_name="$1"
-	systemctl status "$service_name"
+	if command -v apk &>/dev/null; then
+		service "$service_name" status
+	else
+		systemctl status "$service_name"
+	fi
 	if [ $? -eq 0 ]; then
 		_green "$service_name状态已显示"
 	else
@@ -752,7 +794,7 @@ linux_bbr() {
 			echo ""
 			echo "BBR管理"
 			echo "-------------------------"
-			echo "1. 开启BBRv3              2. 关闭BBRv3（会重启）"
+			echo "1. 开启BBRv3              2. 关闭BBRv3(会重启)"
 			echo "-------------------------"
 			echo "0. 返回上一级选单"
 			echo "-------------------------"
@@ -832,10 +874,14 @@ install_docker_official() {
 install_add_docker() {
     _yellow "正在安装docker"
 
-	if [ -f /etc/os-release ] && grep -q "Fedora" /etc/os-release; then
-		install_docker_official
+	install_common_docker() {
 		generate_docker_config
 		docker_main_version
+	}
+
+	if [ -f /etc/os-release ] && grep -q "Fedora" /etc/os-release; then
+		install_docker_official
+		install_common_docker
 	elif command -v dnf &>/dev/null; then
 		install yum-utils device-mapper-persistent-data lvm2
 		[ -f /etc/yum.repos.d/docker*.repo ] && rm -f /etc/yum.repos.d/docker*.repo > /dev/null
@@ -847,21 +893,18 @@ install_add_docker() {
 			yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo > /dev/null
 		fi
 
-		install docker-ce docker-ce-cli containerd.io
+		install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-ce-rootless-extras docker-compose-plugin
 		enable docker
 		start docker
-		generate_docker_config
-		docker_main_version
+		install_common_docker
 	elif command -v apt &>/dev/null || command -v yum &>/dev/null; then
 		install_docker_official
-		generate_docker_config
-		docker_main_version
+		install_common_docker
 	else
 		install docker docker-compose
 		enable docker
 		start docker
-		generate_docker_config
-		docker_main_version
+		install_common_docker
 	fi
 
 	sleep 2
@@ -870,6 +913,7 @@ install_add_docker() {
 # Docker调优
 generate_docker_config() {
 	local config_file="/etc/docker/daemon.json"
+	local config_dir="$(dirname "$config_file")"
 	local registry_url="https://raw.githubusercontent.com/honeok8s/conf/main/docker/registry_mirrors.txt"
 	local is_china_server='false'
 
@@ -884,6 +928,16 @@ generate_docker_config() {
 			_yellow "Docker配置文件已经优化,无需再次优化"
 			return 0
 		fi
+	fi
+
+	# 创建配置目录(如果不存在)
+	if [ ! -d "$config_dir" ]; then
+		mkdir -p "$config_dir"
+	fi
+
+	# 创建配置文件的基础配置(如果文件不存在)
+	if [ ! -f "$config_file" ]; then
+		echo "{}" > "$config_file"
 	fi
 
 	install python3
@@ -1095,7 +1149,7 @@ uninstall_docker() {
 	stop_and_remove_docker
 
 	case "$os_name" in
-		centos|ubuntu|debian)
+		ubuntu|debian|centos|rhel|rocky|fedora)
 			remove docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras
 			;;
 		alpine)
@@ -5774,7 +5828,7 @@ install_crontab() {
 					enable cron
 					start cron
 					;;
-				centos)
+				centos|rhel|rocky|fedora)
 					install cronie
 					enable crond
 					start crond
@@ -7529,11 +7583,11 @@ honeok(){
 	local choice
 	while true; do
 		clear
-		_yellow "脚本地址: https://github.com/honeok8s/shell"
+		_yellow "Project: https://github.com/honeok8s"
 		echo "-------------------------------------------------------"
 		print_logo
 		echo "-------------------------------------------------------"
-		_orange "适配Ubuntu/Debian/CentOS/Alpine系统"
+		_purple "适配Ubuntu/Debian/CentOS/Alpine/RedHat/Fedora/Rocky系统"
 		_cyan "Author: honeok"
 		_green "服务器当前时间: $(date +"%Y-%m-%d %H:%M:%S")"
 		echo "-------------------------------------------------------"

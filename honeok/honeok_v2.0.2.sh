@@ -56,7 +56,13 @@ print_logo(){
 #################### 系统信息START ####################
 # 查看系统信息
 system_info(){
-	local hostname=$(hostnamectl | sed -n 's/^[[:space:]]*Static hostname:[[:space:]]*\(.*\)$/\1/p')
+	local hostname
+	if [ -f "/etc/alpine-release" ]; then
+		hostname=$(hostname)
+	else
+		hostname=$(hostnamectl | sed -n 's/^[[:space:]]*Static hostname:[[:space:]]*\(.*\)$/\1/p')
+	fi
+
 	# 获取运营商信息
 	local isp_info=$(curl -s https://ipinfo.io | grep '"org":' | awk -F'"' '{print $4}')
 
@@ -67,9 +73,14 @@ system_info(){
 	else
 		os_release=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d '"' -f 2)
 	fi
+
 	# 获取虚拟化类型
 	local virt_type
-	virt_type=$(hostnamectl | awk -F ': ' '/Virtualization/ {print $2}')
+	if [ -f "/etc/alpine-release" ]; then
+		virt_type=$(lscpu | grep Hypervisor | awk '{print $3}')
+	else
+		virt_type=$(hostnamectl | awk -F ': ' '/Virtualization/ {print $2}')
+	fi
 
 	# 获取内核版本信息
 	local kernel_version
@@ -160,7 +171,14 @@ system_info(){
 
 	# 获取地理位置,系统时区,系统时间和运行时长
 	local location=$(curl -s ipinfo.io/city)
-	local system_time=$(timedatectl | grep 'Time zone' | awk '{print $3}' | awk '{gsub(/^[[:space:]]+|[[:space:]]+$/,""); print}')
+
+	local system_time
+	if grep -q 'Alpine' /etc/issue; then
+		system_time=$(date +"%Z %z")
+	else
+		system_time=$(timedatectl | grep 'Time zone' | awk '{print $3}' | awk '{gsub(/^[[:space:]]+|[[:space:]]+$/,""); print}')
+	fi
+
 	local current_time=$(date +"%Y-%m-%d %H:%M:%S")
 	local uptime_str=$(cat /proc/uptime | awk -F. '{run_days=int($1 / 86400);run_hours=int(($1 % 86400) / 3600);run_minutes=int(($1 % 3600) / 60); if (run_days > 0) printf("%d天 ", run_days); if (run_hours > 0) printf("%d时 ", run_hours); printf("%d分\n", run_minutes)}')
 
@@ -287,10 +305,10 @@ systemctl() {
 
 # 重载systemd管理的服务
 daemon_reload() {
-	if command -v apk &>/dev/null; then
-		:
-	else
-		/bin/systemctl daemon-reload
+	if ! command -v apk &>/dev/null; then
+		if command -v systemctl &>/dev/null; then
+			/bin/systemctl daemon-reload
+		fi
 	fi
 }
 
@@ -884,8 +902,8 @@ install_add_docker() {
 		install_common_docker
 	else
 		install docker docker-compose
-		systemctl enable docker
-		systemctl start docker
+		enable docker
+		start docker
 		install_common_docker
 	fi
 
@@ -1131,7 +1149,7 @@ uninstall_docker() {
 	stop_and_remove_docker
 
 	case "$os_name" in
-		centos|ubuntu|debian)
+		ubuntu|debian|centos|rhel|rocky|fedora)
 			remove docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras
 			;;
 		alpine)
@@ -5810,7 +5828,7 @@ install_crontab() {
 					enable cron
 					start cron
 					;;
-				centos)
+				centos|rhel|rocky|fedora)
 					install cronie
 					enable crond
 					start crond
@@ -7565,11 +7583,11 @@ honeok(){
 	local choice
 	while true; do
 		clear
-		_yellow "脚本地址: https://github.com/honeok8s/shell"
+		_yellow "Project: https://github.com/honeok8s"
 		echo "-------------------------------------------------------"
 		print_logo
 		echo "-------------------------------------------------------"
-		_purple "适配Ubuntu/Debian/CentOS/Alpine/RedHat/Rocky系统"
+		_purple "适配Ubuntu/Debian/CentOS/Alpine/RedHat/Fedora/Rocky系统"
 		_cyan "Author: honeok"
 		_green "服务器当前时间: $(date +"%Y-%m-%d %H:%M:%S")"
 		echo "-------------------------------------------------------"
