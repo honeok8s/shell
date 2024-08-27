@@ -40,7 +40,7 @@ print_logo(){
 |_| |_|\___/|_| |_|\___|\___/|_|\_\\"
 
 	# 打印logo
-	echo -e "${cyan}${logo}${white}"
+	echo -e "${cyan}${logo}\\${white}"
 	echo ""
 
 	# 设置工具版本文本
@@ -7568,8 +7568,8 @@ honeok(){
 		echo "-------------------------------------------------------"
 		print_logo
 		echo "-------------------------------------------------------"
-		_blue "适配Ubuntu/Debian/CentOS/Alpine/RedHat/Rocky系统"
-		_purple "Author: honeok"
+		_purple "适配Ubuntu/Debian/CentOS/Alpine/RedHat/Rocky系统"
+		_cyan "Author: honeok"
 		_green "服务器当前时间: $(date +"%Y-%m-%d %H:%M:%S")"
 		echo "-------------------------------------------------------"
 		echo "1. 系统信息查询                   2. 系统更新"
