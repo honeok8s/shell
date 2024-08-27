@@ -771,7 +771,7 @@ linux_bbr() {
 			echo ""
 			echo "BBR管理"
 			echo "-------------------------"
-			echo "1. 开启BBRv3              2. 关闭BBRv3（会重启）"
+			echo "1. 开启BBRv3              2. 关闭BBRv3(会重启)"
 			echo "-------------------------"
 			echo "0. 返回上一级选单"
 			echo "-------------------------"
@@ -870,21 +870,18 @@ install_add_docker() {
 			yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo > /dev/null
 		fi
 
-		install docker-ce docker-ce-cli containerd.io
+		install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-ce-rootless-extras docker-compose-plugin
 		enable docker
 		start docker
 		install_common_docker
 	elif command -v apt &>/dev/null || command -v yum &>/dev/null; then
 		install_docker_official
 		install_common_docker
-	elif command -v apk &>/dev/null;then
-		install docker docker-compose
-		enable docker
-		start docker
-		install_common_docker
 	else
-		_red "未知的操作系统"
-		return 1
+		install docker docker-compose
+		systemctl enable docker
+		systemctl start docker
+		install_common_docker
 	fi
 
 	sleep 2
@@ -933,7 +930,6 @@ generate_docker_config() {
 	# Python脚本
 	python3 - <<EOF
 import json
-import sys
 
 registry_mirrors = """$registry_mirrors""".splitlines()
 
