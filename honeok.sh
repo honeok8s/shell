@@ -1149,14 +1149,14 @@ uninstall_docker() {
 	stop_and_remove_docker
 
 	case "$os_name" in
-		ubuntu|debian|centos|rhel|rocky|fedora)
+		ubuntu|debian|centos|rhel|almalinux|rocky|fedora)
 			remove docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras
 			;;
 		alpine)
 			remove docker docker-compose
 			;;
 		*)
-			_red "此脚本不支持您的 Linux 发行版"
+			_red "此脚本不支持您的Linux发行版"
 			return 1
 			;;
 	esac
