@@ -342,14 +342,14 @@ manage_docker_application() {
 
 		case $choice in
 			1)
-				install_docker
+				#install_docker
 				[ ! -d "$docker_workdir" ] && mkdir -p "$docker_workdir"
 				cd "$docker_workdir" || { _red "无法进入目录$docker_workdir"; return 1; }
 
 				# 判断$docker_port_1是否已硬性赋值
 				if [ -n "$docker_port_1" ]; then
 					echo "$docker_compose_content" > docker-compose.yml
-				else		
+				else
 					# 检查端口,如冲突则使用动态端口
 					check_available_port
 					# 构建sed命令生成compose文件
@@ -451,30 +451,38 @@ check_available_port() {
 	# 检查并设置docker_port_2
 	if ! docker inspect "$docker_name" >/dev/null 2>&1; then
 		if [ -n "$default_port_2" ]; then
-			if ss -tuln | grep -q ":$default_port_2 "; then
-				docker_port_2=$(find_available_port 35000 50000)
-				_yellow "默认端口$default_port_2被占用,端口跳跃为$docker_port_2"
-				sleep 1
-			else
-				docker_port_2=$default_port_2
-				_yellow "使用默认端口$docker_port_2"
-				sleep 1
-			fi
+			while true; do
+				if ss -tuln | grep -q ":$default_port_2 "; then
+					docker_port_2=$(find_available_port 35000 50000)
+					_yellow "默认端口$default_port_2被占用,端口跳跃为$docker_port_2"
+					sleep 1
+					break
+				else
+					docker_port_2=$default_port_2
+					_yellow "使用默认端口$docker_port_2"
+					sleep 1
+					break
+				fi
+			done
 		fi
 	fi
 
 	# 检查并设置docker_port_3
 	if ! docker inspect "$docker_name" >/dev/null 2>&1; then
 		if [ -n "$default_port_3" ]; then
-			if ss -tuln | grep -q ":$default_port_3 "; then
-				docker_port_3=$(find_available_port 40000 50000)
-				_yellow "默认端口$default_port_3被占用,端口跳跃为$docker_port_3"
-				sleep 1
-			else
-				docker_port_3=$default_port_3
-				_yellow "使用默认端口$docker_port_3"
-				sleep 1
-			fi
+			while true; do
+				if ss -tuln | grep -q ":$default_port_3 "; then
+					docker_port_3=$(find_available_port 40000 50000)
+					_yellow "默认端口$default_port_3被占用,端口跳跃为$docker_port_3"
+					sleep 1
+					break
+				else
+					docker_port_3=$default_port_3
+					_yellow "使用默认端口$docker_port_3"
+					sleep 1
+					break
+				fi
+			done
 		fi
 	fi
 }
@@ -741,7 +749,7 @@ linux_panel() {
 							_yellow "按任意键继续"
 							read -n 1 -s -r -p ""
 
-							install_docker
+							#install_docker
 							docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/poste-docker-compose.yml)
 							echo "$docker_compose_content" > docker-compose.yml
 							sed -i "s/\${domain}/$domain/g" docker-compose.yml
@@ -883,7 +891,7 @@ linux_panel() {
 
 					case $choice in
 						1)
-							install_docker
+							#install_docker
 							bash -c "$(curl -fsSLk https://waf-ce.chaitin.cn/release/latest/setup.sh)"
 							clear
 							_green "雷池WAF面板已经安装完成"
@@ -1119,7 +1127,7 @@ linux_panel() {
 				;;
 			38)
 				clear
-				install_docker
+				#install_docker
 				bash -c "$(curl --insecure -fsSL https://ddsrem.com/xiaoya_install.sh)"
 				;;
 			39)
