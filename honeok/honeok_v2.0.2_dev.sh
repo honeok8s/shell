@@ -902,8 +902,8 @@ install_add_docker() {
 		install_common_docker
 	else
 		install docker docker-compose
-		systemctl enable docker
-		systemctl start docker
+		enable docker
+		start docker
 		install_common_docker
 	fi
 
