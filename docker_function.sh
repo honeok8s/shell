@@ -352,18 +352,15 @@ manage_docker_application() {
 				else
 					# 检查端口,如冲突则使用动态端口
 					check_available_port
-					# 构建sed命令生成compose文件
-					sed_commands="s/\$default_port_1/$docker_port_1/g;"
-					if [ -n "$docker_port_2" ]; then
-						sed_commands+="s/\$default_port_2/$docker_port_2/g;"
-					fi
-					if [ -n "$docker_port_3" ]; then
-						sed_commands+="s/\$default_port_3/$docker_port_3/g;"
-					fi
-					if [ -n "$random_password" ];then
-						sed_commands+="s/\$random_password/$random_password/g;"
-					fi
-					echo "$docker_compose_content" | sed "$sed_commands" > docker-compose.yml
+
+					echo "$docker_compose_content" > docker-compose.yml
+					# 构建sed命令
+					sed_commands="s#default_port_1#$docker_port_1#g;"
+					[ -n "$docker_port_2" ] && sed_commands+="s#default_port_2#$docker_port_2#g;"
+					[ -n "$docker_port_3" ] && sed_commands+="s#default_port_3#$docker_port_3#g;"
+					[ -n "$random_password" ] && sed_commands+="s#random_password#$random_password#g;"
+
+					sed -i -e "$sed_commands" docker-compose.yml
 				fi
 
 				manage_compose start
