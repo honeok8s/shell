@@ -7583,6 +7583,7 @@ honeok(){
 	local choice
 	while true; do
 		clear
+		_yellow "Project: https://github.com/honeok8s"
 		echo "-------------------------------------------------------"
 		print_logo
 		echo "-------------------------------------------------------"
