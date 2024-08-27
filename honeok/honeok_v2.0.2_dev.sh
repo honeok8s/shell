@@ -305,10 +305,10 @@ systemctl() {
 
 # 重载systemd管理的服务
 daemon_reload() {
-	if command -v apk &>/dev/null; then
-		:
-	else
-		/bin/systemctl daemon-reload
+	if ! command -v apk &>/dev/null; then
+		if command -v systemctl &>/dev/null; then
+			/bin/systemctl daemon-reload
+		fi
 	fi
 }
 
