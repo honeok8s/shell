@@ -347,19 +347,17 @@ manage_docker_application() {
 				cd "$docker_workdir" || { _red "无法进入目录$docker_workdir"; return 1; }
 
 				# 判断$docker_port_1是否已硬性赋值
-				if [ -n "$docker_port_1" ]; then
+				if [ ! -z "$docker_port_1" ]; then
 					echo "$docker_compose_content" > docker-compose.yml
 				else
-					# 检查端口,如冲突则使用动态端口
+					# 只有在端口未硬性赋值时才进行端口检查和替换
 					check_available_port
-
 					echo "$docker_compose_content" > docker-compose.yml
-					# 构建sed命令
+					# 构建并执行Sed命令
 					sed_commands="s#default_port_1#$docker_port_1#g;"
 					[ -n "$docker_port_2" ] && sed_commands+="s#default_port_2#$docker_port_2#g;"
 					[ -n "$docker_port_3" ] && sed_commands+="s#default_port_3#$docker_port_3#g;"
 					[ -n "$random_password" ] && sed_commands+="s#random_password#$random_password#g;"
-
 					sed -i -e "$sed_commands" docker-compose.yml
 				fi
 
@@ -370,6 +368,10 @@ manage_docker_application() {
 				echo ""
 				$docker_exec_command
 				$docker_password
+
+				docker_port_1=""
+				docker_port_2=""
+				docker_port_3=""
 				;;
 			2)
 				cd "$docker_workdir" || { _red "无法进入目录$docker_workdir"; return 1; }
