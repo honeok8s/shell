@@ -29,10 +29,8 @@ _orange() { echo -e ${orange}$@${white}; }
 honeok_v="v2.0.2"
 
 print_logo(){
-	local cyan=$(tput setaf 6)
-	local reset=$(tput sgr0)
-	local yellow=$(tput setaf 3)
-	local bold=$(tput bold)
+	local os_info=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d '"' -f 2)
+	local bold='\033[1m'       # 加粗
 	local logo="
  _                            _    
 | |                          | |   
@@ -41,11 +39,17 @@ print_logo(){
 | | | | (_) | | | |  __| (_) |   < 
 |_| |_|\___/|_| |_|\___|\___/|_|\_\\"
 
-	echo -e "${cyan}${logo}${reset}"
+	# 打印logo
+	echo -e "${cyan}${logo}${white}"
 	echo ""
-	local text="Tools: ${honeok_v}"
-	local padding="                                   "
-	echo -e "${padding}${yellow}${bold}${text}${reset}"
+
+	# 设置工具版本文本
+	local text="${yellow}${bold}Tools: ${honeok_v}${white}"
+	local os_text="${yellow}${bold}操作系统: ${os_info}${white}"
+	local padding="     "  # 根据需要可以调整填充
+
+	# 打印操作系统信息和工具版本信息在同一行
+	echo -e "${os_text}${padding}${text}"
 }
 
 #################### 系统信息START ####################
