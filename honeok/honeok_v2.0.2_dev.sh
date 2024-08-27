@@ -1149,7 +1149,7 @@ uninstall_docker() {
 	stop_and_remove_docker
 
 	case "$os_name" in
-		centos|ubuntu|debian)
+		ubuntu|debian|centos|rhel|rocky|fedora)
 			remove docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras
 			;;
 		alpine)
