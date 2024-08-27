@@ -7583,7 +7583,6 @@ honeok(){
 	local choice
 	while true; do
 		clear
-		_yellow "脚本地址: https://github.com/honeok8s/shell"
 		echo "-------------------------------------------------------"
 		print_logo
 		echo "-------------------------------------------------------"
