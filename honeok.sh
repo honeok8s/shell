@@ -6181,7 +6181,7 @@ redhat_kernel_update() {
 				install_elrepo
 				server_reboot
 				;;
-			[Nn]
+			[Nn])
 				echo "已取消"
 				;;
 			*)
