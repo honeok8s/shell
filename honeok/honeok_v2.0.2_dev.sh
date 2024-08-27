@@ -56,7 +56,13 @@ print_logo(){
 #################### 系统信息START ####################
 # 查看系统信息
 system_info(){
-	local hostname=$(hostnamectl | sed -n 's/^[[:space:]]*Static hostname:[[:space:]]*\(.*\)$/\1/p')
+	local hostname
+	if [ -f "/etc/alpine-release" ]; then
+		hostname=$(hostname)
+	else
+		hostname=$(hostnamectl | sed -n 's/^[[:space:]]*Static hostname:[[:space:]]*\(.*\)$/\1/p')
+	fi
+
 	# 获取运营商信息
 	local isp_info=$(curl -s https://ipinfo.io | grep '"org":' | awk -F'"' '{print $4}')
 
@@ -67,6 +73,7 @@ system_info(){
 	else
 		os_release=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d '"' -f 2)
 	fi
+
 	# 获取虚拟化类型
 	local virt_type
 	if [ -f "/etc/alpine-release" ]; then
@@ -164,7 +171,14 @@ system_info(){
 
 	# 获取地理位置,系统时区,系统时间和运行时长
 	local location=$(curl -s ipinfo.io/city)
-	local system_time=$(timedatectl | grep 'Time zone' | awk '{print $3}' | awk '{gsub(/^[[:space:]]+|[[:space:]]+$/,""); print}')
+
+	local system_time
+	if grep -q 'Alpine' /etc/issue; then
+		system_time=$(date +"%Z %z")
+	else
+		system_time=$(timedatectl | grep 'Time zone' | awk '{print $3}' | awk '{gsub(/^[[:space:]]+|[[:space:]]+$/,""); print}')
+	fi
+
 	local current_time=$(date +"%Y-%m-%d %H:%M:%S")
 	local uptime_str=$(cat /proc/uptime | awk -F. '{run_days=int($1 / 86400);run_hours=int(($1 % 86400) / 3600);run_minutes=int(($1 % 3600) / 60); if (run_days > 0) printf("%d天 ", run_days); if (run_hours > 0) printf("%d时 ", run_hours); printf("%d分\n", run_minutes)}')
 
