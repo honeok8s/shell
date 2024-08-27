@@ -69,7 +69,11 @@ system_info(){
 	fi
 	# 获取虚拟化类型
 	local virt_type
-	virt_type=$(hostnamectl | awk -F ': ' '/Virtualization/ {print $2}')
+	if [ -f "/etc/alpine-release" ]; then
+		virt_type=$(lscpu | grep Hypervisor | awk '{print $3}')
+	else
+		virt_type=$(hostnamectl | awk -F ': ' '/Virtualization/ {print $2}')
+	fi
 
 	# 获取内核版本信息
 	local kernel_version
