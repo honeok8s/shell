@@ -973,6 +973,8 @@ base_config = {
         "max-file": "3"
     },
     "storage-driver": "overlay2",
+    "default-shm-size": "128M",
+	"debug": false,
     "ipv6": False
 }
 
