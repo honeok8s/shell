@@ -921,6 +921,7 @@ generate_docker_config() {
 	local config_dir="$(dirname "$config_file")"
 	local registry_url="https://raw.githubusercontent.com/honeok8s/conf/main/docker/registry_mirrors.txt"
 	local is_china_server='false'
+	local cgroup_driver
 
 	if ! command -v docker &> /dev/null; then
 		_red "Docker未安装在系统上,无法优化"
@@ -955,15 +956,23 @@ generate_docker_config() {
 	# 获取 registry mirrors 内容
 	registry_mirrors=$(curl -s "$registry_url" | grep -v '^#' | sed '/^$/d')
 
+	# 判断操作系统是否为 Alpine
+	if grep -q 'Alpine' /etc/issue; then
+		cgroup_driver="native.cgroupdriver=cgroupfs"
+	else
+		cgroup_driver="native.cgroupdriver=systemd"
+	fi
+
 	# Python脚本
 	python3 - <<EOF
 import json
 
 registry_mirrors = """$registry_mirrors""".splitlines()
+cgroup_driver = "$cgroup_driver"
 
 base_config = {
     "exec-opts": [
-        "native.cgroupdriver=systemd"
+        cgroup_driver
     ],
     "max-concurrent-downloads": 10,
     "max-concurrent-uploads": 5,
