@@ -1397,7 +1397,7 @@ docker_manager(){
 				else
 					docker_main_version
 					while true; do
-						echo -n -e "是否升级Docker环境?(y/n):"
+						echo -n -e "${yellow}是否升级Docker环境?(y/n)${white}"
 						read -r answer
 
 						case $answer in
@@ -1576,7 +1576,7 @@ docker_manager(){
 				;;
 			7)
 				clear
-				echo -n "将清理无用的镜像容器网络,包括停止的容器,确定清理吗?(y/n):"
+				echo -n -e "${yellow}将清理无用的镜像容器网络,包括停止的容器,确定清理吗?(y/n)${white}"
 				read -r choice
 
 				case "$choice" in
@@ -1612,7 +1612,7 @@ docker_manager(){
 				;;
 			20)
 				clear
-				echo -n "确定卸载docker环境吗?(y/n)"
+				echo -n -e "${yellow}确定卸载docker环境吗?(y/n)${white}"
 				read -r choice
 
 				case "$choice" in
@@ -4519,7 +4519,7 @@ linux_ldnmp() {
 
 					while true; do
 						clear
-						read -p "要传送文件到远程服务器吗?(y/n):"
+						echo -n -e "${yellow}要传送文件到远程服务器吗?(y/n)${white}"
 						read -r choice
 
 						case "$choice" in
@@ -4579,12 +4579,14 @@ linux_ldnmp() {
 				case $choice in
 					1)
 						check_crontab_installed
-						echo -n "选择每周备份的星期几(0-6,0代表星期日):" weekday
+						echo -n "选择每周备份的星期几(0-6,0代表星期日):"
+						read -r weekday
 						(crontab -l ; echo "0 0 * * $weekday /data/script/${useip}_backup.sh > /dev/null 2>&1") | crontab -
 						;;
 					2)
 						check_crontab_installed
-						read -p "选择每天备份的时间(小时,0-23):" hour
+						echo -n "选择每天备份的时间(小时,0-23):"
+						read -r hour
 						(crontab -l ; echo "0 $hour * * * /data/script/${useip}_backup.sh") | crontab - > /dev/null 2>&1
 						;;
 					*)
@@ -4827,8 +4829,8 @@ linux_ldnmp() {
 					done
 				elif [ -x "$(command -v fail2ban-client)" ] ; then
 					clear
-					echo "卸载旧版Fail2ban"
-					echo -n "确定继续吗?(y/n):"
+					_yellow "卸载旧版Fail2ban"
+					echo -n -e "${yellow}确定继续吗?(y/n)${white}"
 					read -r choice
 					
 					case "$choice" in
@@ -5044,7 +5046,7 @@ linux_ldnmp() {
 							_green "更新${ldnmp_pods}完成"
 							;;
 						5)
-							echo -n "长时间不更新环境的用户请慎重更新LDNMP环境,会有数据库更新失败的风险,确定更新LDNMP环境吗?(y/n):"
+							echo -n -e "${yellow}长时间不更新环境的用户请慎重更新LDNMP环境,会有数据库更新失败的风险,确定更新LDNMP环境吗?(y/n)${white}"
 							read -r choice
 
 							case "$choice" in
@@ -5077,7 +5079,7 @@ linux_ldnmp() {
 				need_root
 				echo "建议先备份全部网站数据再卸载LDNMP环境"
 				echo "同时会移除由LDNMP建站安装的依赖"
-				echo -n "确认继续?(y/n):"
+				echo -n -e "${yellow}确定继续吗?(y/n)${white}"
 				read -r choice
 
 				case "$choice" in
