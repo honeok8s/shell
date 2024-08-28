@@ -261,7 +261,7 @@ install_docker() {
 		/usr/bin/install -m 0755 -d /etc/apt/keyrings
 		curl -fsSL \"$gpg_key_url\" -o /etc/apt/keyrings/docker.asc >/dev/null 2>&1
 		chmod a+r /etc/apt/keyrings/docker.asc >/dev/null 2>&1
-		echo \"deb [arch=\$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] $repo_url $codename stable\" | tee /etc/apt/sources.list.d/docker.list >/dev/null
+		echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] $repo_url $codename stable" | tee /etc/apt/sources.list.d/docker.list >/dev/null
 
 		install docker-ce docker-ce-cli containerd.io
 		enable docker
