@@ -1112,8 +1112,8 @@ EOF
 # 卸载Docker
 uninstall_docker() {
 	local os_name
-	local docker_files=("/var/lib/docker" "/var/lib/containerd" "/etc/docker" "/opt/containerd" "/data/docker_data")
-	local repo_files=("/etc/yum.repos.d/docker*" "/etc/apt/sources.list.d/docker.*" "/etc/apt/keyrings/docker.*")
+	local docker_data_files=("/var/lib/docker" "/var/lib/containerd" "/etc/docker" "/opt/containerd" "/data/docker_data")
+	local docker_depend_files=("/etc/yum.repos.d/docker*" "/etc/apt/sources.list.d/docker.*" "/etc/apt/keyrings/docker.*" "/var/log/docker.*")
 	local binary_files=("/usr/bin/docker" "/usr/bin/docker-compose")  # 删除二进制文件路径
 
 	need_root
@@ -1121,20 +1121,20 @@ uninstall_docker() {
 	# 停止并删除Docker服务和容器
 	stop_and_remove_docker() {
 		local running_containers=$(docker ps -aq)
-		[ -n "$running_containers" ] && docker rm -f $running_containers >/dev/null 2>&1
+		[ -n "$running_containers" ] && docker rm -f "$running_containers" >/dev/null 2>&1
 		stop docker >/dev/null 2>&1
 		disable docker >/dev/null 2>&1
 	}
 
 	# 移除Docker文件和仓库文件
 	cleanup_files() {
-		for pattern in "${repo_files[@]}"; do
+		for pattern in "${docker_depend_files[@]}"; do
 			for file in $pattern; do
 				[ -e "$file" ] && rm -fr "$file" >/dev/null 2>&1
 			done
 		done
 
-		for file in "${docker_files[@]}" "${binary_files[@]}"; do
+		for file in "${docker_data_files[@]}" "${binary_files[@]}"; do
 			[ -e "$file" ] && rm -fr "$file" >/dev/null 2>&1
 		done
 	}
