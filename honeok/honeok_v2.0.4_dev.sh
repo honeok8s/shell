@@ -6411,7 +6411,7 @@ linux_system_tools(){
 
 		case $choice in
 			2)
-				yellow "设置你的登录密码"
+				_yellow "设置你的登录密码"
 				passwd
 				;;
 			3)
