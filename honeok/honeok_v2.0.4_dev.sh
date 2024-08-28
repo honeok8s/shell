@@ -974,7 +974,7 @@ base_config = {
     },
     "storage-driver": "overlay2",
     "default-shm-size": "128M",
-    "debug": false,
+    "debug": False,
     "ipv6": False
 }
 
