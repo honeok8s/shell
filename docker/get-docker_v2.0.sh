@@ -125,14 +125,43 @@ systemctl() {
 	fi
 }
 
+# 设置服务为开机自启
+enable() {
+	local service_name="$1"
+	if command -v apk &>/dev/null; then
+		rc-update add "$service_name" default
+	else
+		systemctl enable "$service_name"
+	fi
+
+	if [ $? -eq 0 ]; then
+		_green "$service_name已设置为开机自启"
+	else
+		_red "$service_name设置开机自启失败"
+	fi
+}
+
+# 启动服务
+start() {
+	local service_name="$1"
+	if command -v apk &>/dev/null; then
+		service "$service_name" start
+	else
+		systemctl start "$service_name"
+	fi
+	if [ $? -eq 0 ]; then
+		_green "$service_name已启动"
+	else
+		_red "$service_name启动失败"
+	fi
+}
+
 # 检查用户是否为root
 need_root(){
 	clear
 	if [ "$(id -u)" -ne "0" ]; then
-		_red "该功能需要root用户才能运行"
-		end_of
-		# 回调主菜单
-		honeok
+		_red "该脚本需要root用户才能运行"
+		exit 0
 	fi
 }
 
@@ -169,25 +198,99 @@ ip_address() {
 	_yellow "地理位置: ${location}"
 }
 
-# 检查Docker或Docker Compose是否已安装,用于在函数操作系统安装docker中嵌套
-check_docker_installed() {
-	if command -v docker >/dev/null 2>&1; then
-		if docker --version >/dev/null 2>&1; then
-			_red "Docker已安装,正在退出安装程序"
-			script_completion_message
-			exit 0
-		fi
-	fi
-	
-	if command -v docker compose >/dev/null 2>&1 || command -v docker-compose >/dev/null 2>&1; then
-		_red "Docker Compose已安装,正在退出安装程序"
-		script_completion_message
-		exit 0
-	fi
-}
 #################### 通用函数END ####################
 
 #################### Docker START ####################
+
+# 检查Docker或Docker Compose是否已安装
+check_docker_install() {
+	if ! command -v docker >/dev/null 2>&1; then
+		install_docker
+	else
+		_red "Docker已安装,正在退出安装程序"
+		exit 0
+	fi
+}
+
+install_docker() {
+	local repo_url=""
+	local gpg_key_url=""
+	local codename="$(lsb_release -cs)"
+	local os_name="$(lsb_release -si)"
+
+	if [ ! -f "/etc/alpine-release" ]; then
+		_yellow "正在安装docker"
+	fi
+
+	install_common_docker() {
+		generate_docker_config
+		docker_main_version
+	}
+
+	if command -v dnf &>/dev/null; then
+		if ! dnf config-manager --help >/dev/null 2>&1; then
+			install dnf-plugins-core
+		fi
+
+		[ -f /etc/yum.repos.d/docker*.repo ] && rm -f /etc/yum.repos.d/docker*.repo > /dev/null
+
+		if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
+			dnf config-manager --add-repo https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo > /dev/null
+		else
+			dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo > /dev/null
+		fi
+
+		install docker-ce docker-ce-cli containerd.io
+		enable docker
+		start docker
+		install_common_docker
+	elif command -v apt &>/dev/null; then
+		if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
+			repo_url="https://mirrors.aliyun.com/docker-ce/linux/${os_name,,}"
+			gpg_key_url="https://mirrors.aliyun.com/docker-ce/linux/${os_name,,}/gpg"
+		else
+			repo_url="https://download.docker.com/linux/${os_name,,}"
+			gpg_key_url="https://download.docker.com/linux/${os_name,,}/gpg"
+		fi
+
+		apt install sudo >/dev/null 2>&1
+		for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do
+			remove $pkg >/dev/null 2>&1
+		done
+		install apt-transport-https ca-certificates curl gnupg lsb-release
+		/usr/bin/install -m 0755 -d /etc/apt/keyrings
+		curl -fsSL \"$gpg_key_url\" -o /etc/apt/keyrings/docker.asc >/dev/null 2>&1
+		chmod a+r /etc/apt/keyrings/docker.asc >/dev/null 2>&1
+		echo \"deb [arch=\$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] $repo_url $codename stable\" | tee /etc/apt/sources.list.d/docker.list >/dev/null
+
+		install docker-ce docker-ce-cli containerd.io
+		enable docker
+		start docker
+		install_common_docker
+	elif command -v yum &>/dev/null; then
+		if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
+			repo_url="http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo"
+		else
+			repo_url="https://download.docker.com/linux/centos/docker-ce.repo"
+		fi
+		remove docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine >/dev/null 2>&1
+		install yum-utils
+		yum-config-manager --add-repo \"$repo_url\" && yum makecache fast
+
+		install docker-ce docker-ce-cli containerd.io
+		enable docker
+		start docker
+		install_common_docker
+	else
+		install docker docker-compose
+		enable docker
+		start docker
+		install_common_docker
+	fi
+
+	sleep 2
+}
+
 docker_main_version() {
 	local docker_version=""
 	local docker_compose_version=""
@@ -326,91 +429,6 @@ EOF
 	daemon_reload
 	restart docker
 	_yellow "Docker配置文件已根据服务器IP归属做相关优化,如需调整自行修改$config_file"
-}
-
-check_docker_install() {
-	if ! command -v docker >/dev/null 2>&1; then
-		install_docker
-	else
-		_red "Docker已安装,正在退出安装程序"
-		exit 0
-	fi
-}
-
-install_docker() {
-	local repo_url=""
-	local gpg_key_url=""
-	local codename="$(lsb_release -cs)"
-	local os_name="$(lsb_release -si)"
-
-	if [ ! -f "/etc/alpine-release" ]; then
-		_yellow "正在安装docker"
-	fi
-
-	install_common_docker() {
-		generate_docker_config
-		docker_main_version
-	}
-
-	if command -v dnf &>/dev/null; then
-		if ! dnf config-manager --help >/dev/null 2>&1; then
-			install dnf-plugins-core
-		fi
-
-		[ -f /etc/yum.repos.d/docker*.repo ] && rm -f /etc/yum.repos.d/docker*.repo > /dev/null
-
-		if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
-			dnf config-manager --add-repo https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo > /dev/null
-		else
-			dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo > /dev/null
-		fi
-
-		install docker-ce docker-ce-cli containerd.io
-		enable docker
-		start docker
-		install_common_docker
-	elif command -v apt &>/dev/null; then
-		if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
-			repo_url="https://mirrors.aliyun.com/docker-ce/linux/${os_name,,}"
-			gpg_key_url="https://mirrors.aliyun.com/docker-ce/linux/${os_name,,}/gpg"
-		else
-			repo_url="https://download.docker.com/linux/${os_name,,}"
-			gpg_key_url="https://download.docker.com/linux/${os_name,,}/gpg"
-		fi
-
-		apt install sudo >/dev/null 2>&1
-		for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do
-			sudo apt remove $pkg >/dev/null 2>&1 || true
-		done
-		install apt-transport-https ca-certificates curl gnupg lsb-release
-		install -m 0755 -d /etc/apt/keyrings
-		curl -fsSL \"$gpg_key_url\" -o /etc/apt/keyrings/docker.asc >/dev/null 2>&1
-		chmod a+r /etc/apt/keyrings/docker.asc >/dev/null 2>&1
-		echo \"deb [arch=\$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] $repo_url $codename stable\" | tee /etc/apt/sources.list.d/docker.list >/dev/null
-		install docker-ce docker-ce-cli containerd.io
-
-		install_common_docker
-	elif command -v yum &>/dev/null; then
-		if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
-			repo_url="http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo"
-		else
-			repo_url="https://download.docker.com/linux/centos/docker-ce.repo"
-		fi
-		remove docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine &>/dev/null
-		install yum-utils
-		yum yum-config-manager --add-repo \"$repo_url\" && yum makecache fast
-		install docker-ce docker-ce-cli containerd.io
-		enable docker
-		start docker
-		install_common_docker
-	else
-		install docker docker-compose
-		enable docker
-		start docker
-		install_common_docker
-	fi
-
-	sleep 2
 }
 
 # 卸载Docker
