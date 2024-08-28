@@ -5697,7 +5697,7 @@ xanmod_bbr3(){
 					server_reboot
 					;;
 				2)
-					remove 'linux-*xanmod1*'
+					remove 'linux-*xanmod1*' gnupg
 					update-grub
 					_green "XanMod内核已卸载,重启后生效"
 					server_reboot
