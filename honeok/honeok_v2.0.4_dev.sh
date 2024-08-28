@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2024 honeok
 # Forked from kejilion
