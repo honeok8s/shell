@@ -10,6 +10,15 @@ _yellow() { echo -e ${yellow}$@${white}; }
 _red() { echo -e ${red}$@${white}; }
 _green() { echo -e ${green}$@${white}; }
 
+if [ "$(id -u)" -ne 0 ]; then
+	_red "脚本必须以root用户运行"
+	exit 1
+fi
+
+if ! grep -q "Ubuntu" /etc/os-release; then
+	exit 1
+fi
+
 current_version=$(gcc -dumpversion 2>/dev/null)
 
 if [ -z "$current_version" ]; then
