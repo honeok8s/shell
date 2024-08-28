@@ -930,7 +930,7 @@ generate_docker_config() {
 
 	if [ -f "$config_file" ]; then
 		# 如果文件存在,检查是否已经优化过
-		if grep -q '"storage-driver": "overlay2"' "$config_file"; then
+		if grep -q '"default-shm-size": "128M"' "$config_file"; then
 			_yellow "Docker配置文件已经优化,无需再次优化"
 			return 0
 		fi
