@@ -15,7 +15,6 @@ cyan='\033[1;36m'         # 青色
 purple='\033[1;35m'       # 紫色
 gray='\033[1;30m'         # 灰色
 orange='\033[1;38;5;208m' # 橙色
-brown='\033[1;38;5;94m'   # 棕色
 white='\033[0m'           # 白色
 _yellow() { echo -e ${yellow}$@${white}; }
 _red() { echo -e ${red}$@${white}; }
@@ -26,7 +25,6 @@ _cyan() { echo -e ${cyan}$@${white}; }
 _purple() { echo -e ${purple}$@${white}; }
 _gray() { echo -e ${gray}$@${white}; }
 _orange() { echo -e ${orange}$@${white}; }
-_brown() { echo -e ${brown}$@${white}; }
 
 honeok_v="v2.0.6"
 
@@ -52,7 +50,7 @@ print_logo(){
 
 	# 打印操作系统信息和工具版本信息
 	echo -e "${yellow}${bold}${os_text}${while}"
-	echo -e "${padding}${brown}${bold}${text}${white}"
+	echo -e "${padding}${cyan}${bold}${text}${white}"
 }
 
 #################### 系统信息START ####################
@@ -7273,7 +7271,6 @@ honeok_update() {
 	fi
 }
 #################### 脚本更新END ####################
-
 honeok(){
 	local choice system_time
 
@@ -7285,7 +7282,7 @@ honeok(){
 
 	while true; do
 		clear
-		echo -e "${yellow}Github: https://github.com/honeok8s${white} ${brown}时区: ${system_time}${white}"
+		echo -e "${yellow}Github: https://github.com/honeok8s${white} ${cyan}时区: ${system_time}${white}"
 		echo "-------------------------------------------------------"
 		print_logo
 		echo "-------------------------------------------------------"
