@@ -6925,6 +6925,7 @@ node_create(){
 		echo "5. 233boy Sing-box一键脚本"
 		echo "6. Fscarmen ArgoX一键脚本"
 		echo "7. WL一键Argo哪吒脚本"
+		echo "8. Fscarmen Argo+Sing-box一键脚本"
 		echo "20. Multi EasyGost一键脚本"
 		echo "-------------------------------"
 		echo "     单协议/XRAY面板及其他"
@@ -6968,6 +6969,11 @@ node_create(){
 			7)
 				clear
 				bash <(curl -sL https://raw.githubusercontent.com/dsadsadsss/vps-argo/main/install.sh)
+				;;
+			8)
+				clear
+				install wget
+				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/sba/main/sba.sh)
 				;;
 			20)
 				clear
