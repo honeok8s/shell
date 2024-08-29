@@ -50,7 +50,7 @@ print_logo(){
 
 	# 打印操作系统信息和工具版本信息
 	echo -e "${yellow}${bold}${os_text}${while}"
-	echo -e "${padding}${yellow}${bold}${text}${white}"
+	echo -e "${padding}${orange}${bold}${text}${white}"
 }
 
 #################### 系统信息START ####################
