@@ -7283,7 +7283,7 @@ honeok(){
 
 	while true; do
 		clear
-		echo -e "${yellow}Github: https://github.com/honeok8s 时区: ${system_time}${white}"
+		echo -e "${yellow}Github: https://github.com/honeok8s${white} ${cyan}时区: ${system_time}${white}"
 		echo "-------------------------------------------------------"
 		print_logo
 		echo "-------------------------------------------------------"
