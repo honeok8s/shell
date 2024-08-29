@@ -44,13 +44,13 @@ print_logo(){
 	echo ""
 
 	# 设置工具版本文本
-	local text="Version: ${honeok_v}"
+	local text="version: ${honeok_v}"
 	local os_text="当前操作系统: ${os_info}"
 	local padding="                                        "
 
 	# 打印操作系统信息和工具版本信息
 	echo -e "${yellow}${bold}${os_text}${while}"
-	echo -e "${padding}${yellow}${bold}${text}${white}"
+	echo -e "${padding}${orange}${bold}${text}${white}"
 }
 
 #################### 系统信息START ####################
