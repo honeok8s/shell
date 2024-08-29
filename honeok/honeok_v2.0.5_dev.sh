@@ -7255,13 +7255,13 @@ honeok_update() {
 		return 0
 	fi
 
-	# 从远程脚本中提取第29行的版本号
+	# 从远程脚本中提取第31行的版本号
 	local remote_version
-	remote_version=$(curl -s "$remote_script_url" | sed -n '29p' | awk -F'=' '{print $2}' | tr -d '"')
+	remote_version=$(curl -s "$remote_script_url" | sed -n '31p' | awk -F'=' '{print $2}' | tr -d '"')
 
-	# 从本地脚本中提取第29行的版本号
+	# 从本地脚本中提取第31行的版本号
 	local local_version
-	local_version=$(sed -n '29p' "$local_script_path" | awk -F'=' '{print $2}' | tr -d '"')
+	local_version=$(sed -n '31p' "$local_script_path" | awk -F'=' '{print $2}' | tr -d '"')
 
 	# 检查版本号并更新脚本
 	if [[ "$remote_version" != "$local_version" ]]; then
