@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2024 honeok
 # Forked from kejilion
@@ -26,7 +26,7 @@ _purple() { echo -e ${purple}$@${white}; }
 _gray() { echo -e ${gray}$@${white}; }
 _orange() { echo -e ${orange}$@${white}; }
 
-honeok_v="v2.0.3"
+honeok_v="v2.0.4"
 
 print_logo(){
 	local os_info=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d '"' -f 2)
@@ -859,7 +859,7 @@ docker_main_version() {
 }
 
 install_docker_official() {
-	if [[ "$(curl -s ipinfo.io/country)" == "CN" ]]; then
+	if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
 		cd ~
 		curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/docker/get-docker-official.sh && chmod a+x get-docker-official.sh
 		bash get-docker-official.sh --mirror Aliyun
@@ -872,7 +872,9 @@ install_docker_official() {
 }
 
 install_add_docker() {
-    _yellow "正在安装docker"
+	if [ ! -f "/etc/alpine-release" ]; then
+		_yellow "正在安装docker"
+	fi
 
 	install_common_docker() {
 		generate_docker_config
@@ -883,17 +885,20 @@ install_add_docker() {
 		install_docker_official
 		install_common_docker
 	elif command -v dnf &>/dev/null; then
-		install yum-utils device-mapper-persistent-data lvm2
+		if ! dnf config-manager --help >/dev/null 2>&1; then
+			install dnf-plugins-core
+		fi
+
 		[ -f /etc/yum.repos.d/docker*.repo ] && rm -f /etc/yum.repos.d/docker*.repo > /dev/null
 
 		# 判断地区安装
-		if [[ "$(curl -s ipinfo.io/country)" == "CN" ]]; then
-			yum-config-manager --add-repo https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo > /dev/null
+		if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
+			dnf config-manager --add-repo https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo > /dev/null
 		else
-			yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo > /dev/null
+			dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo > /dev/null
 		fi
 
-		install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-ce-rootless-extras docker-compose-plugin
+		install docker-ce docker-ce-cli containerd.io
 		enable docker
 		start docker
 		install_common_docker
@@ -916,6 +921,7 @@ generate_docker_config() {
 	local config_dir="$(dirname "$config_file")"
 	local registry_url="https://raw.githubusercontent.com/honeok8s/conf/main/docker/registry_mirrors.txt"
 	local is_china_server='false'
+	local cgroup_driver
 
 	if ! command -v docker &> /dev/null; then
 		_red "Docker未安装在系统上,无法优化"
@@ -924,7 +930,7 @@ generate_docker_config() {
 
 	if [ -f "$config_file" ]; then
 		# 如果文件存在,检查是否已经优化过
-		if grep -q '"storage-driver": "overlay2"' "$config_file"; then
+		if grep -q '"default-shm-size": "128M"' "$config_file"; then
 			_yellow "Docker配置文件已经优化,无需再次优化"
 			return 0
 		fi
@@ -943,22 +949,30 @@ generate_docker_config() {
 	install python3
 
 	# 检查服务器是否在中国
-	if [[ "$(curl -s ipinfo.io/country)" == "CN" ]]; then
+	if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
 		is_china_server='true'
 	fi
 
 	# 获取 registry mirrors 内容
 	registry_mirrors=$(curl -s "$registry_url" | grep -v '^#' | sed '/^$/d')
 
+	# 判断操作系统是否为 Alpine
+	if grep -q 'Alpine' /etc/issue; then
+		cgroup_driver="native.cgroupdriver=cgroupfs"
+	else
+		cgroup_driver="native.cgroupdriver=systemd"
+	fi
+
 	# Python脚本
 	python3 - <<EOF
 import json
 
 registry_mirrors = """$registry_mirrors""".splitlines()
+cgroup_driver = "$cgroup_driver"
 
 base_config = {
     "exec-opts": [
-        "native.cgroupdriver=systemd"
+        cgroup_driver
     ],
     "max-concurrent-downloads": 10,
     "max-concurrent-uploads": 5,
@@ -968,10 +982,12 @@ base_config = {
         "max-file": "3"
     },
     "storage-driver": "overlay2",
+    "default-shm-size": "128M",
+    "debug": False,
     "ipv6": False
 }
 
-# 如果是中国服务器,将 registry-mirrors 放在前面
+# 如果是中国服务器,将registry-mirrors放在前面
 if "$is_china_server" == "true" and registry_mirrors:
     config = {
         "registry-mirrors": registry_mirrors,
@@ -1105,8 +1121,8 @@ EOF
 # 卸载Docker
 uninstall_docker() {
 	local os_name
-	local docker_files=("/var/lib/docker" "/var/lib/containerd" "/etc/docker" "/opt/containerd" "/data/docker_data")
-	local repo_files=("/etc/yum.repos.d/docker*" "/etc/apt/sources.list.d/docker.*" "/etc/apt/keyrings/docker.*")
+	local docker_data_files=("/var/lib/docker" "/var/lib/containerd" "/etc/docker" "/opt/containerd" "/data/docker_data")
+	local docker_depend_files=("/etc/yum.repos.d/docker*" "/etc/apt/sources.list.d/docker.*" "/etc/apt/keyrings/docker.*" "/var/log/docker.*")
 	local binary_files=("/usr/bin/docker" "/usr/bin/docker-compose")  # 删除二进制文件路径
 
 	need_root
@@ -1114,20 +1130,20 @@ uninstall_docker() {
 	# 停止并删除Docker服务和容器
 	stop_and_remove_docker() {
 		local running_containers=$(docker ps -aq)
-		[ -n "$running_containers" ] && docker rm -f $running_containers >/dev/null 2>&1
+		[ -n "$running_containers" ] && docker rm -f "$running_containers" >/dev/null 2>&1
 		stop docker >/dev/null 2>&1
 		disable docker >/dev/null 2>&1
 	}
 
 	# 移除Docker文件和仓库文件
 	cleanup_files() {
-		for pattern in "${repo_files[@]}"; do
+		for pattern in "${docker_depend_files[@]}"; do
 			for file in $pattern; do
 				[ -e "$file" ] && rm -fr "$file" >/dev/null 2>&1
 			done
 		done
 
-		for file in "${docker_files[@]}" "${binary_files[@]}"; do
+		for file in "${docker_data_files[@]}" "${binary_files[@]}"; do
 			[ -e "$file" ] && rm -fr "$file" >/dev/null 2>&1
 		done
 	}
@@ -1392,7 +1408,7 @@ docker_manager(){
 				else
 					docker_main_version
 					while true; do
-						echo -n -e "是否升级Docker环境?(y/n):"
+						echo -n -e "${yellow}是否升级Docker环境?(y/n)${white}"
 						read -r answer
 
 						case $answer in
@@ -1571,7 +1587,7 @@ docker_manager(){
 				;;
 			7)
 				clear
-				echo -n "将清理无用的镜像容器网络,包括停止的容器,确定清理吗?(y/n):"
+				echo -n -e "${yellow}将清理无用的镜像容器网络,包括停止的容器,确定清理吗?(y/n)${white}"
 				read -r choice
 
 				case "$choice" in
@@ -1607,7 +1623,7 @@ docker_manager(){
 				;;
 			20)
 				clear
-				echo -n "确定卸载docker环境吗?(y/n)"
+				echo -n -e "${yellow}确定卸载docker环境吗?(y/n)${white}"
 				read -r choice
 
 				case "$choice" in
@@ -1632,23 +1648,35 @@ docker_manager(){
 	done
 }
 
-has_ipv4_has_ipv6() {
+check_network_protocols() {
 	ip_address
-	has_ipv4=false
-	has_ipv6=false
 
-	[ -n "$ipv4_address" ] && has_ipv4=true
-	[ -n "$ipv6_address" ] && has_ipv6=true
+	ipv4_enabled=false
+	ipv6_enabled=false
+
+	if [ -n "$ipv4_address" ]; then
+		ipv4_enabled=true
+	fi
+	if [ -n "$ipv6_address" ]; then
+		ipv6_enabled=true
+	fi
 }
 
-check_docker_app_ip() {
+display_docker_access() {
+	local docker_web_port
+	docker_web_port=$(docker inspect "$docker_name" --format '{{ range $p, $conf := .NetworkSettings.Ports }}{{ range $conf }}{{ $p }}:{{ .HostPort }}{{ end }}{{ end }}' | grep -oP '(\d+)$')
+
 	echo "------------------------"
 	echo "访问地址:"
-	$has_ipv4 && echo "http://$ipv4_address:$docker_port_1"
-	$has_ipv6 && echo "http://[$ipv6_address]:$docker_port_1"
+	if [ "$ipv4_enabled" = true ]; then
+		echo -e "http://$ipv4_address:$docker_web_port"
+	fi
+	if [ "$ipv6_enabled" = true ]; then
+		echo -e "http://[$ipv6_address]:$docker_web_port"
+	fi
 }
 
-check_docker_app() {
+check_docker_status() {
 	if docker inspect "$docker_name" &>/dev/null; then
 		check_docker="${green}已安装${white}"
 	else
@@ -1656,19 +1684,19 @@ check_docker_app() {
 	fi
 }
 
-check_panel_app() {
-	if $path; then
+check_panel_status() {
+	if [ -d "$path" ]; then
 		check_panel="${green}已安装${white}"
 	else
 		check_panel="${yellow}未安装${white}"
 	fi
 }
 
-install_panel() {
+manage_panel_application() {
 	local choice
 	while true; do
 		clear
-		check_panel_app
+		check_panel_status
 		echo -e "$panelname $check_panel"
 		echo "${panelname}是一款时下流行且强大的运维管理面板。"
 		echo "官网介绍: $panelurl "
@@ -1700,17 +1728,17 @@ install_panel() {
 					$ubuntu_command
 					$ubuntu_command2
 				else
-					echo "不支持的系统"
+					_red "不支持的系统"
 				fi
 				;;
 			2)
-				$feature1
-				$feature1_1
+				[ -n "$feature1" ] && $feature1
+				[ -n "$feature1_1" ] && $feature1_1
 				;;
 			3)
-				$feature2
-				$feature2_1
-				$feature2_2
+				[ -n "$feature2" ] && $feature2
+				[ -n "$feature2_1" ] && $feature2_1
+				[ -n "$feature2_2" ] && $feature2_2
 				;;
 			0)
 				break
@@ -1723,19 +1751,19 @@ install_panel() {
 	done
 }
 
-docker_app() {
+manage_docker_application() {
 	local choice
-	has_ipv4_has_ipv6
+	check_network_protocols
 	while true; do
 		clear
-		check_docker_app
+		check_docker_status
 		echo -e "$docker_name $check_docker"
 		echo "$docker_describe"
 		echo "$docker_url"
 
 		# 获取并显示当前端口
 		if docker inspect "$docker_name" &>/dev/null; then
-			check_docker_app_ip
+			display_docker_access
 		fi
 		echo "------------------------"
 		echo "1. 安装            2. 更新"
@@ -1749,42 +1777,51 @@ docker_app() {
 
 		case $choice in
 			1)
-				install_docker
-				[ ! -d $docker_workdir ] && mkdir -p $docker_workdir
-				cd $docker_workdir || { _red "无法进入目录$docker_workdir"; return 1; }
+				#install_docker
+				[ ! -d "$docker_workdir" ] && mkdir -p "$docker_workdir"
+				cd "$docker_workdir" || { _red "无法进入目录$docker_workdir"; return 1; }
 
-				# 生成compose文件
-				echo "$docker_compose_content" > docker-compose.yml
+				# 判断$docker_port_1是否已硬性赋值
+				if [ ! -z "$docker_port_1" ]; then
+					echo "$docker_compose_content" > docker-compose.yml
+				else
+					# 只有在端口未硬性赋值时才进行端口检查和替换
+					check_available_port
+					echo "$docker_compose_content" > docker-compose.yml
+					# 构建并执行Sed命令
+					sed_commands="s#default_port_1#$docker_port_1#g;"
+					[ -n "$docker_port_2" ] && sed_commands+="s#default_port_2#$docker_port_2#g;"
+					[ -n "$docker_port_3" ] && sed_commands+="s#default_port_3#$docker_port_3#g;"
+					[ -n "$random_password" ] && sed_commands+="s#random_password#$random_password#g;"
+					sed -i -e "$sed_commands" docker-compose.yml
+				fi
 
 				manage_compose start
-
 				clear
 				_green "${docker_name}安装完成"
-				check_docker_app_ip
+				display_docker_access
 				echo ""
-				$docker_use
-				$docker_passwd
+				$docker_exec_command
+				$docker_password
+
+				docker_port_1=""
+				docker_port_2=""
+				docker_port_3=""
 				;;
 			2)
-				cd $docker_workdir || { _red "无法进入目录$docker_workdir"; return 1; }
-
-				if docker compose version >/dev/null 2>&1; then
-					docker compose pull && docker compose up -d
-				elif command -v docker-compose >/dev/null 2>&1; then
-					docker-compose pull && docker-compose up -d
-				fi
+				cd "$docker_workdir" || { _red "无法进入目录$docker_workdir"; return 1; }
+				manage_compose pull && manage_compose start
 
 				clear
 				_green "$docker_name更新完成"
-				check_docker_app_ip
+				display_docker_access
 				echo ""
-				$docker_use
-				$docker_passwd
+				$docker_exec_command
+				$docker_password
 				;;
 			3)
-				cd $docker_workdir || { _red "无法进入目录$docker_workdir"; return 1; }
+				cd "$docker_workdir" || { _red "无法进入目录$docker_workdir"; return 1; }
 
-				manage_compose down
 				vim docker-compose.yml
 				manage_compose start
 
@@ -1795,11 +1832,9 @@ docker_app() {
 				fi
 				;;
 			4)
-				cd $docker_workdir || { _red "无法进入目录$docker_workdir"; return 1; }
-
+				cd "$docker_workdir" || { _red "无法进入目录$docker_workdir"; return 1; }
 				manage_compose down_all
-
-				[ -d $docker_workdir ] && rm -fr "${docker_workdir}"
+				[ -d "$docker_workdir" ] && rm -fr "${docker_workdir}"
 				_green "${docker_name}应用已卸载"
 				break
 				;;
@@ -1830,10 +1865,7 @@ find_available_port() {
 
 check_available_port() {
 	# 检查并设置docker_port_1
-	if docker inspect "$docker_name" >/dev/null 2>&1; then
-		# 如果容器已存在,获取当前映射的端口
-		docker_port_1=$(docker inspect "$docker_name" --format '{{ range $p, $conf := .NetworkSettings.Ports }}{{ range $conf }}{{ $p }}:{{ .HostPort }}{{ end }}{{ end }}' | grep -oP '(\d+)$')
-	else
+	if ! docker inspect "$docker_name" >/dev/null 2>&1; then
 		while true; do
 			if ss -tuln | grep -q ":$default_port_1 "; then
 				# 查找可用的端口
@@ -1853,30 +1885,38 @@ check_available_port() {
 	# 检查并设置docker_port_2
 	if ! docker inspect "$docker_name" >/dev/null 2>&1; then
 		if [ -n "$default_port_2" ]; then
-			if ss -tuln | grep -q ":$default_port_2 "; then
-				docker_port_2=$(find_available_port 35000 50000)
-				_yellow "默认端口$default_port_2被占用,端口跳跃为$docker_port_2"
-				sleep 1
-			else
-				docker_port_2=$default_port_2
-				_yellow "使用默认端口$docker_port_2"
-				sleep 1
-			fi
+			while true; do
+				if ss -tuln | grep -q ":$default_port_2 "; then
+					docker_port_2=$(find_available_port 35000 50000)
+					_yellow "默认端口$default_port_2被占用,端口跳跃为$docker_port_2"
+					sleep 1
+					break
+				else
+					docker_port_2=$default_port_2
+					_yellow "使用默认端口$docker_port_2"
+					sleep 1
+					break
+				fi
+			done
 		fi
 	fi
 
 	# 检查并设置docker_port_3
 	if ! docker inspect "$docker_name" >/dev/null 2>&1; then
 		if [ -n "$default_port_3" ]; then
-			if ss -tuln | grep -q ":$default_port_3 "; then
-				docker_port_3=$(find_available_port 40000 50000)
-				_yellow "默认端口$default_port_3被占用,端口跳跃为$docker_port_3"
-				sleep 1
-			else
-				docker_port_3=$default_port_3
-				_yellow "使用默认端口$docker_port_3"
-				sleep 1
-			fi
+			while true; do
+				if ss -tuln | grep -q ":$default_port_3 "; then
+					docker_port_3=$(find_available_port 40000 50000)
+					_yellow "默认端口$default_port_3被占用,端口跳跃为$docker_port_3"
+					sleep 1
+					break
+				else
+					docker_port_3=$default_port_3
+					_yellow "使用默认端口$docker_port_3"
+					sleep 1
+					break
+				fi
+			done
 		fi
 	fi
 }
@@ -1891,24 +1931,26 @@ linux_panel() {
 		echo "3. 1Panel新一代管理面板                4. NginxProxyManager可视化面板"
 		echo "5. AList多存储文件列表程序             6. Ubuntu远程桌面网页版"
 		echo "7. 哪吒探针VPS监控面板                 8. QB离线BT磁力下载面板"
+		echo "9. Poste.io邮件服务器程序"
 		echo "------------------------"
 		echo "11. 禅道项目管理软件                   12. 青龙面板定时任务管理平台"
 		echo "14. 简单图床图片管理程序"
 		echo "15. emby多媒体管理系统                 16. Speedtest测速面板"
-		echo "17. AdGuardHome去广告软件              18. onlyoffice在线办公OFFICE"
-		echo "19. 雷池WAF防火墙面板                  20. portainer容器管理面板"
+		echo "17. AdGuardHome去广告软件              18. Onlyoffice在线办公OFFICE"
+		echo "19. 雷池WAF防火墙面板                  20. Portainer容器管理面板"
 		echo "------------------------"
 		echo "21. VScode网页版                       22. UptimeKuma监控工具"
 		echo "23. Memos网页备忘录                    24. Webtop远程桌面网页版"
-		echo "25. Nextcloud网盘                      26. QD-Today定时任务管理框架"
+		echo "25. Nextcloud网盘                      26. QD Today定时任务管理框架"
 		echo "27. Dockge容器堆栈管理面板             28. LibreSpeed测速工具"
-		echo "29. searxng聚合搜索站                  30. PhotoPrism私有相册系统"
+		echo "29. Searxng聚合搜索站                  30. PhotoPrism私有相册系统"
 		echo "------------------------"
-		echo "31. StirlingPDF工具大全                32. drawio免费的在线图表软件"
-		echo "33. Sun-Panel导航面板                  34. Pingvin-Share文件分享平台"
+		echo "31. StirlingPDF工具大全                32. Drawio免费的在线图表软件"
+		echo "33. Sun Panel导航面板                  34. Pingvin Share文件分享平台"
 		echo "35. 极简朋友圈                         36. LobeChatAI聊天聚合网站"
-		echo "37. MyIP工具箱                         38. 小雅alist全家桶"
-		echo "39. Bililive直播录制工具               40. It-tools工具箱(中文版)"
+		echo "37. MyIP工具箱                         38. 小雅Alist全家桶"
+		echo "39. Bililive直播录制工具"
+		echo "41. It-tools工具箱(中文版)"
 		echo "------------------------"
 		echo "51. PVE开小鸡面板"
 		echo "------------------------"
@@ -1920,7 +1962,7 @@ linux_panel() {
 
 		case $choice in
 			1)
-				path="[ -d "/www/server/panel" ]"
+				path="/www/server/panel"
 				panelname="宝塔面板"
 
 				feature1="bt"
@@ -1937,10 +1979,10 @@ linux_panel() {
 				ubuntu_command="wget -O install.sh https://download.bt.cn/install/install-ubuntu_6.0.sh"
 				ubuntu_command2="bash install.sh ed8484bec"
 
-				install_panel
+				manage_panel_application
 				;;
 			2)
-				path="[ -d "/www/server/panel" ]"
+				path="/www/server/panel"
 				panelname="aapanel"
 
 				feature1="bt"
@@ -1957,7 +1999,7 @@ linux_panel() {
 				ubuntu_command="wget -O install.sh http://www.aapanel.com/script/install-ubuntu_6.0_en.sh"
 				ubuntu_command2="bash install.sh aapanel"
 
-				install_panel
+				manage_panel_application
 				;;
 			3)
 				path="command -v 1pctl &> /dev/null"
@@ -1977,7 +2019,7 @@ linux_panel() {
 				ubuntu_command="curl -sSL https://resource.fit2cloud.com/1panel/package/quick_start.sh -o quick_start.sh"
 				ubuntu_command2="bash quick_start.sh"
 
-				install_panel
+				manage_panel_application
 				;;
 			4)
 				docker_name="npm"
@@ -2019,9 +2061,9 @@ linux_panel() {
 					done
 				fi
 
-				docker_use="echo \"初始用户名: admin@example.com\""
-				docker_passwd="echo \"初始密码: changeme\""
-				docker_app
+				docker_exec_command="echo 初始用户名: admin@example.com"
+				docker_password="echo 初始密码: changeme"
+				manage_docker_application
 				;;
 			5)
 				docker_name="alist"
@@ -2029,30 +2071,10 @@ linux_panel() {
 				docker_describe="一个支持多种存储,支持网页浏览和WebDAV的文件列表程序,由gin和Solidjs驱动"
 				docker_url="官网介绍: https://alist.nn.ci/zh/"
 				default_port_1=5244
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-				docker_compose_content=$(cat <<EOF
-services:
-  alist:
-    image: xhofe/alist:latest
-    container_name: alist
-    volumes:
-      - ./config:/opt/alist/data
-    ports:
-      - $docker_port_1:5244
-    environment:
-      - PUID=0
-      - PGID=0
-      - UMASK=022
-      - TZ=Asia/Shanghai
-    restart: unless-stopped
-EOF
-)
-				docker_use="docker exec -it alist ./alist admin random"
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/alist-docker-compose.yml)
+				docker_exec_command="docker exec -it alist ./alist admin random"
+				docker_password=""
+				manage_docker_application
 				;;
 			6)
 				docker_name="webtop-ubuntu"
@@ -2060,35 +2082,10 @@ EOF
 				docker_describe="webtop基于Ubuntu的容器,包含官方支持的完整桌面环境,可通过任何现代Web浏览器访问"
 				docker_url="官网介绍: https://docs.linuxserver.io/images/docker-webtop/"
 				default_port_1=3000
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-				docker_compose_content=$(cat <<EOF
-services:
-  webtop:
-    image: lscr.io/linuxserver/webtop:ubuntu-kde
-    container_name: webtop-ubuntu
-    ports:
-      - $docker_port_1:3000
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Asia/Shanghai
-      - SUBFOLDER=/
-      - TITLE=Webtop
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./data:/config
-    security_opt:
-      - seccomp=unconfined
-    shm_size: "1gb"
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/webtop-ubuntu-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			7)
 				local choice
@@ -2124,33 +2121,103 @@ EOF
 				docker_describe="qbittorrent离线BT磁力下载服务"
 				docker_url="官网介绍: https://hub.docker.com/r/linuxserver/qbittorrent"
 				default_port_1=8081
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/qbittorrent-docker-compose.yml)
+				docker_exec_command="sleep 3"
+				docker_password="docker logs qbittorrent"
+				manage_docker_application
+				;;
+			9)
+				clear
+				install telnet
+				docker_name="poste"
+				docker_workdir="/data/docker_data/$docker_name"
+				while true; do
+					check_docker_status
+					clear
+					echo -e "邮局服务 $check_docker"
+					echo "Poste.io是一个开源的邮件服务器解决方案"
+					echo ""
+					echo "端口检测"
+					if echo "quit" | timeout 3 telnet smtp.qq.com 25 | grep 'Connected'; then
+						echo -e "${green}端口25当前可用${white}"
+					else
+						echo -e "${red}端口25当前不可用${white}"
+					fi
+					echo ""
+					if docker inspect "$docker_name" &>/dev/null; then
+						domain=$(cat $docker_workdir/mail.txt)
+						echo "访问地址:"
+						echo "https://$domain"
+					fi
 
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
+					echo "------------------------"
+					echo "1. 安装     2. 更新     3. 卸载"
+					echo "------------------------"
+					echo "0. 返回上一级"
+					echo "------------------------"
 
-							docker_compose_content=$(cat <<EOF
-services:
-  qbittorrent:
-    image: linuxserver/qbittorrent:latest
-    container_name: qbittorrent
-    ports:
-      - "$docker_port_1:8081"
-      - "6881:6881"
-      - "6881:6881/udp"
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Asia/Shanghai
-      - WEBUI_PORT=8081
-    volumes:
-      - ./config:/config
-      - ./downloads:/downloads
-    restart: unless-stopped
-EOF
-)	
-				docker_use="sleep 3"
-				docker_passwd="docker logs qbittorrent"
-				docker_app
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					read -r choice
+
+					case $choice in
+						1)
+							echo -n "请设置邮箱域名,例如mail.google.com:"
+							read -r domain
+
+							[ ! -d "$docker_workdir" ] && mkdir "$docker_workdir" -p
+							echo "$domain" > "$docker_workdir/mail.txt"
+							cd "$docker_workdir" || { _red "无法进入目录$docker_workdir"; return 1; }
+
+							echo "------------------------"
+							ip_address
+							echo "先解析这些DNS记录"
+							echo "A         mail        $ipv4_address"
+							echo "CNAME     imap        $domain"
+							echo "CNAME     pop         $domain"
+							echo "CNAME     smtp        $domain"
+							echo "MX        @           $domain"
+							echo "TXT       @           v=spf1 mx ~all"
+							echo "TXT       ?           ?"
+							echo ""
+							echo "------------------------"
+							_yellow "按任意键继续"
+							read -n 1 -s -r -p ""
+
+							install_docker
+							docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/poste-docker-compose.yml)
+							echo "$docker_compose_content" > docker-compose.yml
+							sed -i "s/\${domain}/$domain/g" docker-compose.yml
+
+							clear
+							echo "poste.io安装完成"
+							echo "------------------------"
+							echo "您可以使用以下地址访问poste.io:"
+							echo "https://$domain"
+							echo ""
+							;;
+						2)
+							cd "$docker_workdir" || { _red "无法进入目录$docker_workdir"; return 1; }
+							manage_compose pull && manage_compose start
+							echo "poste.io更新完成"
+							echo "------------------------"
+							echo "您可以使用以下地址访问poste.io:"
+							echo "https://$domain"
+							;;
+						3)
+							cd "$docker_workdir" || { _red "无法进入目录$docker_workdir"; return 1; }
+							manage_compose down_all
+							[ -d "$docker_workdir" ] && rm -fr "$docker_workdir"
+							_green "Poste卸载完成"
+							;;
+						0)
+							break
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac
+					end_of
+				done
 				;;
 			11)
 				docker_name="zentao-server"
@@ -2159,32 +2226,10 @@ EOF
 				docker_url="官网介绍: https://www.zentao.net/"
 				default_port_1=8080
 				default_port_2=3306
-
-				# 处理端口冲突
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  zentao-server:
-    image: idoop/zentao:latest
-    container_name: zentao-server
-    ports:
-      - "$docker_port_1:80"
-      - "$docker_port_2:3306"
-    environment:
-      - ADMINER_USER=root
-      - ADMINER_PASSWD=123456
-      - BIND_ADDRESS=false
-    volumes:
-      - ./zentao-server/:/opt/zbox/
-    extra_hosts:
-      - "smtp.exmail.qq.com:163.177.90.125"
-    restart: unless-stopped
-EOF
-)
-				docker_use="echo \"初始用户名: admin\""
-				docker_passwd="echo \"初始密码: 123456\""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/zentao-server-docker-compose.yml)
+				docker_exec_command="echo 初始用户名: admin"
+				docker_password="echo 初始密码: 123456"
+				manage_docker_application
 				;;
 			12)
 				docker_name="qinglong"
@@ -2192,26 +2237,10 @@ EOF
 				docker_describe="青龙面板是一个定时任务管理平台"
 				docker_url="官网介绍: https://github.com/whyour/qinglong"
 				default_port_1=5700
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  qinglong:
-    image: whyour/qinglong:latest
-    container_name: qinglong
-    hostname: qinglong
-    ports:
-      - "$docker_port_1:5700"
-    volumes:
-      - ./data:/ql/data
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/qinglong-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			14)
 				docker_name="easyimage"
@@ -2219,30 +2248,10 @@ EOF
 				docker_describe="简单图床是一个简单的图床程序"
 				docker_url="官网介绍: https://github.com/icret/EasyImages2.0"
 				default_port_1=8080
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  easyimage:
-    image: ddsderek/easyimage:latest
-    container_name: easyimage
-    ports:
-      - "$docker_port_1:80"
-    environment:
-      - TZ=Asia/Shanghai
-      - PUID=1000
-      - PGID=1000
-    volumes:
-      - ./config:/app/web/config
-      - ./i:/app/web/i
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/easyimage-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			15)
 				docker_name="emby"
@@ -2251,33 +2260,10 @@ EOF
 				docker_url="官网介绍: https://emby.media/"
 				default_port_1=8096
 				default_port_2=8920
-
-				# 检查HTTP端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  emby:
-    image: linuxserver/emby:latest
-    container_name: emby
-    ports:
-      - "$docker_port_1:8096"
-      - "$docker_port_2:8920"
-    environment:
-      - UID=1000
-      - GID=100
-      - GIDLIST=100
-    volumes:
-      - ./config:/config
-      - ./share1:/mnt/share1
-      - ./share2:/mnt/share2
-      - ./notify:/mnt/notify
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/emby-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			16)
 				docker_name="looking-glass"
@@ -2286,64 +2272,10 @@ EOF
 				docker_url="官网介绍: https://github.com/wikihost-opensource/als"
 				default_port_1=8080
 				default_port_2=30000
-
-				if docker inspect "$docker_name" >/dev/null 2>&1; then
-					# 如果容器已存在,获取当前映射的端口
-					docker_port_1=$(docker inspect "$docker_name" --format '{{ range $p, $conf := .NetworkSettings.Ports }}{{ range $conf }}{{ $p }}:{{ .HostPort }}{{ end }}{{ end }}' | grep -oP '(\d+)$')
-				else
-					while true; do
-						if ss -tuln | grep -q ":$default_port_1 "; then
-							# 查找可用的端口
-							docker_port_1=$(find_available_port 30000 50000)
-							_yellow "默认端口$default_port_1被占用,端口跳跃为$docker_port_1"
-							sleep 1
-							break
-						else
-							docker_port_1=$default_port_1
-							_yellow "使用默认端口$docker_port_1"
-							sleep 1
-							break
-						fi
-					done
-				fi
-
-				if ! docker inspect "$docker_name" >/dev/null 2>&1; then
-					if [[ "$docker_port_1" -eq "$default_port_2" ]];then
-						docker_port_2=$(find_available_port 30500 31000)
-						_yellow "默认端口$default_iperf_port被占用,端口跳跃为$docker_port_2"
-						sleep 1
-					else
-						docker_port_2=$default_port_2
-						_yellow "使用默认端口$docker_port_2"
-						sleep 1
-					fi
-				else
-					docker_port_2=$(docker ps --filter "name=$docker_name" --format "{{.Ports}}" | grep -oP '(\d+)->\1/tcp' | grep -oP '^\d+' | grep -v '80')
-				fi
-
-							docker_compose_content=$(cat <<EOF
-services:
-  looking-glass:
-    image: wikihostinc/looking-glass-server
-    container_name: looking-glass
-    ports:
-      - "$docker_port_1:80"
-      - "$docker_port_2:$docker_port_2"
-    environment:
-      - DISPLAY_TRAFFIC=true
-      - ENABLE_SPEEDTEST=true
-      - UTILITIES_PING=true
-      - UTILITIES_SPEEDTESTDOTNET=true
-      - UTILITIES_FAKESHELL=true
-      - UTILITIES_IPERF3=true
-      - UTILITIES_IPERF3_PORT_MIN=$docker_port_2
-      - UTILITIES_IPERF3_PORT_MAX=$docker_port_2
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/looking-glass-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			17)
 				docker_name="adguardhome"
@@ -2351,28 +2283,10 @@ EOF
 				docker_describe="AdGuardHome是一款全网广告拦截与反跟踪软件,未来将不止是一个DNS服务器"
 				docker_url="官网介绍: https://hub.docker.com/r/adguard/adguardhome"
 				default_port_1=3000
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  adguardhome:
-    image: adguard/adguardhome
-    container_name: adguardhome
-    ports:
-      - "53:53/tcp"
-      - "53:53/udp"
-      - "$docker_port_1:3000/tcp"
-    volumes:
-      - ./work:/opt/adguardhome/work
-      - ./conf:/opt/adguardhome/conf
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/adguardhome-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			18)
 				docker_name="onlyoffice"
@@ -2380,39 +2294,23 @@ EOF
 				docker_describe="onlyoffice是一款开源的在线office工具,太强大了!"
 				docker_url="官网介绍: https://www.onlyoffice.com/"
 				default_port_1=8080
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  onlyoffice:
-    image: onlyoffice/documentserver:latest
-    container_name: onlyoffice
-    ports:
-      - "$docker_port_1:80"
-    volumes:
-      - ./logs:/var/log/onlyoffice
-      - ./data:/var/www/onlyoffice/Data
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/onlyoffice-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			19)
-				has_ipv4_has_ipv6
+				check_network_protocols
 				docker_name="safeline-mgt"
 				docker_port_1=9443
 				while true; do
-					check_docker_app
+					check_docker_status
 					clear
 					echo -e "雷池服务 $check_docker"
 					echo "雷池是长亭科技开发的WAF站点防火墙程序面板,可以反代站点进行自动化防御"
 
 					if docker inspect "$docker_name" &>/dev/null; then
-						check_docker_app_ip
+						display_docker_access
 					fi
 					echo ""
 
@@ -2431,7 +2329,7 @@ EOF
 							bash -c "$(curl -fsSLk https://waf-ce.chaitin.cn/release/latest/setup.sh)"
 							clear
 							_green "雷池WAF面板已经安装完成"
-							check_docker_app_ip
+							display_docker_access
 							docker exec safeline-mgt resetadmin
 							;;
 						2)
@@ -2440,7 +2338,7 @@ EOF
 							echo ""
 							clear
 							_green "雷池WAF面板已经更新完成"
-							check_docker_app_ip
+							display_docker_access
 							;;
 						3)
 							docker exec safeline-mgt resetadmin
@@ -2467,26 +2365,10 @@ EOF
 				docker_describe="portainer是一个轻量级的docker容器管理面板"
 				docker_url="官网介绍: https://www.portainer.io/"
 				default_port_1=9000
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  portainer:
-    image: portainer/portainer
-    container_name: portainer
-    ports:
-      - "$docker_port_1:9000"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./data:/data
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/portainer-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			21)
 				docker_name="vscode-web"
@@ -2494,25 +2376,10 @@ EOF
 				docker_describe="VScode是一款强大的在线代码编写工具"
 				docker_url="官网介绍: https://github.com/coder/code-server"
 				default_port_1=8080
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  vscode-web:
-    image: codercom/code-server:latest
-    container_name: vscode-web
-    ports:
-      - "$docker_port_1:8080"
-    volumes:
-      - ./vscode-web:/home/coder/.local/share/code-server
-    restart: unless-stopped
-EOF
-)
-				docker_use="sleep 3"
-				docker_passwd="docker exec vscode-web cat /home/coder/.config/code-server/config.yaml"
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/vscode-web-docker-compose.yml)
+				docker_exec_command="sleep 3"
+				docker_password="docker exec vscode-web cat /home/coder/.config/code-server/config.yaml"
+				manage_docker_application
 				;;
 			22)
 				docker_name="uptimekuma"
@@ -2520,25 +2387,10 @@ EOF
 				docker_describe="uptimekuma易于使用的自托管监控工具"
 				docker_url="官网介绍: https://github.com/louislam/uptime-kuma"
 				default_port_1=3001
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  uptimekuma:
-    image: louislam/uptime-kuma:latest
-    container_name: uptimekuma
-    volumes:
-      - ./uptimekuma:/app/data
-    ports:
-      - "$docker_port_1:3001"
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/uptimekuma-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			23)
 				docker_name="memeos"
@@ -2546,26 +2398,10 @@ EOF
 				docker_describe="Memos是一款轻量级,自托管的备忘录中心"
 				docker_url="官网介绍: https://github.com/usememos/memos"
 				default_port_1=5230
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  memos:
-    image: neosmemo/memos:latest
-    container_name: memeos
-    hostname: memeos
-    ports:
-      - "$docker_port_1:5230"
-    volumes:
-      - ./memos:/var/opt/memos
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/memeos-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			24)
 				docker_name="webtop"
@@ -2573,69 +2409,22 @@ EOF
 				docker_describe="webtop基于Alpine,Ubuntu,Fedora和Arch的容器,包含官方支持的完整桌面环境,可通过任何现代Web浏览器访问"
 				docker_url="官网介绍: https://docs.linuxserver.io/images/docker-webtop/"
 				default_port_1=3000
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  webtop:
-    image: lscr.io/linuxserver/webtop:latest
-    container_name: webtop
-    security_opt:
-      - seccomp=unconfined
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Asia/Shanghai
-      - SUBFOLDER=/
-      - TITLE=Webtop
-      - LC_ALL=zh_CN.UTF-8
-      - DOCKER_MODS=linuxserver/mods:universal-package-install
-      - INSTALL_PACKAGES=font-noto-cjk
-    ports:
-      - "$docker_port_1:3000"
-    volumes:
-      - ./config:/config
-      - /var/run/docker.sock:/var/run/docker.sock
-    shm_size: "1gb"
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/webtop-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			25)
 				docker_name="nextcloud"
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="Nextcloud拥有超过400,000个部署,是您可以下载的最受欢迎的本地内容协作平台"
 				docker_url="官网介绍: https://nextcloud.com/"
-				rootpasswd=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
-
 				default_port_1=8080
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  nextcloud:
-    image: nextcloud:latest
-    container_name: nextcloud
-    restart: unless-stopped
-    ports:
-      - "$docker_port_1:80"
-    environment:
-      - NEXTCLOUD_ADMIN_USER=nextcloud
-      - NEXTCLOUD_ADMIN_PASSWORD=$rootpasswd
-    volumes:
-      - ./nextcloud:/var/www/html
-EOF
-)
-				docker_use="echo \"账号: nextcloud  密码: $rootpasswd\""
-				docker_passwd=""
-				docker_app
+				random_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/nextcloud-simple-docker-compose.yml)
+				docker_exec_command="echo 账号: nextcloud  密码: $random_password"
+				docker_password=""
+				manage_docker_application
 				;;
 			26)
 				docker_name="qd"
@@ -2643,25 +2432,10 @@ EOF
 				docker_describe="QD-Today是一个HTTP请求定时任务自动执行框架"
 				docker_url="官网介绍: https://qd-today.github.io/qd/zh_CN/"
 				default_port_1=8080
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  qd:
-    image: qdtoday/qd:latest
-    container_name: qd
-    ports:
-      - "$docker_port_1:80"
-    volumes:
-      - ./config:/usr/src/app/config
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/qd-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			27)
 				docker_name="dockge"
@@ -2669,29 +2443,10 @@ EOF
 				docker_describe="dockge是一个可视化的docker-compose容器管理面板"
 				docker_url="官网介绍: https://github.com/louislam/dockge"
 				default_port_1=5001
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  dockge:
-    image: louislam/dockge:latest
-    container_name: dockge
-    ports:
-      - "$docker_port_1:5001"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./data:/app/data
-      - ./stacks:/data/docker_data/dockge/stacks
-    environment:
-      - DOCKGE_STACKS_DIR=/data/docker_data/dockge/stacks
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/dockge-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			28)
 				docker_name="speedtest"
@@ -2699,25 +2454,10 @@ EOF
 				docker_describe="speedtest是用Javascript实现的轻量级速度测试工具,即开即用"
 				docker_url="官网介绍: https://github.com/librespeed/speedtest"
 				default_port_1=8080
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  speedtest:
-    image: ghcr.io/librespeed/speedtest:latest
-    container_name: speedtest
-    environment:
-      - MODE=standalone
-    ports:
-      - "$docker_port_1:80"
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/speedtest-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			29)
 				docker_name="searxng"
@@ -2725,62 +2465,22 @@ EOF
 				docker_describe="searxng是一个私有且隐私的搜索引擎站点"
 				docker_url="官网介绍: https://hub.docker.com/r/alandoyle/searxng"
 				default_port_1=8080
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  searxng:
-    image: alandoyle/searxng:latest
-    container_name: searxng
-    init: true
-    volumes:
-      - ./config:/etc/searxng
-      - ./templates:/usr/local/searxng/searx/templates/simple
-      - ./theme:/usr/local/searxng/searx/static/themes/simple
-    ports:
-      - "$docker_port_1:8080"
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/searxng-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			30)
 				docker_name="photoprism"
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="photoprism非常强大的私有相册系统"
 				docker_url="官网介绍: https://www.photoprism.app/"
-				rootpasswd=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
 				default_port_1=2342
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  photoprism:
-    image: photoprism/photoprism
-    container_name: photoprism
-    security_opt:
-      - seccomp=unconfined
-      - apparmor=unconfined
-    ports:
-      - "$docker_port_1:2342"
-    environment:
-      - PHOTOPRISM_UPLOAD_NSFW=true
-      - PHOTOPRISM_ADMIN_PASSWORD=${rootpasswd}
-    volumes:
-      - ./storage:/photoprism/storage
-      - ./Pictures:/photoprism/originals
-    restart: unless-stopped
-EOF
-)
-				docker_use="echo \"账号: admin  密码: $rootpasswd\""
-				docker_passwd=""
-				docker_app
+				random_password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c16)
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/photoprism-docker-compose.yml)
+				docker_exec_command="echo 账号: admin  密码: $random_password"
+				docker_password=""
+				manage_docker_application
 				;;
 			31)
 				docker_name="s-pdf"
@@ -2788,29 +2488,10 @@ EOF
 				docker_describe="这是一个强大的本地托管基于Web的PDF操作工具使用docker,允许您对PDF文件执行各种操作,例如拆分合并,转换,重新组织,添加图像,旋转,压缩等"
 				docker_url="官网介绍: https://github.com/Stirling-Tools/Stirling-PDF"
 				default_port_1=8080
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  stirling-pdf:
-    image: frooodle/s-pdf:latest
-    container_name: s-pdf
-    restart: unless-stopped
-    ports:
-      - "$docker_port_1:8080"
-    volumes:
-      - ./data:/usr/share/tesseract-ocr/5/tessdata
-      - ./config:/configs
-      - ./logs:/logs
-    environment:
-      - DOCKER_ENABLE_SECURITY=false
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/s-pdf-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			32)
 				docker_name="drawio"
@@ -2818,25 +2499,10 @@ EOF
 				docker_describe="这是一个强大图表绘制软件,思维导图,拓扑图,流程图,都能画"
 				docker_url="官网介绍: https://www.drawio.com/"
 				default_port_1=8080
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  drawio:
-    image: jgraph/drawio:latest
-    container_name: drawio
-    ports:
-      - "$docker_port_1:8080"
-    volumes:
-      - ./drawio:/var/lib/drawio
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/drawio-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			33)
 				docker_name="sun-panel"
@@ -2844,27 +2510,10 @@ EOF
 				docker_describe="Sun-Panel服务器,NAS导航面板,Homepage,浏览器首页"
 				docker_url="官网介绍: https://doc.sun-panel.top/zh_cn/"
 				default_port_1=3002
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  sun-panel:
-    image: hslr/sun-panel:latest
-    container_name: sun-panel
-    ports:
-      - "$docker_port_1:3002"
-    volumes:
-      - ./conf:/app/conf
-      - ./uploads:/app/uploads
-      - ./database:/app/database
-    restart: unless-stopped
-EOF
-)
-				docker_use="echo \"账号: admin@sun.cc  密码: 12345678\""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/sun-panel-docker-compose.yml)
+				docker_exec_command="echo 账号: admin@sun.cc  密码: 12345678"
+				docker_password=""
+				manage_docker_application
 				;;
 			34)
 				docker_name="pingvin-share"
@@ -2872,25 +2521,10 @@ EOF
 				docker_describe="Pingvin Share是一个可自建的文件分享平台,是WeTransfer的一个替代品"
 				docker_url="官网介绍: https://github.com/stonith404/pingvin-share"
 				default_port_1=3000
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  pingvin-share:
-    image: stonith404/pingvin-share
-    container_name: pingvin-share
-    ports:
-      - "$docker_port_1:3000"
-    volumes:
-      - ./data:/opt/app/backend/data
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/pingvin-share-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			35)
 				docker_name="moments"
@@ -2898,27 +2532,10 @@ EOF
 				docker_describe="极简朋友圈,高仿微信朋友圈,记录你的美好生活"
 				docker_url="官网介绍: https://github.com/kingwrcy/moments?tab=readme-ov-file"
 				default_port_1=3000
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  moments:
-    image: kingwrcy/moments:latest
-    container_name: moments
-    ports:
-      - "$docker_port_1:3000"
-    volumes:
-      - ./data:/app/data
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
-    restart: unless-stopped
-EOF
-)
-				docker_use="echo \"账号: admin  密码: a123456\""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/moments-docker-compose.yml)
+				docker_exec_command="echo 账号: admin  密码: a123456"
+				docker_password=""
+				manage_docker_application
 				;;
 			36)
 				docker_name="lobe-chat"
@@ -2926,23 +2543,10 @@ EOF
 				docker_describe="LobeChat聚合市面上主流的AI大模型,ChatGPT/Claude/Gemini/Groq/Ollama"
 				docker_url="官网介绍: https://github.com/lobehub/lobe-chat"
 				default_port_1=3210
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  lobe-chat:
-    image: lobehub/lobe-chat:latest
-    container_name: lobe-chat
-    ports:
-      - "$docker_port_1:3210"
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/lobe-chat-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			37)
 				docker_name="myip"
@@ -2950,23 +2554,10 @@ EOF
 				docker_describe="是一个多功能IP工具箱,可以查看自己IP信息及连通性,用网页面板呈现"
 				docker_url="官网介绍: https://github.com/jason5ng32/MyIP/blob/main/README_ZH.md"
 				default_port_1=18966
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  myip:
-    image: ghcr.io/jason5ng32/myip:latest
-    container_name: myip
-    ports:
-      - "$docker_port_1:18966"
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/myip-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			38)
 				clear
@@ -2978,55 +2569,28 @@ EOF
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="Bililive-go是一个支持多种直播平台的直播录制工具"
 				docker_url="官网介绍: https://github.com/hr3lxphr6j/bililive-go"
-				if [ ! -d $docker_workdir ]; then
-					mkdir -p $docker_workdir > /dev/null 2>&1
-					wget -O $docker_workdir/config.yml https://raw.githubusercontent.com/hr3lxphr6j/bililive-go/master/config.yml > /dev/null 2>&1
-				fi
 				default_port_1=8080
 
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
+				if [ ! -d "$docker_workdir" ]; then
+					mkdir -p "$docker_workdir" > /dev/null 2>&1
+					wget -qO "$docker_workdir/config.yml" "https://raw.githubusercontent.com/hr3lxphr6j/bililive-go/master/config.yml"
+				fi
 
-							docker_compose_content=$(cat <<EOF
-services:
-  bililive:
-    image: chigusa/bililive-go:latest
-    container_name: bililive
-    ports:
-      - "$docker_port_1:8080"
-    volumes:
-      - ./config.yml:/etc/bililive-go/config.yml
-      - ./videos:/srv/bililive
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/bililive-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
-			40)
+			41)
 				docker_name="it-tools"
 				docker_workdir="/data/docker_data/$docker_name"
 				docker_describe="为方便开发人员提供的在线工具"
 				docker_url="官网介绍: https://github.com/CorentinTh/it-tools"
 				default_port_1=8080
-
-				# 检查端口,如冲突则使用动态端口
-				check_available_port
-
-							docker_compose_content=$(cat <<EOF
-services:
-  it-tools:
-    image: qingfeng2336/it-tools:latest
-    container_name: it-tools
-    ports:
-      - "$docker_port_1:80"
-    restart: unless-stopped
-EOF
-)
-				docker_use=""
-				docker_passwd=""
-				docker_app
+				docker_compose_content=$(curl -sS https://raw.githubusercontent.com/honeok8s/conf/main/docker_app/it-tools-docker-compose.yml)
+				docker_exec_command=""
+				docker_password=""
+				manage_docker_application
 				;;
 			51)
 				clear
@@ -3069,6 +2633,9 @@ manage_compose() {
 			;;
 		down)	# 停止并删除容器
 			$compose_cmd down
+			;;
+		pull)
+			$compose_cmd pull
 			;;
 		down_all) # 停止并删除容器,镜像,卷,未使用的网络
 			$compose_cmd down --rmi all --volumes --remove-orphans
@@ -4514,7 +4081,7 @@ linux_ldnmp() {
 
 					while true; do
 						clear
-						read -p "要传送文件到远程服务器吗?(y/n):"
+						echo -n -e "${yellow}要传送文件到远程服务器吗?(y/n)${white}"
 						read -r choice
 
 						case "$choice" in
@@ -4574,12 +4141,14 @@ linux_ldnmp() {
 				case $choice in
 					1)
 						check_crontab_installed
-						echo -n "选择每周备份的星期几(0-6,0代表星期日):" weekday
+						echo -n "选择每周备份的星期几(0-6,0代表星期日):"
+						read -r weekday
 						(crontab -l ; echo "0 0 * * $weekday /data/script/${useip}_backup.sh > /dev/null 2>&1") | crontab -
 						;;
 					2)
 						check_crontab_installed
-						read -p "选择每天备份的时间(小时,0-23):" hour
+						echo -n "选择每天备份的时间(小时,0-23):"
+						read -r hour
 						(crontab -l ; echo "0 $hour * * * /data/script/${useip}_backup.sh") | crontab - > /dev/null 2>&1
 						;;
 					*)
@@ -4822,8 +4391,8 @@ linux_ldnmp() {
 					done
 				elif [ -x "$(command -v fail2ban-client)" ] ; then
 					clear
-					echo "卸载旧版Fail2ban"
-					echo -n "确定继续吗?(y/n):"
+					_yellow "卸载旧版Fail2ban"
+					echo -n -e "${yellow}确定继续吗?(y/n)${white}"
 					read -r choice
 					
 					case "$choice" in
@@ -5039,7 +4608,7 @@ linux_ldnmp() {
 							_green "更新${ldnmp_pods}完成"
 							;;
 						5)
-							echo -n "长时间不更新环境的用户请慎重更新LDNMP环境,会有数据库更新失败的风险,确定更新LDNMP环境吗?(y/n):"
+							echo -n -e "${yellow}长时间不更新环境的用户请慎重更新LDNMP环境,会有数据库更新失败的风险,确定更新LDNMP环境吗?(y/n)${white}"
 							read -r choice
 
 							case "$choice" in
@@ -5072,7 +4641,7 @@ linux_ldnmp() {
 				need_root
 				echo "建议先备份全部网站数据再卸载LDNMP环境"
 				echo "同时会移除由LDNMP建站安装的依赖"
-				echo -n "确认继续?(y/n):"
+				echo -n -e "${yellow}确定继续吗?(y/n)${white}"
 				read -r choice
 
 				case "$choice" in
@@ -5178,7 +4747,7 @@ set_dns(){
 
 	local ipv6_addresses
 
-	if [[ "$(curl -s ipinfo.io/country)" == "CN" ]]; then
+	if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
 		{
 			echo "nameserver $ali_ipv4"
 			echo "nameserver $tencent_ipv4"
@@ -5690,7 +5259,7 @@ xanmod_bbr3(){
 					server_reboot
 					;;
 				2)
-					remove 'linux-*xanmod1*'
+					remove 'linux-*xanmod1*' gnupg
 					update-grub
 					_green "XanMod内核已卸载,重启后生效"
 					server_reboot
@@ -6402,7 +5971,7 @@ linux_system_tools(){
 
 		case $choice in
 			2)
-				yellow "设置你的登录密码"
+				_yellow "设置你的登录密码"
 				passwd
 				;;
 			3)
@@ -7333,7 +6902,7 @@ servertest_script(){
 
 #################### 节点搭建脚本START ####################
 node_create(){
-	if [[ "$(curl -s ipinfo.io/country)" == "CN" ]]; then
+	if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
 		clear
 		_red "请遵守你当地的法律法规"
 		sleep 1
@@ -7703,7 +7272,7 @@ honeok(){
 		echo "-------------------------------------------------------"
 		print_logo
 		echo "-------------------------------------------------------"
-		_purple "适配Ubuntu/Debian/CentOS/Alpine/RedHat/Fedora/Alma/Rocky"
+		_purple "适配: Ubuntu/Debian/CentOS/Alpine/RedHat/Fedora/Alma/Rocky"
 		_cyan "Author: honeok"
 		_green "服务器当前时间: $(date +"%Y-%m-%d %H:%M:%S") 时区: ${system_time}"
 		echo "-------------------------------------------------------"

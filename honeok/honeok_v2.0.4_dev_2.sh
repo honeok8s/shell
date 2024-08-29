@@ -7272,7 +7272,7 @@ honeok(){
 		echo "-------------------------------------------------------"
 		print_logo
 		echo "-------------------------------------------------------"
-		_purple "适配Ubuntu/Debian/CentOS/Alpine/RedHat/Fedora/Alma/Rocky"
+		_purple "适配: Ubuntu/Debian/CentOS/Alpine/RedHat/Fedora/Alma/Rocky"
 		_cyan "Author: honeok"
 		_green "服务器当前时间: $(date +"%Y-%m-%d %H:%M:%S") 时区: ${system_time}"
 		echo "-------------------------------------------------------"
