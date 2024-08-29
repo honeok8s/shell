@@ -6926,6 +6926,7 @@ node_create(){
 		echo "6. Fscarmen ArgoX一键脚本"
 		echo "7. WL一键Argo哪吒脚本"
 		echo "8. Fscarmen Argo+Sing-box一键脚本"
+		echo "9. 甬哥 Sing-box脚本"
 		echo "20. Multi EasyGost一键脚本"
 		echo "-------------------------------"
 		echo "     单协议/XRAY面板及其他"
@@ -6974,6 +6975,10 @@ node_create(){
 				clear
 				install wget
 				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/sba/main/sba.sh)
+				;;
+			9)
+				clear
+				bash <(curl -Ls https://gitlab.com/rwkgyg/sing-box-yg/raw/main/sb.sh)
 				;;
 			20)
 				clear
