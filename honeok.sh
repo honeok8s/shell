@@ -26,7 +26,7 @@ _purple() { echo -e ${purple}$@${white}; }
 _gray() { echo -e ${gray}$@${white}; }
 _orange() { echo -e ${orange}$@${white}; }
 
-honeok_v="v2.0.4"
+honeok_v="v2.0.5"
 
 print_logo(){
 	local os_info=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d '"' -f 2)
@@ -2877,7 +2877,7 @@ install_ldnmp() {
 		"docker exec php sh -c '\
 			apk add --no-cache imagemagick imagemagick-dev \
 			&& apk add --no-cache git autoconf gcc g++ make pkgconfig \
-			&& rm -rf /tmp/imagick \
+			&& rm -fr /tmp/imagick \
 			&& git clone https://github.com/Imagick/imagick /tmp/imagick \
 			&& cd /tmp/imagick \
 			&& phpize \
@@ -2885,7 +2885,7 @@ install_ldnmp() {
 			&& make \
 			&& make install \
 			&& echo 'extension=imagick.so' > /usr/local/etc/php/conf.d/imagick.ini \
-			&& rm -rf /tmp/imagick' > /dev/null 2>&1"
+			&& rm -fr /tmp/imagick' > /dev/null 2>&1"
 
 		"docker exec php install-php-extensions imagick > /dev/null 2>&1"
 		"docker exec php install-php-extensions mysqli > /dev/null 2>&1"
@@ -4486,7 +4486,7 @@ linux_ldnmp() {
 							# mysql调优
 							wget -O /home/custom_mysql_config.cnf https://raw.githubusercontent.com/kejilion/sh/main/custom_mysql_config.cnf
 							docker cp /home/custom_mysql_config.cnf mysql:/etc/mysql/conf.d/
-							rm -rf /home/custom_mysql_config.cnf
+							rm -fr /home/custom_mysql_config.cnf
 
 							docker exec -it redis redis-cli CONFIG SET maxmemory 1024mb
 							docker exec -it redis redis-cli CONFIG SET maxmemory-policy allkeys-lru
@@ -4574,7 +4574,7 @@ linux_ldnmp() {
 							docker exec "$ldnmp_pods" sh -c "\
 								apk add --no-cache imagemagick imagemagick-dev \
 								&& apk add --no-cache git autoconf gcc g++ make pkgconfig \
-								&& rm -rf /tmp/imagick \
+								&& rm -fr /tmp/imagick \
 								&& git clone https://github.com/Imagick/imagick /tmp/imagick \
 								&& cd /tmp/imagick \
 								&& phpize \
@@ -4582,7 +4582,7 @@ linux_ldnmp() {
 								&& make \
 								&& make install \
 								&& echo 'extension=imagick.so' > /usr/local/etc/php/conf.d/imagick.ini \
-								&& rm -rf /tmp/imagick"
+								&& rm -fr /tmp/imagick"
 
 							docker exec "$ldnmp_pods" install-php-extensions mysqli pdo_mysql gd intl zip exif bcmath opcache redis
 
@@ -6053,7 +6053,7 @@ EOF
 				pyenv install $py_new_v
 				pyenv global $py_new_v
 
-				rm -rf /tmp/python-build.*
+				rm -fr /tmp/python-build.*
 				rm -fr $(pyenv root)/cache/*
 
 				VERSION=$(python -V 2>&1 | awk '{print $2}')
@@ -6772,31 +6772,30 @@ servertest_script(){
 	local choice
 	while true; do
 		clear
-		echo "VPS脚本合集"
-		echo ""
-		echo "-----IP及解锁状态检测----"
-		echo "1. ChatGPT解锁状态检测"
-		echo "2. Region流媒体解锁测试"
-		echo "3. Yeahwu流媒体解锁检测"
-		_purple "4. Xykt_IP质量体检脚本"
-		echo ""
-		echo "------网络线路测速-------"
-		echo "12. Besttrace三网回程延迟路由测试"
-		echo "13. Mtr_trace三网回程线路测试"
-		echo "14. Superspeed三网测速"
-		echo "15. Nxtrace快速回程测试脚本"
-		echo "16. Nxtrace指定IP回程测试脚本"
-		echo "17. Ludashi2020三网线路测试"
-		echo "18. I-abc多功能测速脚本"
-		echo ""
-		echo "-------硬件性能测试------"
-		echo "20. Yabs性能测试"
+		echo "▶ 测试脚本合集"
+		echo "------------------------"
+		_yellow "IP及解锁状态检测"
+		echo "1. ChatGPT 解锁状态检测"
+		echo "2. Region 流媒体解锁测试"
+		echo "3. Yeahwu 流媒体解锁检测"
+		echo "4. Xykt IP 质量体检脚本"
+		echo "------------------------"
+		_yellow "网络线路测速"
+		echo "12. Besttrace 三网回程延迟路由测试"
+		echo "13. Mtr trace 三网回程线路测试"
+		echo "14. Superspeed 三网测速"
+		echo "15. Nxtrace 快速回程测试脚本"
+		echo "16. Nxtrace 指定IP回程测试脚本"
+		echo "17. Ludashi2020 三网线路测试"
+		echo "18. I-abc 多功能测速脚本"
+		echo "------------------------"
+		_yellow "硬件性能测试"
+		echo "20. Yabs 性能测试"
 		echo "21. Icu/gb5 CPU性能测试脚本"
-		echo ""
-		echo "--------综合性测试-------"
-		echo "30. Bench性能测试"
-		_purple "31. Spiritysdx融合怪测评"
-		echo ""
+		echo "------------------------"
+		_yellow "综合性测试"
+		echo "30. Bench 性能测试"
+		echo "31. Spiritysdx 融合怪测评"
 		echo "-------------------------"
 		echo "0. 返回菜单"
 		echo "-------------------------"
@@ -6900,7 +6899,6 @@ servertest_script(){
 				_red "无效选项,请重新输入"
 				;;
 		esac
-		end_of
 	done
 }
 #################### VPS测试脚本 END ####################
@@ -6919,16 +6917,18 @@ node_create(){
 		clear
 		echo "▶ 节点搭建脚本合集"
 		echo "-------------------------------"
-		echo "  Sing-box多合一/Argo-tunnel"
+		_yellow "Sing-box多合一/Argo-tunnel"
 		echo "-------------------------------"
 		echo "1. Fscarmen Sing-box一键脚本"
 		echo "3. FranzKafkaYu Sing-box一键脚本"
 		echo "5. 233boy Sing-box一键脚本"
 		echo "6. Fscarmen ArgoX一键脚本"
 		echo "7. WL一键Argo哪吒脚本"
+		echo "8. Fscarmen Argo+Sing-box一键脚本"
+		echo "9. 甬哥 Sing-box一键四协议共存脚本"
 		echo "20. Multi EasyGost一键脚本"
 		echo "-------------------------------"
-		echo "     单协议/XRAY面板及其他"
+		_yellow "单协议/XRAY面板及其他"
 		echo "-------------------------------"
 		echo "22. Brutal Reality一键脚本"
 		echo "23. Vaxilu X-UI面板一键脚本"
@@ -6969,6 +6969,15 @@ node_create(){
 			7)
 				clear
 				bash <(curl -sL https://raw.githubusercontent.com/dsadsadsss/vps-argo/main/install.sh)
+				;;
+			8)
+				clear
+				install wget
+				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/sba/main/sba.sh)
+				;;
+			9)
+				clear
+				bash <(curl -Ls https://gitlab.com/rwkgyg/sing-box-yg/raw/main/sb.sh)
 				;;
 			20)
 				clear
@@ -7017,7 +7026,7 @@ node_create(){
 				;;
 			36)
 				clear
-				rm -rf /home/mtproxy && mkdir /home/mtproxy && cd /home/mtproxy
+				rm -fr /home/mtproxy && mkdir /home/mtproxy && cd /home/mtproxy
 				curl -fsSL -o mtproxy.sh https://github.com/ellermister/mtproxy/raw/master/mtproxy.sh && chmod +x mtproxy.sh && bash mtproxy.sh
 				sleep 1
 				;;
