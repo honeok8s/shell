@@ -50,7 +50,7 @@ print_logo(){
 
 	# 打印操作系统信息和工具版本信息
 	echo -e "${yellow}${bold}${os_text}${while}"
-	echo -e "${padding}${cyan}${bold}${text}${white}"
+	echo -e "${padding}${yellow}${bold}${text}${white}"
 }
 
 #################### 系统信息START ####################
@@ -7282,7 +7282,7 @@ honeok(){
 
 	while true; do
 		clear
-		echo -e "${yellow}Github: https://github.com/honeok8s${white} ${cyan}时区: ${system_time}${white}"
+		echo -e "${yellow}Github: https://github.com/honeok8s${white} ${yellow}时区: ${system_time}${white}"
 		echo "-------------------------------------------------------"
 		print_logo
 		echo "-------------------------------------------------------"
