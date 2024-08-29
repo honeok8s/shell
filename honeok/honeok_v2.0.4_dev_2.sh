@@ -4794,6 +4794,10 @@ rollbak_dns() {
 }
 
 reinstall_system(){
+	local os_info=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d '"' -f 2)
+	local bold='\033[1m'       # 加粗
+	local os_text="当前操作系统: ${os_info}"
+
 	dd_xitong_MollyLau() {
 		wget --no-check-certificate -qO InstallNET.sh 'https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh' && chmod a+x InstallNET.sh
 	}
@@ -4839,6 +4843,8 @@ reinstall_system(){
 		clear
 		echo "重装有风险失联,不放心者慎用,重装预计花费15分钟,请提前备份数据"
 		echo "感谢MollyLau和bin456789的脚本支持!"
+		echo "-------------------------"
+		echo -e "${yellow}${bold}${os_text}${while}"
 		echo "-------------------------"
 		echo "1. Debian 12                  2. Debian 11"
 		echo "3. Debian 10                  4. Debian 9"
