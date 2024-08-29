@@ -28,7 +28,7 @@ _gray() { echo -e ${gray}$@${white}; }
 _orange() { echo -e ${orange}$@${white}; }
 _brown() { echo -e ${brown}$@${white}; }
 
-honeok_v="v2.0.5"
+honeok_v="v2.0.6"
 
 print_logo(){
 	local os_info=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d '"' -f 2)
