@@ -45,7 +45,7 @@ print_logo(){
 
 	# 设置工具版本文本
 	local text="Version: ${honeok_v}"
-	local os_text="操作系统: ${os_info}"
+	local os_text="当前操作系统: ${os_info}"
 	local padding="                                        "
 
 	# 打印操作系统信息和工具版本信息
