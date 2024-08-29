@@ -6893,12 +6893,13 @@ servertest_script(){
 				curl -L https://gitlab.com/spiritysdx/za/-/raw/main/ecs.sh -o ecs.sh && chmod +x ecs.sh && bash ecs.sh
 				;;
 			0)
-				break
+				honeok # 返回主菜单
 				;;
 			*)
 				_red "无效选项,请重新输入"
 				;;
 		esac
+		end_of
 	done
 }
 #################### VPS测试脚本 END ####################
