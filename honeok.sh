@@ -15,6 +15,7 @@ cyan='\033[1;36m'         # 青色
 purple='\033[1;35m'       # 紫色
 gray='\033[1;30m'         # 灰色
 orange='\033[1;38;5;208m' # 橙色
+brown='\033[1;38;5;94m'   # 棕色
 white='\033[0m'           # 白色
 _yellow() { echo -e ${yellow}$@${white}; }
 _red() { echo -e ${red}$@${white}; }
@@ -25,8 +26,9 @@ _cyan() { echo -e ${cyan}$@${white}; }
 _purple() { echo -e ${purple}$@${white}; }
 _gray() { echo -e ${gray}$@${white}; }
 _orange() { echo -e ${orange}$@${white}; }
+_brown() { echo -e ${brown}$@${white}; }
 
-honeok_v="v2.0.5"
+honeok_v="v2.0.6"
 
 print_logo(){
 	local os_info=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d '"' -f 2)
@@ -45,12 +47,12 @@ print_logo(){
 
 	# 设置工具版本文本
 	local text="Version: ${honeok_v}"
-	local os_text="操作系统: ${os_info}"
+	local os_text="当前操作系统: ${os_info}"
 	local padding="                                        "
 
 	# 打印操作系统信息和工具版本信息
 	echo -e "${yellow}${bold}${os_text}${while}"
-	echo -e "${padding}${yellow}${bold}${text}${white}"
+	echo -e "${padding}${brown}${bold}${text}${white}"
 }
 
 #################### 系统信息START ####################
@@ -7253,13 +7255,13 @@ honeok_update() {
 		return 0
 	fi
 
-	# 从远程脚本中提取第29行的版本号
+	# 从远程脚本中提取第31行的版本号
 	local remote_version
-	remote_version=$(curl -s "$remote_script_url" | sed -n '29p' | awk -F'=' '{print $2}' | tr -d '"')
+	remote_version=$(curl -s "$remote_script_url" | sed -n '31p' | awk -F'=' '{print $2}' | tr -d '"')
 
-	# 从本地脚本中提取第29行的版本号
+	# 从本地脚本中提取第31行的版本号
 	local local_version
-	local_version=$(sed -n '29p' "$local_script_path" | awk -F'=' '{print $2}' | tr -d '"')
+	local_version=$(sed -n '31p' "$local_script_path" | awk -F'=' '{print $2}' | tr -d '"')
 
 	# 检查版本号并更新脚本
 	if [[ "$remote_version" != "$local_version" ]]; then
@@ -7283,13 +7285,13 @@ honeok(){
 
 	while true; do
 		clear
-		_yellow "Github: https://github.com/honeok8s"
+		echo -e "${yellow}Github: https://github.com/honeok8s${white} ${brown}时区: ${system_time}${white}"
 		echo "-------------------------------------------------------"
 		print_logo
 		echo "-------------------------------------------------------"
 		_purple "适配: Ubuntu/Debian/CentOS/Alpine/RedHat/Fedora/Alma/Rocky"
 		_cyan "Author: honeok"
-		_green "服务器当前时间: $(date +"%Y-%m-%d %H:%M:%S") 时区: ${system_time}"
+		_green "服务器当前时间: $(date +"%Y-%m-%d %H:%M:%S")"
 		echo "-------------------------------------------------------"
 		echo "1. 系统信息查询                   2. 系统更新"
 		echo "3. 系统清理                       4. 常用工具 ▶"
