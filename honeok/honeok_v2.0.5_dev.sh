@@ -6918,7 +6918,7 @@ node_create(){
 		clear
 		echo "▶ 节点搭建脚本合集"
 		echo "-------------------------------"
-		echo "  Sing-box多合一/Argo-tunnel"
+		_yellow "Sing-box多合一/Argo-tunnel"
 		echo "-------------------------------"
 		echo "1. Fscarmen Sing-box一键脚本"
 		echo "3. FranzKafkaYu Sing-box一键脚本"
@@ -6929,7 +6929,7 @@ node_create(){
 		echo "9. 甬哥 Sing-box一键四协议共存脚本"
 		echo "20. Multi EasyGost一键脚本"
 		echo "-------------------------------"
-		echo "     单协议/XRAY面板及其他"
+		_yellow "单协议/XRAY面板及其他"
 		echo "-------------------------------"
 		echo "22. Brutal Reality一键脚本"
 		echo "23. Vaxilu X-UI面板一键脚本"
