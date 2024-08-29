@@ -184,10 +184,10 @@ restart() {
 
 # 检查用户是否为root
 need_root(){
-	clear
 	if [ "$(id -u)" -ne "0" ]; then
 		_red "该脚本需要root用户才能运行"
-		exit 0
+		script_completion_message
+		exit 1
 	fi
 }
 
@@ -254,21 +254,21 @@ install_docker() {
 	}
 
 	if command -v dnf &>/dev/null; then
-		if ! dnf config-manager --help >/dev/null 2>&1; then
-			install dnf-plugins-core
-		fi
-
-		[ -f /etc/yum.repos.d/docker*.repo ] && rm -f /etc/yum.repos.d/docker*.repo > /dev/null
-
-		if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
-			dnf config-manager --add-repo https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo > /dev/null
-		else
-			dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo > /dev/null
-		fi
-
-		install docker-ce docker-ce-cli containerd.io
-		enable docker
-		start docker
+		commands=(
+			"if ! dnf config-manager --help >/dev/null 2>&1; then
+				install dnf-plugins-core >/dev/null 2>&1
+			fi"
+			"[ -f /etc/yum.repos.d/docker*.repo ] && rm -f /etc/yum.repos.d/docker*.repo >/dev/null 2>&1"
+			"if [[ \"$(curl -s --connect-timeout 5 ipinfo.io/country)\" == \"CN\" ]]; then
+				dnf config-manager --add-repo https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo >/dev/null 2>&1
+			else
+				dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo >/dev/null 2>&1
+			fi"
+			"install docker-ce docker-ce-cli containerd.io >/dev/null 2>&1"
+			"daemon_reload >/dev/null 2>&1"
+			"enable docker >/dev/null 2>&1"
+			"start docker >/dev/null 2>&1"
+		)
 		install_common_docker
 	elif command -v apt &>/dev/null; then
 		if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
@@ -279,19 +279,21 @@ install_docker() {
 			gpg_key_url="https://download.docker.com/linux/${os_name,,}/gpg"
 		fi
 
-		apt install sudo >/dev/null 2>&1
-		for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do
-			remove $pkg >/dev/null 2>&1
-		done
-		install apt-transport-https ca-certificates curl gnupg lsb-release
-		/usr/bin/install -m 0755 -d /etc/apt/keyrings
-		curl -fsSL \"$gpg_key_url\" -o /etc/apt/keyrings/docker.asc >/dev/null 2>&1
-		chmod a+r /etc/apt/keyrings/docker.asc >/dev/null 2>&1
-		echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] $repo_url $codename stable" | tee /etc/apt/sources.list.d/docker.list >/dev/null
-
-		install docker-ce docker-ce-cli containerd.io
-		enable docker
-		start docker
+		commands=(
+			"install apt-transport-https ca-certificates curl gnupg lsb-release >/dev/null 2>&1"
+			"for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do
+				remove \$pkg >/dev/null 2>&1
+			done"
+			"/usr/bin/install -m 0755 -d /etc/apt/keyrings"
+			"curl -fsSL \"$gpg_key_url\" -o /etc/apt/keyrings/docker.asc >/dev/null 2>&1"
+			"chmod a+r /etc/apt/keyrings/docker.asc >/dev/null 2>&1"
+			"echo \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] $repo_url $codename stable\" | tee /etc/apt/sources.list.d/docker.list >/dev/null"
+			"apt update >/dev/null 2>&1"
+			"install docker-ce docker-ce-cli containerd.io >/dev/null 2>&1"
+			"daemon_reload >/dev/null 2>&1"
+			"enable docker >/dev/null 2>&1"
+			"start docker >/dev/null 2>&1"
+		)
 		install_common_docker
 	elif command -v yum &>/dev/null; then
 		if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
@@ -299,21 +301,46 @@ install_docker() {
 		else
 			repo_url="https://download.docker.com/linux/centos/docker-ce.repo"
 		fi
-		remove docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine >/dev/null 2>&1
-		install yum-utils
-		yum-config-manager --add-repo \"$repo_url\" && yum makecache fast
-
-		install docker-ce docker-ce-cli containerd.io
-		enable docker
-		start docker
+		commands=(
+			"remove docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine >/dev/null 2>&1"
+			"install yum-utils >/dev/null 2>&1"
+			"yum-config-manager --add-repo \"$repo_url\" >/dev/null 2>&1"
+			"yum makecache fast >/dev/null 2>&1"
+			"install docker-ce docker-ce-cli containerd.io >/dev/null 2>&1"
+			"daemon_reload >/dev/null 2>&1"
+			"enable docker >/dev/null 2>&1"
+			"start docker >/dev/null 2>&1"
+		)
 		install_common_docker
 	else
-		install docker docker-compose
-		enable docker
-		start docker
+		commands=(
+			"install docker docker-compose >/dev/null 2>&1"
+			"daemon_reload >/dev/null 2>&1"
+			"enable docker >/dev/null 2>&1"
+			"start docker >/dev/null 2>&1"
+		)
 		install_common_docker
 	fi
 
+	total_commands=${#commands[@]}
+	for ((i = 0; i < total_commands; i++)); do
+		command="${commands[i]}"
+		eval $command
+		percentage=$(( (i + 1) * 100 / total_commands ))
+		completed=$(( percentage / 2 ))
+		remaining=$(( 50 - completed ))
+		progressBar="["
+		for ((j = 0; j < completed; j++)); do
+			progressBar+="#"
+		done
+		for ((j = 0; j < remaining; j++)); do
+			progressBar+="."
+		done
+		progressBar+="]"
+		echo -ne "\r[${yellow}$percentage%${white}] $progressBar"
+	done
+
+	echo # 打印换行,以便输出不被覆盖
 	sleep 2
 }
 
@@ -505,16 +532,40 @@ uninstall_docker() {
 
 	case "$os_name" in
 		ubuntu|debian|centos|rhel|almalinux|rocky|fedora)
-			remove docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras
+			commands=(
+				"remove docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras"
+			)
 			;;
 		alpine)
-			remove docker docker-compose
+			commands=(
+				"remove docker docker-compose"
+			)
 			;;
 		*)
 			_red "此脚本不支持您的Linux发行版"
 			return 1
 			;;
 	esac
+
+	total_commands=${#commands[@]}
+	for ((i = 0; i < total_commands; i++)); do
+		command="${commands[i]}"
+		eval $command
+
+		((current_step++))
+		percentage=$((current_step * 100 / total_steps))
+		completed=$((percentage / 2))
+		remaining=$((50 - completed))
+		progressBar="["
+		for ((j = 0; j < completed; j++)); do
+			progressBar+="#"
+		done
+		for ((j = 0; j < remaining; j++)); do
+			progressBar+="."
+		done
+		progressBar+="]"
+		echo -ne "\r[${yellow}$percentage%${white}] $progressBar"
+	done
 
 	cleanup_files
 
@@ -552,18 +603,19 @@ fi
 
 if [ -n "$2" ]; then
 	print_getdocker_logo
-	_red "只能提供一个参数 (可选: uninstall)"
+	_red "只能提供一个参数(可选: uninstall)"
 	script_completion_message
 	exit 1
 fi
 
 # 检查操作系统是否受支持
 case "$support_os_release" in
-	ubuntu|debian|centos|rhel|almalinux|rocky|fedora|alpine)
+	*Ubuntu*|*ubuntu*|*Debian*|*debian*|*CentOS*|*centos*|*RHEL*|*rhel*|*AlmaLinux*|*almalinux*|*Rocky*|*rocky*|*Fedora*|*fedora*|*Alpine*|*alpine*)
 		_yellow "检测到本脚本支持的Linux发行版: $support_os_release"
 		;;
 	*)
-		_red "此脚本不支持的Linux发行版: $support_os_release"
+		_red "此脚本不支持的Linux发行版: $support_os_release"\
+		script_completion_message
 		exit 1
 		;;
 esac
