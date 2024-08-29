@@ -26,7 +26,7 @@ _purple() { echo -e ${purple}$@${white}; }
 _gray() { echo -e ${gray}$@${white}; }
 _orange() { echo -e ${orange}$@${white}; }
 
-honeok_v="v2.0.5"
+honeok_v="v2.0.6"
 
 print_logo(){
 	local os_info=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d '"' -f 2)
@@ -7271,7 +7271,6 @@ honeok_update() {
 	fi
 }
 #################### 脚本更新END ####################
-
 honeok(){
 	local choice system_time
 
@@ -7283,13 +7282,13 @@ honeok(){
 
 	while true; do
 		clear
-		_yellow "Github: https://github.com/honeok8s"
+		echo -e "${yellow}Github: https://github.com/honeok8s${white} ${yellow}时区: ${system_time}${white}"
 		echo "-------------------------------------------------------"
 		print_logo
 		echo "-------------------------------------------------------"
 		_purple "适配: Ubuntu/Debian/CentOS/Alpine/RedHat/Fedora/Alma/Rocky"
 		_cyan "Author: honeok"
-		_green "服务器当前时间: $(date +"%Y-%m-%d %H:%M:%S") 时区: ${system_time}"
+		_green "服务器当前时间: $(date +"%Y-%m-%d %H:%M:%S")"
 		echo "-------------------------------------------------------"
 		echo "1. 系统信息查询                   2. 系统更新"
 		echo "3. 系统清理                       4. 常用工具 ▶"
