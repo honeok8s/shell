@@ -316,6 +316,73 @@ check_docker_status() {
 	fi
 }
 
+check_panel_status() {
+	if [ -d "$path" ]; then
+		check_panel="${green}已安装${white}"
+	else
+		check_panel="${yellow}未安装${white}"
+	fi
+}
+
+manage_panel_application() {
+	local choice
+	while true; do
+		clear
+		check_panel_status
+		echo -e "$panelname $check_panel"
+		echo "${panelname}是一款时下流行且强大的运维管理面板。"
+		echo "官网介绍: $panelurl "
+
+		echo ""
+		echo "------------------------"
+		echo "1. 安装            2. 管理            3. 卸载"
+		echo "------------------------"
+		echo "0. 返回上一级"
+		echo "------------------------"
+
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read -r choice
+
+		case $choice in
+			1)
+				iptables_open
+				install wget
+				if grep -q 'Alpine' /etc/issue; then
+					$ubuntu_command
+					$ubuntu_command2
+				elif command -v dnf &>/dev/null; then
+					$centos_command
+					$centos_command2
+				elif grep -qi 'Ubuntu' /etc/os-release; then
+					$ubuntu_command
+					$ubuntu_command2
+				elif grep -qi 'Debian' /etc/os-release; then
+					$ubuntu_command
+					$ubuntu_command2
+				else
+					_red "不支持的系统"
+				fi
+				;;
+			2)
+				[ -n "$feature1" ] && $feature1
+				[ -n "$feature1_1" ] && $feature1_1
+				;;
+			3)
+				[ -n "$feature2" ] && $feature2
+				[ -n "$feature2_1" ] && $feature2_1
+				[ -n "$feature2_2" ] && $feature2_2
+				;;
+			0)
+				break
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				;;
+		esac
+		end_of
+	done
+}
+
 manage_docker_application() {
 	local choice
 	check_network_protocols
@@ -527,7 +594,7 @@ linux_panel() {
 
 		case $choice in
 			1)
-				path="[ -d "/www/server/panel" ]"
+				path="/www/server/panel"
 				panelname="宝塔面板"
 
 				feature1="bt"
@@ -544,10 +611,10 @@ linux_panel() {
 				ubuntu_command="wget -O install.sh https://download.bt.cn/install/install-ubuntu_6.0.sh"
 				ubuntu_command2="bash install.sh ed8484bec"
 
-				install_panel
+				manage_panel_application
 				;;
 			2)
-				path="[ -d "/www/server/panel" ]"
+				path="/www/server/panel"
 				panelname="aapanel"
 
 				feature1="bt"
@@ -564,7 +631,7 @@ linux_panel() {
 				ubuntu_command="wget -O install.sh http://www.aapanel.com/script/install-ubuntu_6.0_en.sh"
 				ubuntu_command2="bash install.sh aapanel"
 
-				install_panel
+				manage_panel_application
 				;;
 			3)
 				path="command -v 1pctl &> /dev/null"
@@ -584,7 +651,7 @@ linux_panel() {
 				ubuntu_command="curl -sSL https://resource.fit2cloud.com/1panel/package/quick_start.sh -o quick_start.sh"
 				ubuntu_command2="bash quick_start.sh"
 
-				install_panel
+				manage_panel_application
 				;;
 			4)
 				docker_name="npm"
