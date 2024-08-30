@@ -26,7 +26,7 @@ _purple() { echo -e ${purple}$@${white}; }
 _gray() { echo -e ${gray}$@${white}; }
 _orange() { echo -e ${orange}$@${white}; }
 
-honeok_v="v2.0.6"
+honeok_v="v2.0.7"
 
 print_logo(){
 	local os_info=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d '"' -f 2)
@@ -44,13 +44,14 @@ print_logo(){
 	echo ""
 
 	# 设置工具版本文本
-	local text="version: ${honeok_v}"
+	#local text="Version: ${honeok_v}"
 	local os_text="当前操作系统: ${os_info}"
-	local padding="                                        "
+	#local padding="                                        "
 
 	# 打印操作系统信息和工具版本信息
-	echo -e "${yellow}${bold}${os_text}${while}"
-	echo -e "${padding}${orange}${bold}${text}${white}"
+	#echo -e "${yellow}${os_text}${while}"
+	_yellow "${os_text}"
+	#echo -e "${padding}${yellow}${bold}${text}${white}"
 }
 
 #################### 系统信息START ####################
@@ -7282,13 +7283,13 @@ honeok(){
 
 	while true; do
 		clear
-		echo -e "${yellow}Github: https://github.com/honeok8s${white} ${yellow}时区: ${system_time}${white}"
+		echo -e "${yellow}Github: https://github.com/honeok8s${white}     ${orange}Version: ${honeok_v}${white}"
 		echo "-------------------------------------------------------"
 		print_logo
 		echo "-------------------------------------------------------"
 		_purple "适配: Ubuntu/Debian/CentOS/Alpine/RedHat/Fedora/Alma/Rocky"
 		_cyan "Author: honeok"
-		_green "服务器当前时间: $(date +"%Y-%m-%d %H:%M:%S")"
+		echo -e "${green}服务器当前时间: $(date +"%Y-%m-%d %H:%M:%S")${white} ${yellow}时区: ${system_time}${white}"
 		echo "-------------------------------------------------------"
 		echo "1. 系统信息查询                   2. 系统更新"
 		echo "3. 系统清理                       4. 常用工具 ▶"
