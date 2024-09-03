@@ -24,11 +24,11 @@ curl -fsSL https://raw.githubusercontent.com/honeok8s/shell/main/docker/get-dock
 
 # KVM & XEN
 curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/serverstatus/serverstatus_kvm.sh && chmod +x ./serverstatus_kvm.sh
-sed -i 's/127\.0\.0\.1/107.174.0.197/g' ./serverstatus_kvm.sh
+sed -i 's/127\.0\.0\.1/49.51.47.101/g' ./serverstatus_kvm.sh
 
 # LXC & OpenVZ
 curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/serverstatus/serverstatus_lxc.sh && chmod +x ./serverstatus_lxc.sh
-sed -i 's/127\.0\.0\.1/107.174.0.197/g' ./serverstatus_lxc.sh
+sed -i 's/127\.0\.0\.1/49.51.47.101/g' ./serverstatus_lxc.sh
 ```
 ## NGINX日志管理
 ```shell
