@@ -10,7 +10,7 @@ _green() { echo -e ${green}$@${white}; }
 
 cd /data/tool/
 if pgrep -f processcontrol-allserver.sh >/dev/null 2>&1; then
-	kill -9 $(pgrep -f processcontrol-allserver.sh)
+	pkill -9 -f processcontrol-allserver.sh
 	> control.txt
 	> dump.txt
 	_green "processcontrol进程已终止文件已清空"
