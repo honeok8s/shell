@@ -3224,21 +3224,23 @@ nginx_display_success() {
 
 fail2ban_status() {
 	docker restart fail2ban >/dev/null 2>&1
-	sleep 5
 
-	# 尝试检测fail2ban容器状态最多三次
-	local retries=3
+	# 定义最大重试次数和每次检查的间隔时间
+	local retries=30  # 最多重试30次
+	local interval=1  # 每次检查间隔1秒
 	local count=0
 
 	while [ $count -lt $retries ]; do
-		if docker ps | grep -q fail2ban; then
-			# 显示fail2ban状态
+		# 捕获结果
+		if docker exec fail2ban fail2ban-client status > /dev/null 2>&1; then
+			# 如果命令成功执行显示fail2ban状态并退出循环
 			docker exec fail2ban fail2ban-client status
 			return 0
 		else
-			# 容器未运行,等待一段时间后重试
-			_yellow "Fail2ban容器未运行,正在重试($((count+1))/$retries)"
-			sleep 5
+			# 如果失败输出提示信息并等待
+			_yellow "Fail2Ban 服务尚未完全启动,重试中($((count+1))/$retries)"
+
+			sleep $interval
 			count=$((count + 1))
 		fi
 	done
@@ -6752,6 +6754,7 @@ EOF
 							;;
 					esac
 				done
+				;;
 			24)
 				need_root
 				echo "ROOT私钥登录模式"
