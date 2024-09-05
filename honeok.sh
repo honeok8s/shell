@@ -26,7 +26,7 @@ _purple() { echo -e ${purple}$@${white}; }
 _gray() { echo -e ${gray}$@${white}; }
 _orange() { echo -e ${orange}$@${white}; }
 
-honeok_v="v2.0.7"
+honeok_v="v2.0.8"
 
 print_logo(){
 	local os_info=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d '"' -f 2)
@@ -3224,27 +3224,32 @@ nginx_display_success() {
 
 fail2ban_status() {
 	docker restart fail2ban >/dev/null 2>&1
+
+	# 初始等待5秒,确保容器有时间启动
 	sleep 5
 
-	# 尝试检测fail2ban容器状态最多三次
-	local retries=3
+	# 定义最大重试次数和每次检查的间隔时间
+	local retries=30  # 最多重试30次
+	local interval=1  # 每次检查间隔1秒
 	local count=0
 
 	while [ $count -lt $retries ]; do
-		if docker ps | grep -q fail2ban; then
-			# 显示fail2ban状态
+		# 捕获结果
+		if docker exec fail2ban fail2ban-client status > /dev/null 2>&1; then
+			# 如果命令成功执行,显示fail2ban状态并退出循环
 			docker exec fail2ban fail2ban-client status
 			return 0
 		else
-			# 容器未运行,等待一段时间后重试
-			_yellow "Fail2ban容器未运行,正在重试($((count+1))/$retries)"
-			sleep 5
-			count=$((count + 1))
+			# 如果失败输出提示信息并等待
+			_yellow "Fail2Ban 服务尚未完全启动,重试中($((count+1))/$retries)"
 		fi
+
+			sleep $interval
+			count=$((count + 1))
 	done
 
-	# 如果三次检测后仍未找到容器运行,输出提示信息
-	_red "Fail2ban容器在重试后仍未运行"
+	# 如果多次检测后仍未成功,输出错误信息
+	_red "Fail2ban容器在重试后仍未成功运行"
 }
 
 fail2ban_status_jail() {
@@ -3254,6 +3259,9 @@ fail2ban_status_jail() {
 fail2ban_sshd() {
 	if grep -q 'Alpine' /etc/issue; then
 		jail_name=alpine-sshd
+		fail2ban_status_jail
+	elif command -v dnf &>/dev/null; then
+		jail_name=centos-sshd
 		fail2ban_status_jail
 	else
 		jail_name=linux-sshd
@@ -5576,6 +5584,45 @@ cron_manager(){
 	done
 }
 
+output_status() {
+	output=$(awk 'BEGIN { rx_total = 0; tx_total = 0 }
+		NR > 2 { rx_total += $2; tx_total += $10 }
+		END {
+			rx_units = "Bytes";
+			tx_units = "Bytes";
+			if (rx_total > 1024) { rx_total /= 1024; rx_units = "KB"; }
+			if (rx_total > 1024) { rx_total /= 1024; rx_units = "MB"; }
+			if (rx_total > 1024) { rx_total /= 1024; rx_units = "GB"; }
+
+			if (tx_total > 1024) { tx_total /= 1024; tx_units = "KB"; }
+			if (tx_total > 1024) { tx_total /= 1024; tx_units = "MB"; }
+			if (tx_total > 1024) { tx_total /= 1024; tx_units = "GB"; }
+
+			printf("总接收: %.2f %s\n总发送: %.2f %s\n", rx_total, rx_units, tx_total, tx_units);
+		}' /proc/net/dev)
+}
+
+add_sshkey() {
+	# ssh-keygen -t rsa -b 4096 -C "xxxx@gmail.com" -f /root/.ssh/sshkey -N ""
+	ssh-keygen -t ed25519 -C "fuck@gmail.com" -f /root/.ssh/sshkey -N ""
+
+	cat ~/.ssh/sshkey.pub >> ~/.ssh/authorized_keys
+	chmod 600 ~/.ssh/authorized_keys
+
+	ip_address
+	echo -e "私钥信息已生成,务必复制保存,可保存为${yellow}${ipv4_address}_ssh.key${white}文件,用于以后的SSH登录"
+	echo "--------------------------------"
+	cat ~/.ssh/sshkey
+	echo "--------------------------------"
+
+	sed -i -e 's/^\s*#\?\s*PermitRootLogin .*/PermitRootLogin prohibit-password/' \
+		-e 's/^\s*#\?\s*PasswordAuthentication .*/PasswordAuthentication no/' \
+		-e 's/^\s*#\?\s*PubkeyAuthentication .*/PubkeyAuthentication yes/' \
+		-e 's/^\s*#\?\s*ChallengeResponseAuthentication .*/ChallengeResponseAuthentication no/' /etc/ssh/sshd_config
+	rm -fr /etc/ssh/sshd_config.d/* /etc/ssh/ssh_config.d/*
+	echo -e "${green}root私钥登录已开启,已关闭root密码登录,重连将会生效${white}"
+}
+
 telegram_bot(){
 	need_root
 
@@ -5959,7 +6006,8 @@ linux_system_tools(){
 		echo "18. 修改主机名"
 		echo "19. 切换系统更新源                     20. 定时任务管理"
 		echo "------------------------"
-		echo "21. 本机host解析"
+		echo "21. 本机host解析                       22. Fail2banSSH防御程序"
+		echo "23. 限流自动关机                       24. root私钥登录模式"
 		echo "25. TG-bot系统监控预警                 26. 修复OpenSSH高危漏洞(岫源)"
 		echo "27. 红帽系Linux内核升级"
 		echo "------------------------"
@@ -6556,6 +6604,180 @@ EOF
 							;;
 					esac
 				done
+				;;
+			22)
+				need_root
+				while true; do
+					if docker inspect fail2ban &>/dev/null ; then
+						clear
+						echo "SSH防御程序已启动"
+						echo "------------------------"
+						echo "1. 查看SSH拦截记录"
+						echo "2. 查看日志实时监控"
+						echo "------------------------"
+						echo "9. 卸载防御程序"
+						echo "------------------------"
+						echo "0. 退出"
+						echo "------------------------"
+
+						echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+						read -r choice
+
+						case $choice in
+							1)
+								echo "------------------------"
+								fail2ban_sshd
+								echo "------------------------"
+								end_of
+								;;
+							2)
+								tail -f /data/docker_data/fail2ban/config/log/fail2ban/fail2ban.log
+								break
+								;;
+							9)
+								cd /data/docker_data/fail2ban || { _red "无法进入目录/data/docker_data/fail2ban"; return 1; }
+								manage_compose down_all
+
+								[ -d /data/docker_data/fail2ban ] && rm -fr /data/docker_data/fail2ban
+								;;
+							0)
+								break
+								;;
+							*)
+								_red "无效选项,请重新输入"
+								;;
+						esac
+					elif [ -x "$(command -v fail2ban-client)" ] ; then
+						clear
+						echo "卸载旧版fail2ban"
+						echo -n -e "${yellow}确定继续吗?(y/n)${white}"
+						read -r choice
+
+						case "$choice" in
+							[Yy])
+								remove fail2ban
+								rm -fr /etc/fail2ban
+								_green "Fail2Ban防御程序已卸载"
+								end_of
+								;;
+							*)
+								_yellow "已取消"
+								break
+								;;
+						esac
+					else
+						clear
+						echo "fail2ban是一个SSH防止暴力破解工具"
+						echo "官网介绍: https://github.com/fail2ban/fail2ban"
+						echo "------------------------------------------------"
+						echo "工作原理：研判非法IP恶意高频访问SSH端口，自动进行IP封锁"
+						echo "------------------------------------------------"
+						echo -n -e "${yellow}确定继续吗?(y/n)${white}"
+						read -r choice
+
+						case "$choice" in
+							[Yy])
+								clear
+								install_docker
+								fail2ban_install_sshd
+
+								cd ~
+								fail2ban_status
+								_green "Fail2Ban防御程序已开启"
+								end_of
+								;;
+							*)
+								_yellow "已取消"
+								break
+								;;
+						esac
+					fi
+				done
+				;;
+			23)
+				need_root
+				while true; do
+					clear
+					echo "限流关机功能"
+					echo "------------------------------------------------"
+					echo "当前流量使用情况,重启服务器流量计算会清零!"
+					output_status
+					echo "$output"
+
+					# 检查是否存在 Limiting_Shut_down.sh 文件
+					if [ -f ~/Limiting_Shut_down.sh ]; then
+						# 获取 threshold_gb 的值
+						rx_threshold_gb=$(grep -oP 'rx_threshold_gb=\K\d+' ~/Limiting_Shut_down.sh)
+						tx_threshold_gb=$(grep -oP 'tx_threshold_gb=\K\d+' ~/Limiting_Shut_down.sh)
+						echo "当前设置的进站限流阈值为: ${rx_threshold_gb}GB"
+						echo "当前设置的出站限流阈值为: ${tx_threshold_gb}GB"
+					else
+						echo "当前未启用限流关机功能"
+					fi
+
+					echo ""
+					echo "------------------------------------------------"
+					echo "系统每分钟会检测实际流量是否到达阈值,到达后会自动关闭服务器!"
+
+					echo -n "1. 开启限流关机功能    2. 停用限流关机功能    0. 退出"
+					read -r choice
+
+					case "$choice" in
+						1)
+							echo "如果实际服务器就100G流量,可设置阈值为95G,提前关机,以免出现流量误差或溢出"
+							echo -n "请输入进站流量阈值(单位为GB):"
+							read -r rx_threshold_gb
+							echo -n "请输入出站流量阈值(单位为GB):"
+							read -r tx_threshold_gb
+							echo -n "请输入流量重置日期(默认每月1日重置):"
+							read -r cz_day
+							cz_day=${cz_day:-1}
+
+							cd ~
+							curl -Ss -o ~/Limiting_Shut_down.sh https://raw.githubusercontent.com/kejilion/sh/main/Limiting_Shut_down1.sh
+							chmod +x ~/Limiting_Shut_down.sh
+							sed -i "s/110/$rx_threshold_gb/g" ~/Limiting_Shut_down.sh
+							sed -i "s/120/$tx_threshold_gb/g" ~/Limiting_Shut_down.sh
+							check_crontab_installed
+							crontab -l | grep -v '~/Limiting_Shut_down.sh' | crontab -
+							(crontab -l ; echo "* * * * * ~/Limiting_Shut_down.sh") | crontab - > /dev/null 2>&1
+							crontab -l | grep -v 'reboot' | crontab -
+							(crontab -l ; echo "0 1 $cz_day * * reboot") | crontab - > /dev/null 2>&1
+							_green "限流关机已开启"
+							;;
+						2)
+							check_crontab_installed
+							crontab -l | grep -v '~/Limiting_Shut_down.sh' | crontab -
+							crontab -l | grep -v 'reboot' | crontab -
+							rm ~/Limiting_Shut_down.sh
+							_green "限流关机已卸载"
+							;;
+						*)
+							break
+							;;
+					esac
+				done
+				;;
+			24)
+				need_root
+				echo "ROOT私钥登录模式"
+				echo "------------------------------------------------"
+				echo "将会生成密钥对，更安全的方式SSH登录"
+				echo -n -e "${yellow}确定继续吗?(y/n)${white}"
+				read -r choice
+
+				case "$choice" in
+					[Yy])
+						clear
+						add_sshkey
+						;;
+					[Nn])
+						_yellow "已取消"
+						;;
+					*)
+						_red "无效的选择,请输入Y或N"
+						;;
+				esac
 				;;
 			25)
 				telegram_bot
