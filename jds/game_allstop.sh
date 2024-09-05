@@ -18,11 +18,9 @@ else
 	_red "processcontrol进程未运行无需终止"
 fi
 
-cd /data/server/login/ && ./server.sh stop &
-cd /data/server/gate/ && ./server.sh stop &
+cd /data/server/login/ && ./server.sh stop
+cd /data/server/gate/ && ./server.sh stop && sleep 120s
 
-# 等待Login和Gate服务器停止后再继续执行
-wait
 _green "login和gate服务器已停止"
 
 for i in {1..5}; do
