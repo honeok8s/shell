@@ -26,11 +26,13 @@ wait
 _green "login和gate服务器已停止"
 
 for i in {1..5}; do
-	_yellow "正在处理server$i"
-	cd /data/server$i/game/
-	./server.sh flush &
-
-	sleep 60s && ./server.sh stop &
+	(
+		_yellow "正在处理server$i"
+		cd /data/server$i/game/
+		./server.sh flush
+		sleep 60s
+		./server.sh stop
+	) &
 done
 
 # 等待所有并行操作完成
