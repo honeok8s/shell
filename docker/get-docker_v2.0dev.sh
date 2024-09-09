@@ -29,7 +29,7 @@ _gray() { echo -e ${gray}$@${white}; }
 _orange() { echo -e ${orange}$@${white}; }
 
 # 安装软件包
-install(){
+install() {
 	if [ $# -eq 0 ]; then
 		_red "未提供软件包参数"
 		return 1
@@ -37,23 +37,64 @@ install(){
 
 	for package in "$@"; do
 		if ! command -v "$package" &>/dev/null; then
-			_yellow "正在安装${package}"
+			_yellow "正在安装$package"
 			if command -v dnf &>/dev/null; then
-				dnf install -y "$package"
+				dnf update -y
+				dnf install epel-release -y
+				dnf install "$package" -y
 			elif command -v yum &>/dev/null; then
-				yum -y install "$package"
+				yum update -y
+				yum install epel-release -y
+				yum install "$package" -y
 			elif command -v apt &>/dev/null; then
-				apt update && apt install -y "$package"
+				apt update -y
+				apt install "$package" -y
 			elif command -v apk &>/dev/null; then
+				apk update
 				apk add "$package"
 			else
 				_red "未知的包管理器"
 				return 1
 			fi
 		else
-			_yellow "${package}已安装"
+			_green "$package已安装"
 		fi
 	done
+
+	return 0
+}
+
+# 卸载软件包
+remove() {
+	if [ $# -eq 0 ]; then
+		_red "未提供软件包参数"
+		return 1
+	fi
+
+	for package in "$@"; do
+		_yellow "正在卸载$package"
+		if command -v dnf &>/dev/null; then
+			if rpm -q "$package" &>/dev/null; then
+				dnf remove "$package"* -y
+			fi
+		elif command -v yum &>/dev/null; then
+			if rpm -q "${package}" >/dev/null 2>&1; then
+				yum remove "${package}"* -y
+			fi
+		elif command -v apt &>/dev/null; then
+			if dpkg -l | grep -qw "${package}"; then
+				apt purge "${package}"* -y
+			fi
+		elif command -v apk &>/dev/null; then
+			if apk info | grep -qw "${package}"; then
+				apk del "${package}"*
+			fi
+		else
+			_red "未知的包管理器"
+			return 1
+		fi
+	done
+
 	return 0
 }
 
