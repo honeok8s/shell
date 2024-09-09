@@ -1,7 +1,7 @@
 ## VPS工具箱
 * 在线执行
 ```shell
-bash <(curl -fsSL https://github.com/honeok8s/shell/raw/main/honeok.sh)
+bash <(curl -sL https://github.com/honeok8s/shell/raw/main/honeok.sh)
 ```
 * 下载本地执行
 ```shell
