@@ -1,7 +1,7 @@
 ## VPS工具箱
 * 在线执行
 ```shell
-bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/honeok.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/honeok8s/shell/main/honeok.sh)
 ```
 * 下载本地执行
 ```shell
