@@ -1,7 +1,7 @@
 #!/bin/bash
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2024 honeok
-# Author: honeok
+# Author: honeok yihaohey@gmail.com
 # Blog: https://www.honeok.com
 
 set -o errexit
