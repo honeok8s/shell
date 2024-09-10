@@ -24,7 +24,7 @@ apiserver_dir="/data/bi/apiserver"
 
 # 根据IP地址确定下载链接
 if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
-    installer_url="https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/$installer"
+	installer_url="https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/$installer"
 	pypi_index_url="https://pypi.tuna.tsinghua.edu.cn/simple"
 else
 	installer_url="https://repo.anaconda.com/miniconda/$installer"
@@ -58,7 +58,7 @@ rm -f "$installer"
 # 配置全局环境变量
 conda_env="/etc/profile.d/conda.sh"
 if [ ! -f "$conda_env" ]; then
-    echo "# Conda environment variables" > "$conda_env"
+	echo "# Conda environment variables" > "$conda_env"
 fi
 
 if ! grep -q "$install_dir/bin" "$conda_env"; then
@@ -70,9 +70,9 @@ source "$conda_env"
 
 # 验证Miniconda安装
 if ! conda --version >/dev/null 2>&1; then
-    _red "Conda安装错误"
+	_red "Conda安装错误"
 	[ -f "$conda_env" ] && rm -f "$conda_env"
-    exit 1
+	exit 1
 fi
 
 _yellow "更新Conda并安装Python 3.9"
