@@ -45,6 +45,7 @@ _green() { echo -e ${green}$@${white}; }
 install_dir="/data/conda3"
 installer="Miniconda3-py39_24.3.0-0-Linux-x86_64.sh"
 apiserver_dir="/data/bi/apiserver"
+conda_env="/etc/profile.d/conda.sh"
 
 print_logo(){
     echo -e "${purple}\
@@ -64,32 +65,32 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 # 检查是否为卸载操作
-if [ "${1:-}" == "uninstall" ]; then
-	_yellow "开始卸载Miniconda和相关配置"
+if [[ "${1:-}" == "uninstall" ]]; then
+	_yellow "卸载Miniconda和相关配置"
 
 	# 删除Miniconda安装目录
 	if [ -d "$install_dir" ]; then
 		_yellow "删除Miniconda安装目录$install_dir"
-		rm -fr "$install_dir"
+		rm -fr "$install_dir" || { _red "删除Miniconda目录失败"; exit 1; }
 	else
-		_red "未找到Miniconda安装目录,本次跳过"
+		_red "$install_dir不存在,跳过删除"
 	fi
 
 	# 删除环境变量
 	if [ -f "$conda_env" ]; then
 		_yellow "删除Conda环境变量文件$conda_env"
-		rm -f "$conda_env"
+		rm -f "$conda_env" || { _red "删除Miniconda环境变量文件失败"; exit 1; }
 		source /etc/profile*
 	else
-		_red "未找到$conda_env文件"
+		_red "$conda_env不存在,跳过删除"
 	fi
 
-	# 删除虚拟环境
+	# 检查并删除虚拟环境
 	if conda info --envs | grep -q 'py39'; then
 		_yellow "删除Conda虚拟环境py39"
-		conda remove -n py39 --all --yes || { _red "删除py39环境失败"; exit 1; }
+		conda remove -n py39 --all --yes || { _red "删除py3.9虚拟环境失败"; exit 1; }
 	else
-		_red "未找到 py39 虚拟环境,本次跳过"
+		_red "未找到py39虚拟环境,本次跳过"
 	fi
 
 	_green "卸载成功"
@@ -124,7 +125,6 @@ bash "$installer" -bfp "$install_dir" || { _red "Miniconda安装失败"; exit 1;
 rm -f "$installer"
 
 # 配置全局环境变量
-conda_env="/etc/profile.d/conda.sh"
 if [ ! -f "$conda_env" ]; then
 	echo "# Conda environment variables" > "$conda_env"
 fi
@@ -144,7 +144,7 @@ if ! conda --version >/dev/null 2>&1; then
 	exit 1
 fi
 
-_yellow "更新Conda并安装Python 3.9"
+_yellow "更新Conda并安装Python3.9"
 conda install -y python=3.9 || { _red "安装Python3.9失败"; exit 1; }
 conda update -y conda || { _red "更新Conda失败"; exit 1; }
 conda clean --all --yes || { _red "清理Conda缓存失败"; exit 1; }
@@ -157,6 +157,7 @@ conda activate py39 || { _red "激活py39环境失败"; exit 1; }
 
 if [ ! -d "$apiserver_dir" ]; then
 	_red "$apiserver_dir 目录不存在请检查路径"
+	[ -f "$conda_env" ] && rm -f "$conda_env"
 	exit 1
 fi
 
