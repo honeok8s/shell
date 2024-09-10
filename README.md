@@ -40,5 +40,5 @@ sed -i 's/127\.0\.0\.1/49.51.47.101/g' ./serverstatus_lxc.sh
 LOG_DIR="/usr/local/nginx/logs"              日志路径可自行定义
 BAK_DIR="/usr/local/nginx/logs/backup"       日志备份路径可自行定义
 ```shell
-curl -sL -O github.com/honeok8s/shell/raw/main/nginx/ngx_logrotate.sh && chmod +x ./logrotate_ngx.sh
+curl -sL -O github.com/honeok8s/shell/raw/main/nginx/ngx_logrotate.sh && chmod +x ./ngx_logrotate.sh
 ```
