@@ -9,7 +9,7 @@
 #
 # Description:
 #   This script installs Miniconda, creates a Python 3.9 environment,
-#   installs necessary Python packages, and sets up the API server.
+#   installs necessary Python packages, and sets up the bi server.
 #   Optionally, the script can also uninstall Miniconda and all associated files.
 #
 # Options:
