@@ -3,6 +3,29 @@
 # Copyright (c) 2024 honeok
 # Author: honeok yihaohey@gmail.com
 # Blog: https://www.honeok.com
+#
+# Usage:
+#   ./setup.sh [uninstall]
+#
+# Description:
+#   This script installs Miniconda, creates a Python 3.9 environment,
+#   installs necessary Python packages, and sets up the API server.
+#   Optionally, the script can also uninstall Miniconda and all associated files.
+#
+# Options:
+#   uninstall  - Uninstalls Miniconda, removes environment variables, and deletes virtual environments.
+#
+# Example:
+#   1. To install Miniconda and set up the environment:
+#      ./setup.sh
+#
+#   2. To uninstall Miniconda and clean up:
+#      ./setup.sh uninstall
+#
+# Notes:
+#   - This script must be run as root.
+#   - It automatically detects if the server is located in China and selects the appropriate Miniconda download mirror.
+#   - All errors during the installation will cause the script to exit immediately.
 
 set -o errexit
 set -o pipefail
@@ -11,6 +34,7 @@ set -o nounset
 yellow='\033[1;33m'       # 黄色
 red='\033[1;31m'          # 红色
 green='\033[1;32m'        # 绿色
+purple='\033[1;35m'       # 紫色
 white='\033[0m'           # 白色
 
 _yellow() { echo -e ${yellow}$@${white}; }
@@ -23,7 +47,7 @@ installer="Miniconda3-py39_24.3.0-0-Linux-x86_64.sh"
 apiserver_dir="/data/bi/apiserver"
 
 print_logo(){
-    echo -e "${yellow}\
+    echo -e "${purple}\
        _     _        _____                      
       | |   | |      / ____|                     
       | | __| |___  | |  __  __ _ _ __ ___   ___ 
@@ -33,6 +57,51 @@ print_logo(){
 }
 print_logo
 
+# 检查是否具有足够的权限
+if [ "$(id -u)" -ne 0 ]; then
+	_red "该脚本需要以root权限运行,请使用root用户执行"
+	exit 1
+fi
+
+# 检查是否为卸载操作
+if [ "${1:-}" == "uninstall" ]; then
+	_yellow "开始卸载Miniconda和相关配置"
+
+	# 删除Miniconda安装目录
+	if [ -d "$install_dir" ]; then
+		_yellow "删除Miniconda安装目录$install_dir"
+		rm -fr "$install_dir"
+	else
+		_red "未找到Miniconda安装目录,本次跳过"
+	fi
+
+	# 删除环境变量
+	if [ -f "$conda_env" ]; then
+		_yellow "删除Conda环境变量文件$conda_env"
+		rm -f "$conda_env"
+		source /etc/profile*
+	else
+		_red "未找到$conda_env文件"
+	fi
+
+	# 删除虚拟环境
+	if conda info --envs | grep -q 'py39'; then
+		_yellow "删除Conda虚拟环境py39"
+		conda remove -n py39 --all --yes || { _red "删除py39环境失败"; exit 1; }
+	else
+		_red "未找到 py39 虚拟环境,本次跳过"
+	fi
+
+	_green "卸载成功"
+	exit 0
+fi
+
+# 检查Conda是否已安装
+if command -v conda >/dev/null 2>&1; then
+	_yellow "Conda已经安装在系统中,跳过安装步骤"
+	exit 0
+fi
+
 # 根据IP地址确定下载链接
 if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
 	installer_url="https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/$installer"
@@ -40,18 +109,6 @@ if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
 else
 	installer_url="https://repo.anaconda.com/miniconda/$installer"
 	pypi_index_url="https://pypi.org/simple"
-fi
-
-# 检查是否具有足够的权限
-if [ "$(id -u)" -ne 0 ]; then
-	_red "该脚本需要以root权限运行,请使用root用户执行"
-	exit 1
-fi
-
-# 检查Conda是否已安装
-if command -v conda >/dev/null 2>&1; then
-	_yellow "Conda已经安装在系统中,跳过安装步骤"
-	exit 0
 fi
 
 # 下载和安装Miniconda
