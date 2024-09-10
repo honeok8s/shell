@@ -83,6 +83,7 @@ source "$conda_env"
 if ! conda --version >/dev/null 2>&1; then
 	_red "Conda安装错误"
 	[ -f "$conda_env" ] && rm -f "$conda_env"
+	source /etc/profile*
 	exit 1
 fi
 
