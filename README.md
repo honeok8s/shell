@@ -3,9 +3,14 @@
 ```shell
 bash <(curl -sL github.com/honeok8s/shell/raw/main/honeok.sh)
 ```
+* 国内
+```shell
+bash <(curl -sL https://gh.jiasu.in/github.com/honeok8s/shell/raw/main/honeok.sh)
+```
+
 * 下载本地执行
 ```shell
-curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/honeok.sh && chmod +x ./honeok.sh && ./honeok.sh
+curl -sL -O github.com/honeok8s/shell/raw/main/honeok.sh && chmod +x ./honeok.sh && ./honeok.sh
 ```
 ## Docker一键安装
 根据IP归属地优化配置文件，安装镜像加速
@@ -37,12 +42,4 @@ sed -i 's/127\.0\.0\.1/49.51.47.101/g' ./serverstatus_lxc.sh
 # BAK_DIR="/usr/local/nginx/logs/backup"       日志备份路径可自行定义
 
 curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/nginx/ngx_logrotate.sh && chmod +x ./logrotate_ngx.sh
-```
-
-## JDS Games
-```shell
-bash <(wget -qO- https://raw.githubusercontent.com/honeok8s/shell/main/jds/main.sh)
-```
-```shell
-curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/jds/main.sh && chmod +x ./main.sh
 ```
