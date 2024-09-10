@@ -22,6 +22,17 @@ install_dir="/data/conda3"
 installer="Miniconda3-py39_24.3.0-0-Linux-x86_64.sh"
 apiserver_dir="/data/bi/apiserver"
 
+print_logo(){
+    echo -e "${yellow}\
+       _     _        _____                      
+      | |   | |      / ____|                     
+      | | __| |___  | |  __  __ _ _ __ ___   ___ 
+  _   | |/ _\` / __| | | |_ |/ _\` | '_ \` _ \ / _ \\
+ | |__| | (_| \__ \ | |__| | (_| | | | | | |  __/
+  \____/ \__,_|___/  \_____|\\__,_|_| |_| |_|\___|${white}"
+}
+print_logo
+
 # 根据IP地址确定下载链接
 if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
 	installer_url="https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/$installer"
