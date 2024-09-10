@@ -5824,7 +5824,7 @@ update_openssh() {
 		echo "SSH高危漏洞修复工具"
 		echo "--------------------------"
 
-		echo -e "${white}SSH版本: $current_version,在8.5到9.7之间,${yellow}需要修复${white}"
+		echo -e "${white}SSH版本: $current_version 在8.5到9.7之间 ${yellow}需要修复${white}"
 		echo -n -e "${yellow}确定继续吗?(y/n)${white}"
 		read -r choice
 
@@ -5850,7 +5850,7 @@ update_openssh() {
 		echo "SSH高危漏洞修复工具"
 		echo "--------------------------"
 
-		echo -e "${white}SSH版本: $current_version,${green}无需修复${white}"
+		echo -e "${white}SSH版本: $current_version ${green}无需修复${white}"
 		return 1
 	fi
 }
@@ -5958,6 +5958,221 @@ redhat_kernel_update() {
 				;;
 		esac
 	fi
+}
+
+# 高性能模式优化函数
+optimize_high_performance() {
+	echo -e "${yellow}切换到${optimization_mode}${white}"
+
+	echo -e "${yellow}优化文件描述符${white}"
+	ulimit -n 65535
+
+	echo -e "${yellow}优化虚拟内存${white}"
+	sysctl -w vm.swappiness=10 2>/dev/null
+	sysctl -w vm.dirty_ratio=15 2>/dev/null
+	sysctl -w vm.dirty_background_ratio=5 2>/dev/null
+	sysctl -w vm.overcommit_memory=1 2>/dev/null
+	sysctl -w vm.min_free_kbytes=65536 2>/dev/null
+
+	echo -e "${yellow}优化网络设置${white}"
+	sysctl -w net.core.rmem_max=16777216 2>/dev/null
+	sysctl -w net.core.wmem_max=16777216 2>/dev/null
+	sysctl -w net.core.netdev_max_backlog=250000 2>/dev/null
+	sysctl -w net.core.somaxconn=4096 2>/dev/null
+	sysctl -w net.ipv4.tcp_rmem='4096 87380 16777216' 2>/dev/null
+	sysctl -w net.ipv4.tcp_wmem='4096 65536 16777216' 2>/dev/null
+	sysctl -w net.ipv4.tcp_congestion_control=bbr 2>/dev/null
+	sysctl -w net.ipv4.tcp_max_syn_backlog=8192 2>/dev/null
+	sysctl -w net.ipv4.tcp_tw_reuse=1 2>/dev/null
+	sysctl -w net.ipv4.ip_local_port_range='1024 65535' 2>/dev/null
+
+	echo -e "${yellow}优化缓存管理${white}"
+	sysctl -w vm.vfs_cache_pressure=50 2>/dev/null
+
+	echo -e "${yellow}优化CPU设置${white}"
+	sysctl -w kernel.sched_autogroup_enabled=0 2>/dev/null
+
+	echo -e "${yellow}其他优化...${white}"
+	# 禁用透明大页面,减少延迟
+	echo never > /sys/kernel/mm/transparent_hugepage/enabled
+	# 禁用NUMA balancing
+	sysctl -w kernel.numa_balancing=0 2>/dev/null
+}
+
+# 均衡模式优化函数
+optimize_balanced() {
+	echo -e "${yellow}切换到均衡模式${white}"
+
+	echo -e "${yellow}优化文件描述符${white}"
+	ulimit -n 32768
+
+	echo -e "${yellow}优化虚拟内存${white}"
+	sysctl -w vm.swappiness=30 2>/dev/null
+	sysctl -w vm.dirty_ratio=20 2>/dev/null
+	sysctl -w vm.dirty_background_ratio=10 2>/dev/null
+	sysctl -w vm.overcommit_memory=0 2>/dev/null
+	sysctl -w vm.min_free_kbytes=32768 2>/dev/null
+
+	echo -e "${yellow}优化网络设置${white}"
+	sysctl -w net.core.rmem_max=8388608 2>/dev/null
+	sysctl -w net.core.wmem_max=8388608 2>/dev/null
+	sysctl -w net.core.netdev_max_backlog=125000 2>/dev/null
+	sysctl -w net.core.somaxconn=2048 2>/dev/null
+	sysctl -w net.ipv4.tcp_rmem='4096 87380 8388608' 2>/dev/null
+	sysctl -w net.ipv4.tcp_wmem='4096 32768 8388608' 2>/dev/null
+	sysctl -w net.ipv4.tcp_congestion_control=bbr 2>/dev/null
+	sysctl -w net.ipv4.tcp_max_syn_backlog=4096 2>/dev/null
+	sysctl -w net.ipv4.tcp_tw_reuse=1 2>/dev/null
+	sysctl -w net.ipv4.ip_local_port_range='1024 49151' 2>/dev/null
+
+	echo -e "${yellow}优化缓存管理${white}"
+	sysctl -w vm.vfs_cache_pressure=75 2>/dev/null
+
+	echo -e "${yellow}优化CPU设置${white}"
+	sysctl -w kernel.sched_autogroup_enabled=1 2>/dev/null
+
+	echo -e "${yellow}其他优化...${white}"
+	# 还原透明大页面
+	echo always > /sys/kernel/mm/transparent_hugepage/enabled
+	# 还原 NUMA balancing
+	sysctl -w kernel.numa_balancing=1 2>/dev/null
+}
+
+# 还原默认设置函数
+restore_defaults() {
+	echo -e "${yellow}还原到默认设置${white}"
+
+	echo -e "${yellow}还原文件描述符${white}"
+	ulimit -n 1024
+
+	echo -e "${yellow}还原虚拟内存${white}"
+	sysctl -w vm.swappiness=60 2>/dev/null
+	sysctl -w vm.dirty_ratio=20 2>/dev/null
+	sysctl -w vm.dirty_background_ratio=10 2>/dev/null
+	sysctl -w vm.overcommit_memory=0 2>/dev/null
+	sysctl -w vm.min_free_kbytes=16384 2>/dev/null
+
+	echo -e "${yellow}还原网络设置${white}"
+	sysctl -w net.core.rmem_max=212992 2>/dev/null
+	sysctl -w net.core.wmem_max=212992 2>/dev/null
+	sysctl -w net.core.netdev_max_backlog=1000 2>/dev/null
+	sysctl -w net.core.somaxconn=128 2>/dev/null
+	sysctl -w net.ipv4.tcp_rmem='4096 87380 6291456' 2>/dev/null
+	sysctl -w net.ipv4.tcp_wmem='4096 16384 4194304' 2>/dev/null
+	sysctl -w net.ipv4.tcp_congestion_control=cubic 2>/dev/null
+	sysctl -w net.ipv4.tcp_max_syn_backlog=2048 2>/dev/null
+	sysctl -w net.ipv4.tcp_tw_reuse=0 2>/dev/null
+	sysctl -w net.ipv4.ip_local_port_range='32768 60999' 2>/dev/null
+
+	echo -e "${yellow}还原缓存管理${white}"
+	sysctl -w vm.vfs_cache_pressure=100 2>/dev/null
+
+	echo -e "${yellow}还原CPU设置${white}"
+	sysctl -w kernel.sched_autogroup_enabled=1 2>/dev/null
+
+	echo -e "${yellow}还原其他优化${white}"
+	# 还原透明大页面
+	echo always > /sys/kernel/mm/transparent_hugepage/enabled
+	# 还原 NUMA balancing
+	sysctl -w kernel.numa_balancing=1 2>/dev/null
+}
+
+clamav_freshclam() {
+	_yellow "正在更新病毒库"
+	docker run --rm \
+		--name clamav \
+		--mount source=clam_db,target=/var/lib/clamav \
+		clamav/clamav-debian:latest \
+		freshclam
+}
+
+clamav_scan() {
+	local clamav_dir="/data/docker_data/clamav"
+
+	if [ $# -eq 0 ]; then
+		_red "请指定要扫描的目录"
+		return 1
+	fi
+
+	echo -e "${yellow}正在扫描目录$@ ${white}"
+
+	# 构建mount参数
+	local mount_params=""
+	for dir in "$@"; do
+		mount_params+="--mount type=bind,source=${dir},target=/mnt/host${dir} "
+	done
+
+	# 构建clamscan命令参数
+	scan_params=""
+	for dir in "$@"; do
+		scan_params+="/mnt/host${dir} "
+	done
+
+	mkdir -p $clamav_dir/log/ > /dev/null 2>&1
+	> $clamav_dir/log/scan.log > /dev/null 2>&1
+
+	# 执行docker命令
+	docker run -it --rm \
+		--name clamav \
+		--mount source=clam_db,target=/var/lib/clamav \
+		$mount_params \
+		-v $clamav_dir/log/:/var/log/clamav/ \
+		clamav/clamav-debian:latest \
+		clamscan -r --log=/var/log/clamav/scan.log $scan_params
+
+	echo -e "${green}$@ 扫描完成 病毒报告存放在${white}$clamav_dir/log/scan.log"
+	_yellow "如果有病毒请在scan.log中搜索FOUND关键字确认病毒位置"
+}
+
+clamav_antivirus() {
+	need_root
+	while true; do
+		clear
+		echo "clamav病毒扫描工具"
+		echo "------------------------"
+		echo "clamav是一个开源的防病毒软件工具,主要用于检测和删除各种类型的恶意软件"
+		echo "包括病毒,特洛伊木马,间谍软件,恶意脚本和其他有害软件"
+		echo "------------------------"
+		echo "1. 全盘扫描     2. 重要目录扫描     3. 自定义目录扫描"
+		echo "------------------------"
+		echo "0. 返回上一级选单"
+		echo "------------------------"
+
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read -r choice
+
+		case $choice in
+			1)
+				install_docker
+				docker volume create clam_db > /dev/null 2>&1
+				clamav_freshclam
+				clamav_scan /
+				docker volume rm clam_db > /dev/null 2>&1
+				end_of
+				;;
+			2)
+				install_docker
+				docker volume create clam_db > /dev/null 2>&1
+				clamav_freshclam
+				clamav_scan /etc /var /usr /home /root
+				docker volume rm clam_db > /dev/null 2>&1
+				end_of
+				;;
+			3)
+				echo -n "请输入要扫描的目录 用空格分隔(例如: /etc /var /usr /home /root)"
+				read -r directories
+
+				install_docker
+				clamav_freshclam
+				clamav_scan $directories
+				docker volume rm clam_db > /dev/null 2>&1
+				end_of
+				;;
+			*)
+				break
+				;;
+		esac
+	done
 }
 
 cloudflare_ddns() {
@@ -6155,8 +6370,9 @@ linux_system_tools(){
 		echo "------------------------"
 		echo "21. 本机host解析                       22. Fail2banSSH防御程序"
 		echo "23. 限流自动关机                       24. root私钥登录模式"
-		echo "25. TG-bot系统监控预警                 26. 修复OpenSSH高危漏洞(岫源)"
-		echo "27. 红帽系Linux内核升级"
+		echo "25. TG-bot系统监控预警                 26. 修复OpenSSH高危漏洞"
+		echo "27. 红帽系Linux内核升级                28. Linux系统内核参数优化"
+		echo "29. Clamav病毒扫描工具"
 		echo "------------------------"
 		echo "50. Cloudflare ddns解析"
 		echo "------------------------"
@@ -6907,7 +7123,7 @@ EOF
 				;;
 			24)
 				need_root
-				echo "ROOT私钥登录模式"
+				echo "root私钥登录模式"
 				echo "------------------------------------------------"
 				echo "将会生成密钥对，更安全的方式SSH登录"
 				echo -n -e "${yellow}确定继续吗?(y/n)${white}"
@@ -6936,6 +7152,75 @@ EOF
 				;;
 			27)
 				redhat_kernel_update
+				;;
+			28)
+				need_root
+				while true; do
+					clear
+					echo "Linux系统内核参数优化"
+					echo "------------------------------------------------"
+					echo "提供多种系统参数调优模式,用户可以根据自身使用场景进行选择切换"
+					_yellow "生产环境请谨慎使用!"
+					echo "--------------------"
+					echo "1. 高性能优化模式:     最大化系统性能,优化文件描述符,虚拟内存,网络设置,缓存管理和CPU设置"
+					echo "2. 均衡优化模式:     在性能与资源消耗之间取得平衡,适合日常使用"
+					echo "3. 网站优化模式:     针对网站服务器进行优化,提高并发连接处理能力,响应速度和整体性能"
+					echo "4. 直播优化模式:     针对直播推流的特殊需求进行优化,减少延迟,提高传输性能"
+					echo "5. 游戏服优化模式:     针对游戏服务器进行优化,提高并发处理能力和响应速度"
+					echo "6. 还原默认设置:     将系统设置还原为默认配置"
+					echo "--------------------"
+					echo "0. 返回上一级"
+					echo "--------------------"
+
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					read -r choice
+
+					case $choice in
+						1)
+							cd ~
+							clear
+							optimization_mode="高性能优化模式"
+							optimize_high_performance
+							;;
+						2)
+							cd ~
+							clear
+							optimize_balanced
+							;;
+						3)
+							cd ~
+							clear
+							optimize_web_server
+							;;
+						4)
+							cd ~
+							clear
+							optimization_mode="直播优化模式"
+							optimize_high_performance
+							;;
+						5)
+							cd ~
+							clear
+							optimization_mode="游戏服优化模式"
+							optimize_high_performance
+							;;
+						6)
+							cd ~
+							clear
+							restore_defaults
+							;;
+						0)
+							break
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac
+					end_of
+				done
+				;;
+			29)
+				clamav_antivirus
 				;;
 			50)
 				cloudflare_ddns
