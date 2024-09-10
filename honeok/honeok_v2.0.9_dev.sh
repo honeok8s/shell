@@ -5850,7 +5850,7 @@ update_openssh() {
 		echo "SSH高危漏洞修复工具"
 		echo "--------------------------"
 
-		echo -e "${white}SSH版本: $current_version,不在8.5到9.7之间,${yellow}无需修复${white}"
+		echo -e "${white}SSH版本: $current_version,${green}无需修复${white}"
 		return 1
 	fi
 }
