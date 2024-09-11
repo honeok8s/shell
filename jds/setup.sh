@@ -46,15 +46,13 @@ print_logo
 #fi
 
 remove_condaenv_init() {
-	if [ -f "$bashrc_file" ]; then
-		grep -q '# >>> conda initialize >>>' ~/.bashrc && \
-			sed -i '/# >>> conda initialize >>>/,/# <<< conda initialize <<<$/d' ~/.bashrc && \
-			_green "已删除.bashrc中的Conda初始化配置块"
+	grep -q '# >>> conda initialize >>>' ~/.bashrc && \
+		sed -i '/# >>> conda initialize >>>/,/# <<< conda initialize <<<$/d' ~/.bashrc && \
+		_green "已删除.bashrc中的Conda初始化配置块"
 
-		grep -q '# commented out by conda initialize' ~/.bashrc && \
-			sed -i '/# commented out by conda initialize/d' ~/.bashrc && \
-			_green "已删除.bashrc中的Conda路径配置"
-	fi
+	grep -q '# commented out by conda initialize' ~/.bashrc && \
+		sed -i '/# commented out by conda initialize/d' ~/.bashrc && \
+		_green "已删除.bashrc中的Conda路径配置"
 }
 
 # 检查是否为卸载操作
