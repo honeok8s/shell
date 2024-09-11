@@ -5,7 +5,7 @@ bash <(curl -sL github.com/honeok8s/shell/raw/main/honeok.sh)
 ```
 * 国内使用
 ```shell
-bash <(curl -sL https://gh.jiasu.in/github.com/honeok8s/shell/raw/main/honeok.sh)
+bash <(curl -sL https://ghp.ci/github.com/honeok8s/shell/raw/main/honeok.sh)
 ```
 
 * 下载本地执行
