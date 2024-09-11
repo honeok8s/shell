@@ -26,7 +26,7 @@ _purple() { echo -e ${purple}$@${white}; }
 _gray() { echo -e ${gray}$@${white}; }
 _orange() { echo -e ${orange}$@${white}; }
 
-honeok_v="v2.0.8"
+honeok_v="v2.0.9"
 
 print_logo(){
 	local os_info=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d '"' -f 2)
@@ -1854,8 +1854,16 @@ find_available_port() {
 	local start_port=$1
 	local end_port=$2
 	local port
+	local check_command
+
+	if command -v ss >/dev/null 2>&1; then
+		check_command="ss -tuln"
+	else
+		check_command="netstat -tuln"
+	fi
+
 	for port in $(seq $start_port $end_port); do
-		if ! ss -tuln | grep -q ":$port "; then
+		if ! $check_command | grep -q ":$port "; then
 			echo $port
 			return
 		fi
@@ -1865,10 +1873,18 @@ find_available_port() {
 }
 
 check_available_port() {
+	local check_command
+
+	if command -v ss >/dev/null 2>&1; then
+		check_command="ss -tuln"
+	else
+		check_command="netstat -tuln"
+	fi
+
 	# 检查并设置docker_port_1
 	if ! docker inspect "$docker_name" >/dev/null 2>&1; then
 		while true; do
-			if ss -tuln | grep -q ":$default_port_1 "; then
+			if $check_command | grep -q ":$default_port_1 "; then
 				# 查找可用的端口
 				docker_port_1=$(find_available_port 30000 50000)
 				_yellow "默认端口$default_port_1被占用,端口跳跃为$docker_port_1"
@@ -1887,7 +1903,7 @@ check_available_port() {
 	if ! docker inspect "$docker_name" >/dev/null 2>&1; then
 		if [ -n "$default_port_2" ]; then
 			while true; do
-				if ss -tuln | grep -q ":$default_port_2 "; then
+				if $check_command | grep -q ":$default_port_2 "; then
 					docker_port_2=$(find_available_port 35000 50000)
 					_yellow "默认端口$default_port_2被占用,端口跳跃为$docker_port_2"
 					sleep 1
@@ -1906,7 +1922,7 @@ check_available_port() {
 	if ! docker inspect "$docker_name" >/dev/null 2>&1; then
 		if [ -n "$default_port_3" ]; then
 			while true; do
-				if ss -tuln | grep -q ":$default_port_3 "; then
+				if $check_command | grep -q ":$default_port_3 "; then
 					docker_port_3=$(find_available_port 40000 50000)
 					_yellow "默认端口$default_port_3被占用,端口跳跃为$docker_port_3"
 					sleep 1
@@ -5708,6 +5724,153 @@ telegram_bot(){
 	esac
 }
 
+update_openssh() {
+	local openssh_version="9.8p1"
+
+	# 检测系统类型
+	if [ -f /etc/os-release ]; then
+		. /etc/os-release
+		OS=$ID
+	else
+		_red "无法检测操作系统类型"
+		return 1
+	fi
+
+	# 等待并检查锁文件
+	wait_for_lock() {
+		while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+			_yellow "等待dpkg锁释放"
+			sleep 1
+		done
+	}
+
+	# 修复dpkg中断问题
+	fix_dpkg() {
+		DEBIAN_FRONTEND=noninteractive dpkg --configure -a
+	}
+
+	# 安装依赖包
+	install_dependencies() {
+		case $OS in
+			ubuntu|debian)
+				wait_for_lock
+				fix_dpkg
+				DEBIAN_FRONTEND=noninteractive apt update
+				DEBIAN_FRONTEND=noninteractive apt install -y build-essential zlib1g-dev libssl-dev libpam0g-dev wget ntpdate -o Dpkg::Options::="--force-confnew"
+				;;
+			centos|rhel|almalinux|rocky|fedora)
+				yum install -y epel-release
+				yum groupinstall "Development Tools" -y
+				install zlib-devel openssl-devel pam-devel wget ntpdate
+				;;
+			alpine)
+				apk add build-base zlib-dev openssl-dev pam-dev wget ntpdate
+				;;
+			*)
+				_red "不支持的操作系统：$OS"
+				return 1
+				;;
+		esac
+	}
+
+	# 下载编译和安装OpenSSH
+	install_openssh() {
+		wget --no-check-certificate https://cdn.openbsd.org/pub/OpenBSD/OpenSSH/portable/openssh-${openssh_version}.tar.gz
+		tar -xzf openssh-${openssh_version}.tar.gz
+		cd openssh-${openssh_version}
+		./configure
+		make -j$(nproc)
+		make install
+		cd ..
+	}
+
+	# 重启SSH服务
+	restart_ssh() {
+		case $OS in
+			ubuntu|debian)
+				systemctl restart ssh
+				;;
+			centos|rhel|almalinux|rocky|fedora)
+				systemctl restart sshd
+				;;
+			alpine)
+				rc-service sshd restart
+				;;
+			*)
+				_red "不支持的操作系统:$OS"
+				return 1
+				;;
+		esac
+	}
+
+	# 设置路径优先级
+	set_path_priority() {
+		local new_ssh_path
+		local new_ssh_dir
+
+		new_ssh_path=$(which sshd)
+		new_ssh_dir=$(dirname "$new_ssh_path")
+
+		if [[ ":$PATH:" != *":$new_ssh_dir:"* ]]; then
+			export PATH="$new_ssh_dir:$PATH"
+			echo "export PATH=\"$new_ssh_dir:\$PATH\"" >> ~/.bashrc
+		fi
+	}
+
+	# 验证更新
+	verify_installation() {
+		_yellow "ssh版本信息:"
+		ssh -V
+		sshd -V
+	}
+
+	# 清理下载的文件
+	clean_up() {
+		rm -fr openssh-${openssh_version}*
+	}
+
+	# 检查OpenSSH版本
+	current_version=$(ssh -V 2>&1 | awk '{print $1}' | cut -d'_' -f2 | cut -d'p' -f1)
+
+	# 版本范围
+	min_version=8.5
+	max_version=9.7
+
+	if awk -v ver="$current_version" -v min="$min_version" -v max="$max_version" 'BEGIN{if(ver>=min && ver<=max) exit 0; else exit 1}'; then
+		echo "SSH高危漏洞修复工具"
+		echo "--------------------------"
+
+		echo -e "${white}SSH版本: $current_version 在8.5到9.7之间 ${yellow}需要修复${white}"
+		echo -n -e "${yellow}确定继续吗?(y/n)${white}"
+		read -r choice
+
+		case "$choice" in
+			[Yy])
+				install_dependencies
+				install_openssh
+				restart_ssh
+				set_path_priority
+				verify_installation
+				clean_up
+				;;
+			[Nn])
+				_red "已取消"
+				return 1
+				;;
+			*)
+				_red "无效选项,请重新输入"
+				return 1
+				;;
+		esac
+	else
+		echo "SSH高危漏洞修复工具"
+		echo "--------------------------"
+
+		echo -e "${white}SSH版本: $current_version ${green}无需修复${white}"
+		return 1
+	fi
+}
+
 redhat_kernel_update() {
 	install_elrepo() {
 		# 导入ELRepo GPG公钥
@@ -5811,6 +5974,221 @@ redhat_kernel_update() {
 				;;
 		esac
 	fi
+}
+
+# 高性能模式优化函数
+optimize_high_performance() {
+	echo -e "${yellow}切换到${optimization_mode}${white}"
+
+	echo -e "${yellow}优化文件描述符${white}"
+	ulimit -n 65535
+
+	echo -e "${yellow}优化虚拟内存${white}"
+	sysctl -w vm.swappiness=10 2>/dev/null
+	sysctl -w vm.dirty_ratio=15 2>/dev/null
+	sysctl -w vm.dirty_background_ratio=5 2>/dev/null
+	sysctl -w vm.overcommit_memory=1 2>/dev/null
+	sysctl -w vm.min_free_kbytes=65536 2>/dev/null
+
+	echo -e "${yellow}优化网络设置${white}"
+	sysctl -w net.core.rmem_max=16777216 2>/dev/null
+	sysctl -w net.core.wmem_max=16777216 2>/dev/null
+	sysctl -w net.core.netdev_max_backlog=250000 2>/dev/null
+	sysctl -w net.core.somaxconn=4096 2>/dev/null
+	sysctl -w net.ipv4.tcp_rmem='4096 87380 16777216' 2>/dev/null
+	sysctl -w net.ipv4.tcp_wmem='4096 65536 16777216' 2>/dev/null
+	sysctl -w net.ipv4.tcp_congestion_control=bbr 2>/dev/null
+	sysctl -w net.ipv4.tcp_max_syn_backlog=8192 2>/dev/null
+	sysctl -w net.ipv4.tcp_tw_reuse=1 2>/dev/null
+	sysctl -w net.ipv4.ip_local_port_range='1024 65535' 2>/dev/null
+
+	echo -e "${yellow}优化缓存管理${white}"
+	sysctl -w vm.vfs_cache_pressure=50 2>/dev/null
+
+	echo -e "${yellow}优化CPU设置${white}"
+	sysctl -w kernel.sched_autogroup_enabled=0 2>/dev/null
+
+	echo -e "${yellow}其他优化...${white}"
+	# 禁用透明大页面,减少延迟
+	echo never > /sys/kernel/mm/transparent_hugepage/enabled
+	# 禁用NUMA balancing
+	sysctl -w kernel.numa_balancing=0 2>/dev/null
+}
+
+# 均衡模式优化函数
+optimize_balanced() {
+	echo -e "${yellow}切换到均衡模式${white}"
+
+	echo -e "${yellow}优化文件描述符${white}"
+	ulimit -n 32768
+
+	echo -e "${yellow}优化虚拟内存${white}"
+	sysctl -w vm.swappiness=30 2>/dev/null
+	sysctl -w vm.dirty_ratio=20 2>/dev/null
+	sysctl -w vm.dirty_background_ratio=10 2>/dev/null
+	sysctl -w vm.overcommit_memory=0 2>/dev/null
+	sysctl -w vm.min_free_kbytes=32768 2>/dev/null
+
+	echo -e "${yellow}优化网络设置${white}"
+	sysctl -w net.core.rmem_max=8388608 2>/dev/null
+	sysctl -w net.core.wmem_max=8388608 2>/dev/null
+	sysctl -w net.core.netdev_max_backlog=125000 2>/dev/null
+	sysctl -w net.core.somaxconn=2048 2>/dev/null
+	sysctl -w net.ipv4.tcp_rmem='4096 87380 8388608' 2>/dev/null
+	sysctl -w net.ipv4.tcp_wmem='4096 32768 8388608' 2>/dev/null
+	sysctl -w net.ipv4.tcp_congestion_control=bbr 2>/dev/null
+	sysctl -w net.ipv4.tcp_max_syn_backlog=4096 2>/dev/null
+	sysctl -w net.ipv4.tcp_tw_reuse=1 2>/dev/null
+	sysctl -w net.ipv4.ip_local_port_range='1024 49151' 2>/dev/null
+
+	echo -e "${yellow}优化缓存管理${white}"
+	sysctl -w vm.vfs_cache_pressure=75 2>/dev/null
+
+	echo -e "${yellow}优化CPU设置${white}"
+	sysctl -w kernel.sched_autogroup_enabled=1 2>/dev/null
+
+	echo -e "${yellow}其他优化...${white}"
+	# 还原透明大页面
+	echo always > /sys/kernel/mm/transparent_hugepage/enabled
+	# 还原 NUMA balancing
+	sysctl -w kernel.numa_balancing=1 2>/dev/null
+}
+
+# 还原默认设置函数
+restore_defaults() {
+	echo -e "${yellow}还原到默认设置${white}"
+
+	echo -e "${yellow}还原文件描述符${white}"
+	ulimit -n 1024
+
+	echo -e "${yellow}还原虚拟内存${white}"
+	sysctl -w vm.swappiness=60 2>/dev/null
+	sysctl -w vm.dirty_ratio=20 2>/dev/null
+	sysctl -w vm.dirty_background_ratio=10 2>/dev/null
+	sysctl -w vm.overcommit_memory=0 2>/dev/null
+	sysctl -w vm.min_free_kbytes=16384 2>/dev/null
+
+	echo -e "${yellow}还原网络设置${white}"
+	sysctl -w net.core.rmem_max=212992 2>/dev/null
+	sysctl -w net.core.wmem_max=212992 2>/dev/null
+	sysctl -w net.core.netdev_max_backlog=1000 2>/dev/null
+	sysctl -w net.core.somaxconn=128 2>/dev/null
+	sysctl -w net.ipv4.tcp_rmem='4096 87380 6291456' 2>/dev/null
+	sysctl -w net.ipv4.tcp_wmem='4096 16384 4194304' 2>/dev/null
+	sysctl -w net.ipv4.tcp_congestion_control=cubic 2>/dev/null
+	sysctl -w net.ipv4.tcp_max_syn_backlog=2048 2>/dev/null
+	sysctl -w net.ipv4.tcp_tw_reuse=0 2>/dev/null
+	sysctl -w net.ipv4.ip_local_port_range='32768 60999' 2>/dev/null
+
+	echo -e "${yellow}还原缓存管理${white}"
+	sysctl -w vm.vfs_cache_pressure=100 2>/dev/null
+
+	echo -e "${yellow}还原CPU设置${white}"
+	sysctl -w kernel.sched_autogroup_enabled=1 2>/dev/null
+
+	echo -e "${yellow}还原其他优化${white}"
+	# 还原透明大页面
+	echo always > /sys/kernel/mm/transparent_hugepage/enabled
+	# 还原 NUMA balancing
+	sysctl -w kernel.numa_balancing=1 2>/dev/null
+}
+
+clamav_freshclam() {
+	_yellow "正在更新病毒库"
+	docker run --rm \
+		--name clamav \
+		--mount source=clam_db,target=/var/lib/clamav \
+		clamav/clamav-debian:latest \
+		freshclam
+}
+
+clamav_scan() {
+	local clamav_dir="/data/docker_data/clamav"
+
+	if [ $# -eq 0 ]; then
+		_red "请指定要扫描的目录"
+		return 1
+	fi
+
+	echo -e "${yellow}正在扫描目录$@ ${white}"
+
+	# 构建mount参数
+	local mount_params=""
+	for dir in "$@"; do
+		mount_params+="--mount type=bind,source=${dir},target=/mnt/host${dir} "
+	done
+
+	# 构建clamscan命令参数
+	scan_params=""
+	for dir in "$@"; do
+		scan_params+="/mnt/host${dir} "
+	done
+
+	mkdir -p $clamav_dir/log/ > /dev/null 2>&1
+	> $clamav_dir/log/scan.log > /dev/null 2>&1
+
+	# 执行docker命令
+	docker run -it --rm \
+		--name clamav \
+		--mount source=clam_db,target=/var/lib/clamav \
+		$mount_params \
+		-v $clamav_dir/log/:/var/log/clamav/ \
+		clamav/clamav-debian:latest \
+		clamscan -r --log=/var/log/clamav/scan.log $scan_params
+
+	echo -e "${green}$@ 扫描完成 病毒报告存放在${white}$clamav_dir/log/scan.log"
+	_yellow "如果有病毒请在scan.log中搜索FOUND关键字确认病毒位置"
+}
+
+clamav_antivirus() {
+	need_root
+	while true; do
+		clear
+		echo "clamav病毒扫描工具"
+		echo "------------------------"
+		echo "clamav是一个开源的防病毒软件工具,主要用于检测和删除各种类型的恶意软件"
+		echo "包括病毒,特洛伊木马,间谍软件,恶意脚本和其他有害软件"
+		echo "------------------------"
+		echo "1. 全盘扫描     2. 重要目录扫描     3. 自定义目录扫描"
+		echo "------------------------"
+		echo "0. 返回上一级选单"
+		echo "------------------------"
+
+		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		read -r choice
+
+		case $choice in
+			1)
+				install_docker
+				docker volume create clam_db > /dev/null 2>&1
+				clamav_freshclam
+				clamav_scan /
+				docker volume rm clam_db > /dev/null 2>&1
+				end_of
+				;;
+			2)
+				install_docker
+				docker volume create clam_db > /dev/null 2>&1
+				clamav_freshclam
+				clamav_scan /etc /var /usr /home /root
+				docker volume rm clam_db > /dev/null 2>&1
+				end_of
+				;;
+			3)
+				echo -n "请输入要扫描的目录 用空格分隔(例如: /etc /var /usr /home /root)"
+				read -r directories
+
+				install_docker
+				clamav_freshclam
+				clamav_scan $directories
+				docker volume rm clam_db > /dev/null 2>&1
+				end_of
+				;;
+			*)
+				break
+				;;
+		esac
+	done
 }
 
 cloudflare_ddns() {
@@ -6008,8 +6386,9 @@ linux_system_tools(){
 		echo "------------------------"
 		echo "21. 本机host解析                       22. Fail2banSSH防御程序"
 		echo "23. 限流自动关机                       24. root私钥登录模式"
-		echo "25. TG-bot系统监控预警                 26. 修复OpenSSH高危漏洞(岫源)"
-		echo "27. 红帽系Linux内核升级"
+		echo "25. TG-bot系统监控预警                 26. 修复OpenSSH高危漏洞"
+		echo "27. 红帽系Linux内核升级                28. Linux系统内核参数优化"
+		echo "29. Clamav病毒扫描工具"
 		echo "------------------------"
 		echo "50. Cloudflare ddns解析"
 		echo "------------------------"
@@ -6760,7 +7139,7 @@ EOF
 				;;
 			24)
 				need_root
-				echo "ROOT私钥登录模式"
+				echo "root私钥登录模式"
 				echo "------------------------------------------------"
 				echo "将会生成密钥对，更安全的方式SSH登录"
 				echo -n -e "${yellow}确定继续吗?(y/n)${white}"
@@ -6785,13 +7164,79 @@ EOF
 			26)
 				need_root
 				cd ~
-				curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/upgrade_openssh9.8p1.sh
-				chmod +x ~/upgrade_openssh9.8p1.sh
-				~/upgrade_openssh9.8p1.sh
-				rm ~/upgrade_openssh9.8p1.sh
+				update_openssh
 				;;
 			27)
 				redhat_kernel_update
+				;;
+			28)
+				need_root
+				while true; do
+					clear
+					echo "Linux系统内核参数优化"
+					echo "------------------------------------------------"
+					echo "提供多种系统参数调优模式,用户可以根据自身使用场景进行选择切换"
+					_yellow "生产环境请谨慎使用!"
+					echo "--------------------"
+					echo "1. 高性能优化模式:     最大化系统性能,优化文件描述符,虚拟内存,网络设置,缓存管理和CPU设置"
+					echo "2. 均衡优化模式:     在性能与资源消耗之间取得平衡,适合日常使用"
+					echo "3. 网站优化模式:     针对网站服务器进行优化,提高并发连接处理能力,响应速度和整体性能"
+					echo "4. 直播优化模式:     针对直播推流的特殊需求进行优化,减少延迟,提高传输性能"
+					echo "5. 游戏服优化模式:     针对游戏服务器进行优化,提高并发处理能力和响应速度"
+					echo "6. 还原默认设置:     将系统设置还原为默认配置"
+					echo "--------------------"
+					echo "0. 返回上一级"
+					echo "--------------------"
+
+					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					read -r choice
+
+					case $choice in
+						1)
+							cd ~
+							clear
+							optimization_mode="高性能优化模式"
+							optimize_high_performance
+							;;
+						2)
+							cd ~
+							clear
+							optimize_balanced
+							;;
+						3)
+							cd ~
+							clear
+							optimize_web_server
+							;;
+						4)
+							cd ~
+							clear
+							optimization_mode="直播优化模式"
+							optimize_high_performance
+							;;
+						5)
+							cd ~
+							clear
+							optimization_mode="游戏服优化模式"
+							optimize_high_performance
+							;;
+						6)
+							cd ~
+							clear
+							restore_defaults
+							;;
+						0)
+							break
+							;;
+						*)
+							_red "无效选项,请重新输入"
+							;;
+					esac
+					end_of
+				done
+				;;
+			29)
+				clamav_antivirus
 				;;
 			50)
 				cloudflare_ddns
