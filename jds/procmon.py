@@ -1,13 +1,36 @@
 import subprocess
 import json
-import requests
+import urllib.request
+import time
+import os
 
 # Bark API 回调接口
-bark_url = "x"
+bark_url = "https://api.honeok.de/x"
 title = "P8_CN_测试服务器告警"
 
-# 执行 ps 命令获取进程信息
+# 告警记录文件
+alert_file = "/root/alert_time.txt"
+
+# 告警间隔时间（20分钟）
+alert_interval = 20 * 60  # 20分钟
+
+def load_last_alert_time():
+    """从文件中加载上次告警时间"""
+    if os.path.exists(alert_file):
+        with open(alert_file, "r") as f:
+            try:
+                return float(f.read().strip())
+            except ValueError:
+                return 0
+    return 0
+
+def save_last_alert_time(timestamp):
+    """保存当前时间为最后一次告警时间"""
+    with open(alert_file, "w") as f:
+        f.write(str(timestamp))
+
 def run_ps_command(sort_by, threshold, field_index):
+    """执行 ps 命令获取进程信息并检查是否超出阈值"""
     result = subprocess.run(
         ["ps", "-eo", "pid,comm,%mem,%cpu", f"--sort=-{sort_by}"],
         stdout=subprocess.PIPE,
@@ -24,7 +47,6 @@ def run_ps_command(sort_by, threshold, field_index):
         try:
             pid = fields[0]
             # 从字段中提取命令部分
-            # 找到 %mem 或 %cpu 的位置
             if sort_by == "%mem":
                 mem_usage = fields[-2]
                 cpu_usage = fields[-1]
@@ -47,7 +69,7 @@ def run_ps_command(sort_by, threshold, field_index):
 
 # 获取内存和 CPU 占用警报
 memory_alert = run_ps_command("%mem", 30, 2)
-cpu_alert = run_ps_command("%cpu", 30, 3)
+cpu_alert = run_ps_command("%cpu", 20, 3)
 
 # 合并警报信息
 alert_message = ""
@@ -57,8 +79,11 @@ if memory_alert:
 if cpu_alert:
     alert_message += f"CPU占用警报:\n{cpu_alert}\n"
 
-# 格式化并发送 Bark 通知
-if alert_message:
+# 发送 Bark 通知的逻辑
+current_time = time.time()
+last_alert_time = load_last_alert_time()
+
+if alert_message and (current_time - last_alert_time) > alert_interval:
     data = {
         "title": title,
         "body": alert_message
@@ -66,4 +91,7 @@ if alert_message:
     headers = {
         "Content-Type": "application/json"
     }
-    requests.post(bark_url, headers=headers, data=json.dumps(data))
+    req = urllib.request.Request(bark_url, data=json.dumps(data).encode(), headers=headers)
+    with urllib.request.urlopen(req) as response:
+        response.read()
+    save_last_alert_time(current_time)
