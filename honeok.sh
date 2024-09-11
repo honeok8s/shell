@@ -862,7 +862,7 @@ docker_main_version() {
 install_docker_official() {
 	if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
 		cd ~
-		curl -fsSL -O https://raw.githubusercontent.com/honeok8s/shell/main/docker/get-docker-official.sh && chmod a+x get-docker-official.sh
+		curl -sL -O https://ghp.ci/github.com/honeok8s/shell/raw/main/docker/get-docker-official.sh && chmod a+x get-docker-official.sh
 		bash get-docker-official.sh --mirror Aliyun
 		[ -f ~/get-docker-official.sh ] && rm -f get-docker-official.sh
 	else
@@ -920,7 +920,7 @@ install_add_docker() {
 generate_docker_config() {
 	local config_file="/etc/docker/daemon.json"
 	local config_dir="$(dirname "$config_file")"
-	local registry_url="https://raw.githubusercontent.com/honeok8s/conf/main/docker/registry_mirrors.txt"
+	local registry_url="https://ghp.ci/github.com/honeok8s/conf/blob/main/docker/registry_mirrors.txt"
 	local is_china_server='false'
 	local cgroup_driver
 
@@ -955,7 +955,7 @@ generate_docker_config() {
 	fi
 
 	# 获取 registry mirrors 内容
-	registry_mirrors=$(curl -s "$registry_url" | grep -v '^#' | sed '/^$/d')
+	registry_mirrors=$(curl -sL "$registry_url" | grep -v '^#' | sed '/^$/d')
 
 	# 判断操作系统是否为 Alpine
 	if grep -q 'Alpine' /etc/issue; then
