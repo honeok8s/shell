@@ -1854,8 +1854,16 @@ find_available_port() {
 	local start_port=$1
 	local end_port=$2
 	local port
+	local check_command
+
+	if command -v ss >/dev/null 2>&1; then
+		check_command="ss -tuln"
+	else
+		check_command="netstat -tuln"
+	fi
+
 	for port in $(seq $start_port $end_port); do
-		if ! ss -tuln | grep -q ":$port "; then
+		if ! $check_command | grep -q ":$port "; then
 			echo $port
 			return
 		fi
@@ -1865,10 +1873,18 @@ find_available_port() {
 }
 
 check_available_port() {
+	local check_command
+
+	if command -v ss >/dev/null 2>&1; then
+		check_command="ss -tuln"
+	else
+		check_command="netstat -tuln"
+	fi
+
 	# 检查并设置docker_port_1
 	if ! docker inspect "$docker_name" >/dev/null 2>&1; then
 		while true; do
-			if ss -tuln | grep -q ":$default_port_1 "; then
+			if $check_command | grep -q ":$default_port_1 "; then
 				# 查找可用的端口
 				docker_port_1=$(find_available_port 30000 50000)
 				_yellow "默认端口$default_port_1被占用,端口跳跃为$docker_port_1"
@@ -1887,7 +1903,7 @@ check_available_port() {
 	if ! docker inspect "$docker_name" >/dev/null 2>&1; then
 		if [ -n "$default_port_2" ]; then
 			while true; do
-				if ss -tuln | grep -q ":$default_port_2 "; then
+				if $check_command | grep -q ":$default_port_2 "; then
 					docker_port_2=$(find_available_port 35000 50000)
 					_yellow "默认端口$default_port_2被占用,端口跳跃为$docker_port_2"
 					sleep 1
@@ -1906,7 +1922,7 @@ check_available_port() {
 	if ! docker inspect "$docker_name" >/dev/null 2>&1; then
 		if [ -n "$default_port_3" ]; then
 			while true; do
-				if ss -tuln | grep -q ":$default_port_3 "; then
+				if $check_command | grep -q ":$default_port_3 "; then
 					docker_port_3=$(find_available_port 40000 50000)
 					_yellow "默认端口$default_port_3被占用,端口跳跃为$docker_port_3"
 					sleep 1
