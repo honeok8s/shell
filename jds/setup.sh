@@ -123,7 +123,7 @@ source ~/.bashrc
 if ! conda --version >/dev/null 2>&1; then
 	_red "Conda安装错误"
 	# 删除安装目录和环境变量文件
-	[ -d "$install_dir" ] && rm -rf "$install_dir"
+	[ -d "$install_dir" ] && rm -fr "$install_dir"
 	remove_condaenv_init
 	source ~/.bashrc
 	exit 1
@@ -143,7 +143,7 @@ conda activate py39 || { _red "激活py39环境失败"; exit 1; }
 if [ ! -d "$apiserver_dir" ]; then
 	_red "$apiserver_dir目录不存在请检查路径"
 	# 删除安装目录和环境变量文件
-	[ -d "$install_dir" ] && rm -rf "$install_dir"
+	[ -d "$install_dir" ] && rm -fr "$install_dir"
 	remove_condaenv_init
 	source ~/.bashrc
 	exit 1
