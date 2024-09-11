@@ -6,26 +6,6 @@
 #
 # Usage:
 #   ./setup.sh [uninstall]
-#
-# Description:
-#   This script installs Miniconda, creates a Python 3.9 environment,
-#   installs necessary Python packages, and sets up the bi server.
-#   Optionally, the script can also uninstall Miniconda and all associated files.
-#
-# Options:
-#   uninstall  - Uninstalls Miniconda, removes environment variables, and deletes virtual environments.
-#
-# Example:
-#   1. To install Miniconda and set up the environment:
-#      ./setup.sh
-#
-#   2. To uninstall Miniconda and clean up:
-#      ./setup.sh uninstall
-#
-# Notes:
-#   - This script must be run as root.
-#   - It automatically detects if the server is located in China and selects the appropriate Miniconda download mirror.
-#   - All errors during the installation will cause the script to exit immediately.
 
 set -o errexit
 set -o pipefail
@@ -41,11 +21,12 @@ _yellow() { echo -e ${yellow}$@${white}; }
 _red() { echo -e ${red}$@${white}; }
 _green() { echo -e ${green}$@${white}; }
 
+##############################
 # 定义安装目录和安装程序
 install_dir="/data/conda3"
 installer="Miniconda3-py39_24.3.0-0-Linux-x86_64.sh"
 apiserver_dir="/data/bi/apiserver"
-conda_env="/etc/profile.d/conda.sh"
+##############################
 
 print_logo(){
     echo -e "${purple}\
@@ -59,10 +40,22 @@ print_logo(){
 print_logo
 
 # 检查是否具有足够的权限
-if [ "$(id -u)" -ne 0 ]; then
-	_red "该脚本需要以root权限运行,请使用root用户执行"
-	exit 1
-fi
+#if [ "$(id -u)" -ne 0 ]; then
+#	_red "该脚本需要以root权限运行,请使用root用户执行"
+#	exit 1
+#fi
+
+remove_condaenv_init() {
+	if [ -f "$bashrc_file" ]; then
+		grep -q '# >>> conda initialize >>>' ~/.bashrc && \
+			sed -i '/# >>> conda initialize >>>/,/# <<< conda initialize <<<$/d' ~/.bashrc && \
+			_green "已删除.bashrc中的Conda初始化配置块"
+
+		grep -q '# commented out by conda initialize' ~/.bashrc && \
+			sed -i '/# commented out by conda initialize/d' ~/.bashrc && \
+			_green "已删除.bashrc中的Conda路径配置"
+	fi
+}
 
 # 检查是否为卸载操作
 if [[ "${1:-}" == "uninstall" ]]; then
@@ -77,13 +70,7 @@ if [[ "${1:-}" == "uninstall" ]]; then
 	fi
 
 	# 删除环境变量
-	if [ -f "$conda_env" ]; then
-		_yellow "删除Conda环境变量文件$conda_env"
-		rm -f "$conda_env" || { _red "删除Miniconda环境变量文件失败"; exit 1; }
-		source /etc/profile*
-	else
-		_red "$conda_env不存在,跳过删除"
-	fi
+	remove_condaenv_init
 
 	# 检查并删除虚拟环境
 	if conda info --envs | grep -q 'py39'; then
@@ -125,22 +112,20 @@ bash "$installer" -bfp "$install_dir" || { _red "Miniconda安装失败"; exit 1;
 rm -f "$installer"
 
 # 配置全局环境变量
-if [ ! -f "$conda_env" ]; then
-	echo "# Conda environment variables" > "$conda_env"
+if ! grep -q "$install_dir/bin" ~/.bashrc; then
+	_yellow "在.bashrc中添加Conda的PATH"
+	echo "export PATH=\"$install_dir/bin:\$PATH\"" >> ~/.bashrc
 fi
 
-if ! grep -q "$install_dir/bin" "$conda_env"; then
-	_yellow "配置Conda环境变量"
-	echo "export PATH=\"$install_dir/bin:\$PATH\"" >> "$conda_env"
-fi
-
-source "$conda_env"
+source ~/.bashrc
 
 # 验证Miniconda安装
 if ! conda --version >/dev/null 2>&1; then
 	_red "Conda安装错误"
-	[ -f "$conda_env" ] && rm -f "$conda_env"
-	source /etc/profile*
+	# 删除安装目录和环境变量文件
+	[ -d "$install_dir" ] && rm -rf "$install_dir"
+	remove_condaenv_init
+	source ~/.bashrc
 	exit 1
 fi
 
@@ -156,13 +141,16 @@ conda init || { _red "初始化Conda失败"; exit 1; }
 conda activate py39 || { _red "激活py39环境失败"; exit 1; }
 
 if [ ! -d "$apiserver_dir" ]; then
-	_red "$apiserver_dir 目录不存在请检查路径"
-	[ -f "$conda_env" ] && rm -f "$conda_env"
+	_red "$apiserver_dir目录不存在请检查路径"
+	# 删除安装目录和环境变量文件
+	[ -d "$install_dir" ] && rm -rf "$install_dir"
+	remove_condaenv_init
+	source ~/.bashrc
 	exit 1
 fi
 
 _yellow "安装所需的Python包"
-cd "$apiserver_dir" || { _red "切换目录到$apiserver_dir失败"; exit 1; }
+cd "$apiserver_dir"
 python -m pip install -i "$pypi_index_url" --trusted-host $(echo $pypi_index_url | awk -F/ '{print $3}') -r requirements.txt || { _red "从requirements.txt安装包失败"; exit 1; }
 
 _yellow "初始化数据库"
@@ -170,3 +158,4 @@ python manager.py initdb || { _red "初始化数据库失败"; exit 1; }
 
 # 安装完成
 _green "安装成功"
+exit 0
