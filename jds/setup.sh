@@ -9,7 +9,6 @@
 
 set -o errexit
 set -o pipefail
-set -o nounset
 
 yellow='\033[1;33m'       # 黄色
 red='\033[1;31m'          # 红色
