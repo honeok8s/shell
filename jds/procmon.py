@@ -4,7 +4,7 @@ import requests
 
 # Bark API 回调接口
 bark_url = "x"
-title = "P8测试服务器预警"
+title = "P8_CN_测试服务器告警"
 
 # 执行 ps 命令获取进程信息
 def run_ps_command(sort_by, threshold, field_index):
