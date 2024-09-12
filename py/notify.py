@@ -3,7 +3,7 @@ import json
 import urllib.request
 
 # 配置部分
-BARK_API_URL = "https://api.honeok.de/to73XJ2pqf6HfHM1234567/"
+BARK_API_URL = "https://api.honeok.de/to73XJ2pqf6HfHMg8WQ7nn/"
 TITLE = "天气警报"
 CITY = 'Chengdu'  # 替换为你想查询的城市名称
 
