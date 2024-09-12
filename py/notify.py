@@ -64,6 +64,11 @@ def should_send_weather_report():
     now = datetime.utcnow() + timedelta(hours=8)  # 转换为东八区时间
     return now.hour in [6, 12, 18] and now.minute == 0
 
+def should_check_rain():
+    """检查当前时间是否在降雨预警检测时间范围内"""
+    now = datetime.utcnow() + timedelta(hours=8)  # 获取东八区时间
+    return 6 <= now.hour < 22
+
 def check_rain_forecast(alert_for_rain_only=False):
     """检查每个区未来半小时是否有降雨预警"""
     rain_alerts = []
@@ -86,7 +91,7 @@ if __name__ == '__main__':
         now = datetime.utcnow() + timedelta(hours=8)  # 获取东八区时间
 
         # 每小时检测一次降雨预警
-        if last_rain_alert is None or (now - last_rain_alert).seconds >= 3600:
+        if should_check_rain() and (last_rain_alert is None or (now - last_rain_alert).seconds >= 3600):
             check_rain_forecast(alert_for_rain_only=True)
             last_rain_alert = now
 
