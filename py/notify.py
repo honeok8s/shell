@@ -23,15 +23,21 @@ def get_weather(district):
         
         if weather_info:
             temperature, humidity, wind, weather, precipitation = weather_info.split(',')
+            # 处理降雨量
+            if 'mm' in precipitation:
+                precipitation_value = float(precipitation.replace('mm', ''))
+            else:
+                precipitation_value = float(precipitation.replace('%', '')) / 100.0  # 处理百分比情况
+
             alert_message = (
                 f"区域: {district}\n"
                 f"温度: {temperature}\n"
                 f"湿度: {humidity}\n"
                 f"风速: {wind}\n"
                 f"天气: {weather}\n"
-                f"降雨概率: {precipitation}"
+                f"降雨量: {precipitation}"
             )
-            return alert_message, precipitation
+            return alert_message, precipitation_value
         else:
             return None, None
     except Exception:
@@ -63,7 +69,7 @@ def check_rain_forecast(alert_for_rain_only=False):
     rain_alerts = []
     for district in DISTRICTS:
         weather_message, precipitation = get_weather(district)
-        if precipitation and float(precipitation.replace('%', '')) > 50:  # 降雨概率大于50%
+        if precipitation is not None and precipitation > 0.5:  # 降雨量大于0.5mm
             rain_alerts.append(weather_message)
 
     if rain_alerts:
