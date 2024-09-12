@@ -6,7 +6,7 @@ import os
 import logging
 
 # Bark API 回调接口
-bark_url = "https://api.honeok.de/to73XJ2pqf6HfHMg8WQ7nn/"
+bark_url = "https://api.honeok.de/to73XJ2pqf6HfHMg8WQ7n1/"
 title = "P8_CN_测试服务器告警"
 
 # 告警记录文件
