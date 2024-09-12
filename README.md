@@ -1,7 +1,7 @@
 ## VPS工具箱
 * 在线执行
 ```shell
-bash <(curl -s -L sh.honeok.de)
+bash <(curl -sL sh.honeok.de)
 ```
 * 国内使用
 ```shell
