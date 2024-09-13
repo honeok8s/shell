@@ -153,6 +153,9 @@ python -m pip install -i "$pypi_index_url" --trusted-host $(echo $pypi_index_url
 _yellow "初始化数据库"
 python manager.py initdb || { _red "初始化数据库失败"; exit 1; }
 
+aerich init -t aerich_env.TORTOISE_ORM
+aerich init-db
+
 # 安装完成
 _green "安装成功"
 exit 0
