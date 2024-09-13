@@ -1,5 +1,7 @@
 #!/bin/bash
-# Author: honeok
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2024 honeok
+# Author: honeok yihaohey@gmail.com
 # Blog: www.honeok.com
 
 set -o errexit
