@@ -1209,7 +1209,8 @@ docker_ps() {
 		echo "4. 删除指定容器             8. 删除所有容器"
 		echo "5. 重启指定容器             9. 重启所有容器"
 		echo "------------------------"
-		echo "11. 进入指定容器           12. 查看容器日志           13. 查看容器网络"
+		echo "11. 进入指定容器            12. 查看容器日志"
+		echo "13. 查看容器网络            14. 查看容器占用"
 		echo "------------------------"
 		echo "0. 返回上一级选单"
 		echo "------------------------"
@@ -1292,6 +1293,10 @@ docker_ps() {
 						printf "%-20s %-20s %-15s\n" "$container_name" "$network_name" "$ip_address"
 					done <<< "$network_info"
 				done
+				end_of
+				;;
+			14)
+				docker stats --no-stream
 				end_of
 				;;
 			0)
@@ -1429,26 +1434,22 @@ docker_manager(){
 				;;
 			2)
 				clear
-				if ! command -v docker >/dev/null 2>&1; then
-					_red "未安装Docker,请先安装Docker."
-				else
-					echo "Docker版本"
-					docker -v
-					manage_compose version
-					echo ""
-					echo "Docker镜像列表"
-					docker image ls
-					echo ""
-					echo "Docker容器列表"
-					docker ps -a
-					echo ""
-					echo "Docker卷列表"
-					docker volume ls
-					echo ""
-					echo "Docker网络列表"
-					docker network ls
-					echo ""
-				fi
+				echo "Docker版本"
+				docker -v
+				manage_compose version
+				echo ""
+				echo "Docker镜像列表"
+				docker image ls
+				echo ""
+				echo "Docker容器列表"
+				docker ps -a
+				echo ""
+				echo "Docker卷列表"
+				docker volume ls
+				echo ""
+				echo "Docker网络列表"
+				docker network ls
+				echo ""
 				;;
 			3)
 				docker_ps
@@ -1514,7 +1515,7 @@ docker_manager(){
 							echo -n "设置新网络名:"
 							read -r dockernetwork
 
-							echo -n "那些容器退出该网络(多个容器名请用空格分隔):"
+							echo -n "哪些容器退出该网络(多个容器名请用空格分隔):"
 							read -r dockernames
                           
 							for dockername in $dockernames; do
