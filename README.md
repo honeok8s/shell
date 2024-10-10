@@ -1,7 +1,7 @@
 ## VPS工具箱
 * 在线执行
 ```shell
-bash <(curl -sL sh.honeok.de)
+bash <(curl -sL github.com/honeok8s/shell/raw/main/honeok.sh)
 ```
 * 国内使用
 ```shell
