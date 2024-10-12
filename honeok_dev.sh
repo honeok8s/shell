@@ -607,7 +607,7 @@ linux_tools() {
 		echo "0. 返回主菜单"
 		echo "-------------------------"
 		
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 		read -r choice
 
 		case $choice in
@@ -784,7 +784,7 @@ linux_tools() {
 				honeok
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				;;
 		esac
 		end_of
@@ -816,7 +816,7 @@ linux_bbr() {
 			echo "0. 返回上一级选单"
 			echo "-------------------------"
 
-			echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+			echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 			read -r choice
 
 			case $choice in
@@ -1066,7 +1066,7 @@ docker_ipv6_on() {
 		"fixed-cidr-v6": "2001:db8:1::/64"
 	}'
 
-	# 检查配置文件是否存在,如果不存在则创建文件并写入默认设置
+	# 检查配置文件是否存在，如果不存在则创建文件并写入默认设置
 	if [ ! -f "$CONFIG_FILE" ]; then
 		echo "$REQUIRED_IPV6_CONFIG" > "$CONFIG_FILE"
 		restart docker
@@ -1141,7 +1141,7 @@ except (FileNotFoundError, json.JSONDecodeError):
 
 original_config = dict(config)
 
-# 更新配置项,确保ipv6关闭,且移除fixed-cidr-v6
+# 更新配置项，确保ipv6关闭，且移除fixed-cidr-v6
 config['ipv6'] = False
 config.pop('fixed-cidr-v6', None)
 
@@ -1207,14 +1207,14 @@ uninstall_docker() {
 
 	# 检查Docker是否安装
 	if ! command -v docker &> /dev/null; then
-		_red "Docker未安装在系统上,无法继续卸载"
+		_red "Docker未安装在系统上，无法继续卸载"
 		return 1
 	fi
 
 	stop_and_remove_docker
 
 	case "$os_name" in
-		ubuntu|debian|centos|rhel|almalinux|rocky|fedora)
+		ubuntu|debian|kali|centos|rhel|almalinux|rocky|fedora)
 			remove docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-ce-rootless-extras
 			;;
 		alpine)
@@ -1263,30 +1263,31 @@ docker_ps() {
 		echo "0. 返回上一级选单"
 		echo "------------------------"
 
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 		read -r choice
 		case $choice in
 			1)
-				echo -n "请输入创建命令:" dockername
+				echo -n "请输入创建命令:"
+				read -r dockername
 				$dockername
 				;;
 			2)
-				echo -n "请输入容器名(多个容器名请用空格分隔):" dockername
+				echo -n "请输入容器名（多个容器名请用空格分隔）:"
 				read -r dockername
 				docker start $dockername
 				;;
 			3)
-				echo -n "请输入容器名(多个容器名请用空格分隔):"
+				echo -n "请输入容器名（多个容器名请用空格分隔）:"
 				read -r dockername
 				docker stop $dockername
 				;;
 			4)
-				echo -n "请输入容器名(多个容器名请用空格分隔):"
+				echo -n "请输入容器名（多个容器名请用空格分隔）:"
 				read -r dockername
 				docker rm -f $dockername
 				;;
 			5)
-				echo -n "请输入容器名(多个容器名请用空格分隔):"
+				echo -n "请输入容器名（多个容器名请用空格分隔）:"
 				read -r dockername
 				docker restart $dockername
 				;;
@@ -1297,7 +1298,7 @@ docker_ps() {
 				docker stop $(docker ps -q)
 				;;
 			8)
-				echo -n -e "${yellow}确定删除所有容器吗?(y/n):${white}"
+				echo -n -e "${yellow}确定删除所有容器吗？(y/n):${white}"
 				read -r choice
 
 				case "$choice" in
@@ -1307,7 +1308,7 @@ docker_ps() {
 					[Nn])
 						;;
 					*)
-						_red "无效选项,请重新输入"
+						_red "无效选项，请重新输入。"
 						;;
 				esac
 				;;
@@ -1351,7 +1352,7 @@ docker_ps() {
 				break
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				;;
 		esac
 	done
@@ -1371,11 +1372,11 @@ docker_image() {
 		echo "0. 返回上一级选单"
 		echo "------------------------"
 
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 		read -r choice
 		case $choice in
 			1)
-				echo -n "请输入镜像名(多个镜像名请用空格分隔):"
+				echo -n "请输入镜像名（多个镜像名请用空格分隔）:"
 				read -r imagenames
 				for name in $imagenames; do
 					_yellow "正在获取镜像:" $name
@@ -1383,7 +1384,7 @@ docker_image() {
 				done
 				;;
 			2)
-				echo -n "请输入镜像名(多个镜像名请用空格分隔):"
+				echo -n "请输入镜像名（多个镜像名请用空格分隔）:"
 				read -r imagenames
 				for name in $imagenames; do
 					_yellow "正在更新镜像:" $name
@@ -1391,14 +1392,14 @@ docker_image() {
 				done
 				;;
 			3)
-				echo -n "请输入镜像名(多个镜像名请用空格分隔):"
+				echo -n "请输入镜像名（多个镜像名请用空格分隔）:"
 				read -r imagenames
 				for name in $imagenames; do
 					docker rmi -f $name
 				done
 				;;
 			4)
-				echo -n -e "${yellow}确定删除所有镜像吗?(y/n):${white}"
+				echo -n -e "${red}确定删除所有镜像吗？（y/n）:${white}"
 				read -r choice
 
 				case "$choice" in
@@ -1408,7 +1409,7 @@ docker_image() {
 					[Nn])
 						;;
 					*)
-						_red "无效选项,请重新输入"
+						_red "无效选项，请重新输入。"
 						;;
 				esac
 				;;
@@ -1416,7 +1417,7 @@ docker_image() {
 				break
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				;;
 		esac
 	done
@@ -1441,7 +1442,7 @@ docker_manager(){
 		echo "------------------------"
 		echo "8. 更换Docker源"
 		echo "9. 编辑Docker配置文件"
-		echo "10. Docker配置文件一键优化(CN提供镜像加速)"
+		echo "10. Docker配置文件一键优化（CN提供镜像加速）"
 		echo "------------------------"
 		echo "11. 开启Docker-ipv6访问"
 		echo "12. 关闭Docker-ipv6访问"
@@ -1451,7 +1452,7 @@ docker_manager(){
 		echo "0. 返回主菜单"
 		echo "------------------------"
 		
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 		read -r choice
 
 		case $choice in
@@ -1462,7 +1463,7 @@ docker_manager(){
 				else
 					docker_main_version
 					while true; do
-						echo -n -e "${yellow}是否升级Docker环境?(y/n)${white}"
+						echo -n -e "${yellow}是否升级Docker环境？（y/n）${white}"
 						read -r answer
 
 						case $answer in
@@ -1474,7 +1475,7 @@ docker_manager(){
 								break
 								;;
 							*)
-								_red "无效选项,请重新输入"
+								_red "无效选项，请重新输入。"
 								;;
 						esac
 					done
@@ -1540,7 +1541,7 @@ docker_manager(){
 					echo "0. 返回上一级选单"
 					echo "------------------------"
 
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 					read -r choice
 
 					case $choice in
@@ -1579,7 +1580,7 @@ docker_manager(){
 							break  # 跳出循环,退出菜单
 							;;
 						*)
-							_red "无效选项,请重新输入"
+							_red "无效选项，请重新输入。"
 							;;
 					esac
 				done
@@ -1599,7 +1600,7 @@ docker_manager(){
 					echo "0. 返回上一级选单"
 					echo "------------------------"
 
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 					read -r choice
 
 					case $choice in
@@ -1626,7 +1627,7 @@ docker_manager(){
 								[Nn])
 									;;
 								*)
-									_red "无效选项,请重新输入"
+									_red "无效选项，请重新输入。"
 									;;
 							esac
 							;;
@@ -1634,7 +1635,7 @@ docker_manager(){
 							break  # 跳出循环,退出菜单
 							;;
 						*)
-							_red "无效选项,请重新输入"
+							_red "无效选项，请重新输入。"
 							;;
 					esac
 				done
@@ -1651,7 +1652,7 @@ docker_manager(){
 					[Nn])
 						;;
 					*)
-						_red "无效选项,请重新输入"
+						_red "无效选项，请重新输入。"
 						;;
 				esac
 				;;
@@ -1687,7 +1688,7 @@ docker_manager(){
 					[Nn])
 						;;
 					*)
-						_red "无效选项,请重新输入"
+						_red "无效选项，请重新输入。"
 						;;
 				esac
 				;;
@@ -1695,7 +1696,7 @@ docker_manager(){
 				honeok
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				;;
 		esac
 		end_of
@@ -1762,7 +1763,7 @@ manage_panel_application() {
 		echo "0. 返回上一级"
 		echo "------------------------"
 
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 		read -r choice
 
 		case $choice in
@@ -1798,7 +1799,7 @@ manage_panel_application() {
 				break
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				;;
 		esac
 		end_of
@@ -1826,7 +1827,7 @@ manage_docker_application() {
 		echo "0. 返回上一级"
 		echo "------------------------"
 
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 		read -r choice
 
 		case $choice in
@@ -1896,7 +1897,7 @@ manage_docker_application() {
 				break
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				;;
 		esac
 		end_of
@@ -2027,7 +2028,7 @@ linux_panel() {
 		echo "0. 返回主菜单"
 		echo "------------------------"
 
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 		read -r choice
 
 		case $choice in
@@ -2125,7 +2126,7 @@ linux_panel() {
 								linux_panel # 返回面板管理界面
 								;;
 							*)
-								_red "无效选项,请重新输入"
+								_red "无效选项，请重新输入。"
 								;;
 						esac
 					done
@@ -2167,7 +2168,7 @@ linux_panel() {
 					echo "1. 使用           0. 返回上一级"
 					echo "------------------------"
 					
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 					read -r choice
 
 					case $choice in
@@ -2179,7 +2180,7 @@ linux_panel() {
 							break
 							;;
 						*)
-							_red "无效选项,请重新输入"
+							_red "无效选项，请重新输入。"
 							;;
 					esac
 					end_of
@@ -2226,7 +2227,7 @@ linux_panel() {
 					echo "0. 返回上一级"
 					echo "------------------------"
 
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 					read -r choice
 
 					case $choice in
@@ -2283,7 +2284,7 @@ linux_panel() {
 							break
 							;;
 						*)
-							_red "无效选项,请重新输入"
+							_red "无效选项，请重新输入。"
 							;;
 					esac
 					end_of
@@ -2390,7 +2391,7 @@ linux_panel() {
 					echo "0. 返回上一级"
 					echo "------------------------"
 
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 					read -r choice
 
 					case $choice in
@@ -2423,7 +2424,7 @@ linux_panel() {
 							break
 							;;
 						*)
-							_red "无效选项,请重新输入"
+							_red "无效选项，请重新输入。"
 							;;
 					esac
 					end_of
@@ -2670,7 +2671,7 @@ linux_panel() {
 				honeok
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				;;
 		esac
 		end_of
@@ -3417,7 +3418,7 @@ linux_ldnmp() {
 		echo "0. 返回主菜单"
 		echo "------------------------"
 
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 		read -r choice
 
 		case $choice in
@@ -3750,7 +3751,7 @@ linux_ldnmp() {
 						PHP_Version="php74"
 						;;
 					*)
-						_red "无效选项,请重新输入"
+						_red "无效选项，请重新输入。"
 						;;
 				esac
 
@@ -4042,7 +4043,7 @@ linux_ldnmp() {
 					echo "0. 返回上一级选单"
 					echo "------------------------"
 
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 					read -r choice
 
 					case $choice in
@@ -4158,7 +4159,7 @@ linux_ldnmp() {
 							break
 							;;
 						*)
-							_red "无效选项,请重新输入"
+							_red "无效选项，请重新输入。"
 							;;
 					esac
 				done
@@ -4199,7 +4200,7 @@ linux_ldnmp() {
 								break
 								;;
 							*)
-								_red "无效选项,请重新输入"
+								_red "无效选项，请重新输入。"
 								;;
 						esac
 					done
@@ -4226,7 +4227,7 @@ linux_ldnmp() {
 				echo "------------------------"
 				echo "1. 每周备份                 2. 每天备份"
 
-				echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+				echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 				read -r choice
 
 				case $choice in
@@ -4293,7 +4294,7 @@ linux_ldnmp() {
 						echo "0. 退出"
 						echo "------------------------"
 
-						echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+						echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 						read -r choice
 
 						case $choice in
@@ -4475,7 +4476,7 @@ linux_ldnmp() {
 								break
 								;;
 							*)
-								_red "无效选项,请重新输入"
+								_red "无效选项，请重新输入。"
 								;;
 						esac
 						end_of
@@ -4497,7 +4498,7 @@ linux_ldnmp() {
 							_yellow "已取消"
 							;;
 						*)
-							_red "无效选项,请重新输入"
+							_red "无效选项，请重新输入。"
 							;;
 					esac
 				else
@@ -4527,7 +4528,7 @@ linux_ldnmp() {
 					echo "0. 退出"
 					echo "------------------------"
 
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 					read -r choice
 
 					case $choice in
@@ -4593,7 +4594,7 @@ linux_ldnmp() {
 							break
 							;;
 						*)
-							_red "无效选项,请重新输入"
+							_red "无效选项，请重新输入。"
 							;;
 					esac
 					end_of
@@ -4613,7 +4614,7 @@ linux_ldnmp() {
 					echo "0. 返回上一级"
 					echo "------------------------"
 
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 					read -r choice
 
 					case $choice in
@@ -4722,7 +4723,7 @@ linux_ldnmp() {
 							break
 							;;
 						*)
-							_red "无效选项,请重新输入"
+							_red "无效选项，请重新输入。"
 							;;
 					esac
 					end_of
@@ -4761,7 +4762,7 @@ linux_ldnmp() {
 						_yellow "操作已取消"
 						;;
 					*)
-						_red "无效选项,请重新输入"
+						_red "无效选项，请重新输入。"
 						;;
 				esac
 				;;
@@ -4769,7 +4770,7 @@ linux_ldnmp() {
 				honeok
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				;;
 		esac
 		end_of
@@ -4959,7 +4960,7 @@ reinstall_system(){
 		echo "0. 返回上一级菜单"
 		echo "-------------------------"
 
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 		read -r choice
 
 		case "$choice" in
@@ -5141,7 +5142,7 @@ reinstall_system(){
 				break
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				break
 				;;
 		esac
@@ -5275,7 +5276,7 @@ set_default_qdisc(){
 				break
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				;;
 		esac
 	done
@@ -5341,7 +5342,7 @@ xanmod_bbr3(){
 			echo "0. 返回上一级选单"
 			echo "-------------------------"
 
-			echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+			echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 			read -r choice
 
 			case $choice in
@@ -5375,7 +5376,7 @@ xanmod_bbr3(){
 					break  # 跳出循环,退出菜单
 					;;
 				*)
-					_red "无效选项,请重新输入"
+					_red "无效选项，请重新输入。"
 					;;
 			esac
 		done
@@ -5462,7 +5463,7 @@ linux_mirror(){
 		echo "0. 返回上一级"
 		echo "-------------------------"
 	
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 		read -r choice
 	
 		case $choice in
@@ -5479,7 +5480,7 @@ linux_mirror(){
 				break
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				;;
 		esac
 	done
@@ -5583,7 +5584,7 @@ cron_manager(){
 		echo "0. 返回上一级选单"
 		echo "-------------------------"
 
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 		read -r choice
 
 		case $choice in
@@ -5595,7 +5596,7 @@ cron_manager(){
 				echo "3. 每天任务                 4. 每小时任务"
 				echo "-------------------------"
 
-				echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+				echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 				read -r dingshi
 
 				case $dingshi in
@@ -5671,7 +5672,7 @@ cron_manager(){
 				break  # 跳出循环,退出菜单
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				;;
 		esac
 	done
@@ -5796,7 +5797,7 @@ telegram_bot(){
 			_yellow "已取消"
 			;;
 		*)
-			_red "无效选项,请重新输入"
+			_red "无效选项，请重新输入。"
 			;;
 	esac
 }
@@ -5935,7 +5936,7 @@ update_openssh() {
 				return 1
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				return 1
 				;;
 		esac
@@ -6002,7 +6003,7 @@ redhat_kernel_update() {
 			echo "0. 返回上一级选单"
 			echo "------------------------"
 
-			echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+			echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 			read -r choice
 
 			case "$choice" in
@@ -6022,7 +6023,7 @@ redhat_kernel_update() {
 					break
 					;;
 				0)
-					_red "无效选项,请重新输入"
+					_red "无效选项，请重新输入。"
 					;;
 			esac
 		done
@@ -6047,7 +6048,7 @@ redhat_kernel_update() {
 				echo "已取消"
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				;;
 		esac
 	fi
@@ -6231,7 +6232,7 @@ clamav_antivirus() {
 		echo "0. 返回上一级选单"
 		echo "------------------------"
 
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 		read -r choice
 
 		case $choice in
@@ -6295,7 +6296,7 @@ cloudflare_ddns() {
 		echo "0. 返回上一级"
 		echo "-------------------------"
 
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 		read -r choice
 
 		case $choice in
@@ -6419,7 +6420,7 @@ cloudflare_ddns() {
 				break
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				;;
 		esac
 		end_of
@@ -6476,7 +6477,7 @@ linux_system_tools(){
 		echo "0. 返回主菜单"
 		echo "------------------------"
 
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 		read -r choice
 
 		case $choice in
@@ -6624,7 +6625,7 @@ EOF
 					echo "0. 返回上一级"
 					echo "------------------------"
 
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 					read -r choice
 
 					case "$choice" in
@@ -6639,7 +6640,7 @@ EOF
 							break
 							;;
 						*)
-							_red "无效选项,请重新输入"
+							_red "无效选项，请重新输入。"
 							;;
 					esac
 				done
@@ -6743,7 +6744,7 @@ EOF
 					echo "1. 分配1024MB         2. 分配2048MB         3. 自定义大小         0. 退出"
 					echo "------------------------"
 					
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 					read -r choice
 
 					case "$choice" in
@@ -6771,7 +6772,7 @@ EOF
 							break
 							;;
 						*)
-							_red "无效选项,请重新输入"
+							_red "无效选项，请重新输入。"
 							;;
 					esac
 				done
@@ -6800,7 +6801,7 @@ EOF
 					echo "0. 返回上一级选单"
 					echo "------------------------"
 
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 					read -r choice
 
 					case $choice in
@@ -6850,7 +6851,7 @@ EOF
 							break
 							;;
 						*)
-							_red "无效选项,请重新输入"
+							_red "无效选项，请重新输入。"
 							;;
 					esac
 				done
@@ -6943,7 +6944,7 @@ EOF
 					echo "----------------------------"
 
 					# 提示用户输入选项
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 					read -r choice
 
 					case $choice in
@@ -6978,7 +6979,7 @@ EOF
 						33) set_timedate Africa/Casablanca ;;
 						34) set_timedate Africa/Lagos ;;
 						0) break ;;  # 退出循环
-						*) _red "无效选项,请重新输入" ;;
+						*) _red "无效选项，请重新输入。" ;;
 					esac
 					end_of
 				done
@@ -7036,7 +7037,7 @@ EOF
 					echo "0. 返回上一级选单"
 					echo "------------------------"
 
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 					read -r host_dns
 
 					case $host_dns in
@@ -7056,7 +7057,7 @@ EOF
 							break
 							;;
 						*)
-							_red "无效选项,请重新输入"
+							_red "无效选项，请重新输入。"
 							;;
 					esac
 				done
@@ -7076,7 +7077,7 @@ EOF
 						echo "0. 退出"
 						echo "------------------------"
 
-						echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+						echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 						read -r choice
 
 						case $choice in
@@ -7100,7 +7101,7 @@ EOF
 								break
 								;;
 							*)
-								_red "无效选项,请重新输入"
+								_red "无效选项，请重新输入。"
 								;;
 						esac
 					elif [ -x "$(command -v fail2ban-client)" ] ; then
@@ -7265,7 +7266,7 @@ EOF
 					echo "0. 返回上一级"
 					echo "--------------------"
 
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 					read -r choice
 
 					case $choice in
@@ -7306,7 +7307,7 @@ EOF
 							break
 							;;
 						*)
-							_red "无效选项,请重新输入"
+							_red "无效选项，请重新输入。"
 							;;
 					esac
 					end_of
@@ -7329,7 +7330,7 @@ EOF
 				honeok
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				;;
 		esac
 		end_of
@@ -7394,7 +7395,7 @@ linux_workspace() {
 		echo "0. 返回主菜单"
 		echo "------------------------"
 
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 		read -r choice
 
 		case $choice in
@@ -7472,7 +7473,7 @@ linux_workspace() {
 					echo "0. 返回上一级"
 					echo "------------------------"
 
-					echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+					echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 					read -r gongzuoqu_del
 
 					case "$gongzuoqu_del" in
@@ -7495,7 +7496,7 @@ linux_workspace() {
 							break
 							;;
 						*)
-							_red "无效选项,请重新输入"
+							_red "无效选项，请重新输入。"
 							;;
 					esac
 				done
@@ -7504,7 +7505,7 @@ linux_workspace() {
 				honeok
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				;;
 		esac
 		end_of
@@ -7545,7 +7546,7 @@ servertest_script(){
 		echo "0. 返回菜单"
 		echo "-------------------------"
 
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 		read -r choice
 
 		case "$choice" in
@@ -7641,7 +7642,7 @@ servertest_script(){
 				honeok # 返回主菜单
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				;;
 		esac
 		end_of
@@ -7688,7 +7689,7 @@ node_create(){
 		echo "0. 返回主菜单"
 		echo "-------------------------------"
 
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 		read -r choice
 
 		case $choice in
@@ -7780,7 +7781,7 @@ node_create(){
 				honeok # 返回主菜单
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				;;
 		esac
 		end_of
@@ -7805,7 +7806,7 @@ oracle_script() {
 		echo "0. 返回主菜单"
 		echo "------------------------"
 
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 		read -r choice
 
 		case $choice in
@@ -7889,7 +7890,7 @@ oracle_script() {
 									break  # 结束循环
 									;;
 								*)
-									_red "无效选项,请重新输入"
+									_red "无效选项，请重新输入。"
 									;;
 							esac
 						done
@@ -7920,7 +7921,7 @@ oracle_script() {
 				honeok
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				;;
 		esac
 		end_of
@@ -7949,7 +7950,7 @@ palworld_script(){
 		echo "0. 返回主菜单"
 		echo "-------------------------"
 
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 		read -r choice
 
 		case $choice in
@@ -7979,7 +7980,7 @@ palworld_script(){
 				honeok
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				;;
 		esac
 	done
@@ -8051,7 +8052,7 @@ honeok(){
 		echo "-------------------------------------------------------"
 		echo ""
 
-		echo -n -e "${yellow}请输入选项并按回车键确认:${white}"
+		echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
 		read -r choice
 
 		case "$choice" in
@@ -8117,7 +8118,7 @@ honeok(){
 				exit 0
 				;;
 			*)
-				_red "无效选项,请重新输入"
+				_red "无效选项，请重新输入。"
 				;;
 		esac
 		end_of
