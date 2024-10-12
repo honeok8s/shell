@@ -4926,7 +4926,7 @@ reinstall_system(){
 		echo "35. openSUSE Tumbleweed"
 		echo "-------------------------"
 		echo "41. Windows 11                42. Windows 10"
-		echo "44. Windows Server 2022"
+		echo "43. Windows 7                 44. Windows Server 2022"
 		echo "45. Windows Server 2019       46. Windows Server 2016"
 		echo "-------------------------"
 		echo "0. 返回上一级菜单"
