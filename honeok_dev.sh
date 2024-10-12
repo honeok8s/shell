@@ -4862,15 +4862,15 @@ reinstall_system(){
 	local os_text="当前操作系统: ${os_info}"
 
 	dd_xitong_MollyLau() {
-		wget --no-check-certificate -qO InstallNET.sh 'https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh' && chmod a+x InstallNET.sh
+		wget --no-check-certificate -qO InstallNET.sh "${github_proxy}https://raw.githubusercontent.com/leitbogioro/Tools/master/Linux_reinstall/InstallNET.sh" && chmod a+x InstallNET.sh
 	}
 
 	dd_xitong_bin456789() {
-		curl -O https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh
+		curl -fsSL -O "${github_proxy}https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh"
 	}
 
 	dd_xitong_1() {
-		echo -e "重装后初始用户名:${yellow}root${white}  初始密码:${yellow}LeitboGi0ro${white}  初始端口: ${yellow}22${white}"
+		echo -e "重装后初始用户名: ${yellow}root${white}  初始密码: ${yellow}LeitboGi0ro${white}  初始端口: ${yellow}22${white}"
 		_yellow "按任意键继续"
 		read -n 1 -s -r -p ""
 		install wget
@@ -4904,8 +4904,8 @@ reinstall_system(){
 	while true; do
 		need_root
 		clear
-		echo "重装有风险失联,不放心者慎用,重装预计花费15分钟,请提前备份数据"
-		echo "感谢MollyLau和bin456789的脚本支持!"
+		echo -e "${red}注意: ${white}重装有风险失联，不放心者慎用。重装预计花费15分钟，请提前备份数据。"
+		_gray "感谢MollyLau大佬和bin456789大佬的脚本支持！"
 		echo "-------------------------"
 		_yellow "${os_text}"
 		echo "-------------------------"
@@ -4922,6 +4922,8 @@ reinstall_system(){
 		echo "29. CentOS 7"
 		echo "-------------------------"
 		echo "31. Alpine Linux              32. Arch Linux"
+		echo "33. Kali Linux                34. openEuler"
+		echo "35. openSUSE Tumbleweed"
 		echo "-------------------------"
 		echo "41. Windows 11                42. Windows 10"
 		echo "44. Windows Server 2022"
@@ -5075,6 +5077,15 @@ reinstall_system(){
 			42)
 				dd_xitong_2
 				bash InstallNET.sh -windows 10 -lang "cn"
+				reboot
+				exit
+				;;
+			43)
+				dd_xitong_4
+				URL="https://massgrave.dev/windows_7_links"
+				web_content=$(wget -q -O - "$URL")
+				iso_link=$(echo "$web_content" | grep -oP '(?<=href=")[^"]*cn[^"]*windows_7[^"]*professional[^"]*x64[^"]*\.iso')
+				bash reinstall.sh windows --iso="$iso_link" --image-name='Windows 7 PROFESSIONAL'
 				reboot
 				exit
 				;;
