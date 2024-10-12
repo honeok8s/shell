@@ -447,12 +447,7 @@ end_of(){
 # 检查用户是否为root
 need_root(){
 	clear
-	if [ "$(id -u)" -ne "0" ]; then
-		_red "该功能需要root用户才能运行"
-		end_of
-		# 回调主菜单
-		honeok
-	fi
+	[ "$(id -u)" -ne "0" ] && _red "提示：该功能需要root用户才能运行！" && end_of && honeok
 }
 
 # 获取公网IP地址
@@ -524,28 +519,28 @@ update_system(){
 #################### 系统更新END ####################
 
 #################### 系统清理START ####################
+wait_for_lock(){
+	local timeout=300  # 设置超时时间为300秒(5分钟)
+	local waited=0
+
+	while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+		_yellow "等待dpkg锁释放"
+		sleep 1
+		waited=$((waited + 1))
+		if [ $waited -ge $timeout ]; then
+			_red "等待dpkg锁超时"
+			break # 等待dpkg锁超时后退出循环
+		fi
+	done
+}
+
+# 修复dpkg中断问题
+fix_dpkg(){
+	DEBIAN_FRONTEND=noninteractive dpkg --configure -a
+}
+
 linux_clean() {
 	_yellow "正在系统清理"
-
-	wait_for_lock(){
-		local timeout=300  # 设置超时时间为300秒(5分钟)
-		local waited=0
-
-		while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
-			_yellow "等待dpkg锁释放"
-			sleep 1
-			waited=$((waited + 1))
-			if [ $waited -ge $timeout ]; then
-				_red "等待dpkg锁超时"
-				break # 等待dpkg锁超时后退出循环
-			fi
-		done
-	}
-
-	# 修复dpkg中断问题
-	fix_dpkg(){
-		DEBIAN_FRONTEND=noninteractive dpkg --configure -a
-	}
 
 	if command -v dnf &>/dev/null; then
 		dnf autoremove -y
@@ -576,7 +571,7 @@ linux_clean() {
 		rm -fr /var/cache/apk/*
 		rm -fr /tmp/*
 	else
-		_red "未知的包管理器!"
+		_red "未知的包管理器！"
 		return 1
 	fi
 
@@ -843,7 +838,7 @@ linux_bbr() {
 		done
 	else
 		install wget
-		wget --no-check-certificate -O tcpx.sh https://raw.githubusercontent.com/ylx2016/Linux-NetSpeed/master/tcpx.sh && chmod +x tcpx.sh && ./tcpx.sh
+		wget --no-check-certificate -O tcpx.sh "${github_proxy}https://raw.githubusercontent.com/ylx2016/Linux-NetSpeed/master/tcpx.sh" && chmod +x tcpx.sh && ./tcpx.sh
 		rm tcpx.sh
 	fi
 }
@@ -895,9 +890,10 @@ install_docker_official() {
 
 install_add_docker() {
 	if [ ! -f "/etc/alpine-release" ]; then
-		_yellow "正在安装docker"
+		_yellow "正在安装docker环境"
 	fi
 
+	# Docker调优
 	install_common_docker() {
 		generate_docker_config
 		docker_main_version
@@ -924,6 +920,38 @@ install_add_docker() {
 		enable docker
 		start docker
 		install_common_docker
+	elif [ -f /etc/os-release ] && grep -q "Kali" /etc/os-release; then
+		install apt-transport-https ca-certificates curl gnupg lsb-release
+		rm -f /usr/share/keyrings/docker-archive-keyring.gpg
+		if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
+			if [ "$(uname -m)" = "x86_64" ]; then
+				sed -i '/^deb \[arch=amd64 signed-by=\/etc\/apt\/keyrings\/docker-archive-keyring.gpg\] https:\/\/mirrors.aliyun.com\/docker-ce\/linux\/debian bullseye stable/d' /etc/apt/sources.list.d/docker.list > /dev/null
+				mkdir -p /etc/apt/keyrings
+				curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker-archive-keyring.gpg > /dev/null
+				echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker-archive-keyring.gpg] https://mirrors.aliyun.com/docker-ce/linux/debian bullseye stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+			elif [ "$(uname -m)" = "aarch64" ]; then
+				sed -i '/^deb \[arch=arm64 signed-by=\/etc\/apt\/keyrings\/docker-archive-keyring.gpg\] https:\/\/mirrors.aliyun.com\/docker-ce\/linux\/debian bullseye stable/d' /etc/apt/sources.list.d/docker.list > /dev/null
+				mkdir -p /etc/apt/keyrings
+				curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker-archive-keyring.gpg > /dev/null
+				echo "deb [arch=arm64 signed-by=/etc/apt/keyrings/docker-archive-keyring.gpg] https://mirrors.aliyun.com/docker-ce/linux/debian bullseye stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+			fi
+		else
+			if [ "$(uname -m)" = "x86_64" ]; then
+				sed -i '/^deb \[arch=amd64 signed-by=\/usr\/share\/keyrings\/docker-archive-keyring.gpg\] https:\/\/download.docker.com\/linux\/debian bullseye stable/d' /etc/apt/sources.list.d/docker.list > /dev/null
+				mkdir -p /etc/apt/keyrings
+				curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker-archive-keyring.gpg > /dev/null
+				echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian bullseye stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+			elif [ "$(uname -m)" = "aarch64" ]; then
+				sed -i '/^deb \[arch=arm64 signed-by=\/usr\/share\/keyrings\/docker-archive-keyring.gpg\] https:\/\/download.docker.com\/linux\/debian bullseye stable/d' /etc/apt/sources.list.d/docker.list > /dev/null
+				mkdir -p /etc/apt/keyrings
+				curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker-archive-keyring.gpg > /dev/null
+				echo "deb [arch=arm64 signed-by=/etc/apt/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian bullseye stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+			fi
+		fi
+		install docker-ce docker-ce-cli containerd.io
+		enable docker
+		start docker
+		install_common_docker
 	elif command -v apt &>/dev/null || command -v yum &>/dev/null; then
 		install_docker_official
 		install_common_docker
@@ -941,7 +969,6 @@ install_add_docker() {
 generate_docker_config() {
 	local config_file="/etc/docker/daemon.json"
 	local config_dir="$(dirname "$config_file")"
-	local registry_url="https://ghp.ci/github.com/honeok8s/conf/blob/main/docker/registry_mirrors.txt"
 	local is_china_server='false'
 	local cgroup_driver
 
@@ -976,7 +1003,7 @@ generate_docker_config() {
 	fi
 
 	# 获取 registry mirrors 内容
-	registry_mirrors=$(curl -sL "$registry_url" | grep -v '^#' | sed '/^$/d')
+	registry_mirrors=$(curl -fsSL "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/docker/registry_mirrors.txt" | grep -v '^#' | sed '/^$/d')
 
 	# 判断操作系统是否为 Alpine
 	if grep -q 'Alpine' /etc/issue; then
@@ -4878,7 +4905,7 @@ reinstall_system(){
 	}
 
 	dd_xitong_2() {
-		echo -e "重装后初始用户名:${yellow}Administrator${white} 初始密码:${yellow}Teddysun.com${white} 初始端口:${yellow}3389${white}"
+		echo -e "重装后初始用户名: ${yellow}Administrator${white} 初始密码: ${yellow}Teddysun.com${white} 初始端口: ${yellow}3389${white}"
 		_yellow "按任意键继续"
 		read -n 1 -s -r -p ""
 		install wget
@@ -4886,14 +4913,14 @@ reinstall_system(){
 	}
 
 	dd_xitong_3() {
-		echo -e "重装后初始用户名:${yellow}root${white} 初始密码:${yellow}123@@@${white} 初始端口:${yellow}22${white}"
+		echo -e "重装后初始用户名: ${yellow}root${white} 初始密码: ${yellow}123@@@${white} 初始端口: ${yellow}22${white}"
 		_yellow "按任意键继续"
 		read -n 1 -s -r -p ""
 		dd_xitong_bin456789
 	}
 
 	dd_xitong_4() {
-		echo -e "重装后初始用户名:${yellow}Administrator${white} 初始密码:${yellow}123@@@${white} 初始端口:${yellow}3389${white}"
+		echo -e "重装后初始用户名: ${yellow}Administrator${white} 初始密码: ${yellow}123@@@${white} 初始端口: ${yellow}3389${white}"
 		_yellow "按任意键继续"
 		read -n 1 -s -r -p ""
 		dd_xitong_bin456789
@@ -4905,7 +4932,7 @@ reinstall_system(){
 		need_root
 		clear
 		echo -e "${red}注意: ${white}重装有风险失联，不放心者慎用。重装预计花费15分钟，请提前备份数据。"
-		_orange "感谢MollyLau大佬和bin456789大佬的脚本支持！"
+		echo "感谢MollyLau大佬和bin456789大佬的脚本支持！"
 		echo "-------------------------"
 		_yellow "${os_text}"
 		echo "-------------------------"
