@@ -27,7 +27,7 @@ _gray() { echo -e ${gray}$@${white}; }
 _orange() { echo -e ${orange}$@${white}; }
 
 # 2024/10/12
-honeok_v="v2.10_dev"
+honeok_v="v3.0.0_dev"
 
 ########################################
 # 设置地区相关的代理配置
