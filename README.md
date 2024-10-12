@@ -12,7 +12,9 @@ bash <(curl -fsSL https://gh-proxy.com/github.com/honeok8s/shell/raw/main/honeok
 * 下载本地执行
 ```shell
 curl -fsSL -O github.com/honeok8s/shell/raw/main/honeok.sh && chmod +x ./honeok.sh && ./honeok.sh
+```
 or
+```
 curl -fsSL -O https://gh-proxy.com/github.com/honeok8s/shell/raw/main/honeok.sh && chmod +x ./honeok.sh && ./honeok.sh
 ```
 ## Docker一键安装
