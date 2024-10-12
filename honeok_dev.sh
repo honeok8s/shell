@@ -2759,11 +2759,8 @@ ldnmp_install_certbot() {
 	local cron_job existing_cron certbot_dir
 	certbot_dir="/data/docker_data/certbot"
 
-	docker pull certbot/certbot
-
 	# 创建Certbot工作目录
-	[ ! -d "$certbot_dir" ] && mkdir -p "$certbot_dir"
-	mkdir -p "$certbot_dir/cert" "$certbot_dir/data"
+	[ ! -d "$certbot_dir" ] && mkdir -p "$certbot_dir/cert" "$certbot_dir/data"
 
 	# 创建并进入脚本目录
 	[ ! -d /data/script ] && mkdir -p /data/script
@@ -2771,48 +2768,49 @@ ldnmp_install_certbot() {
 
 	# 设置定时任务字符串
 	check_crontab_installed
-	cron_job="0 0 * * * /data/script/auto_cert_renewal.sh >/dev/null 2>&1"
+	cron_job="0 0 * * * /data/script/cert_renewal.sh >/dev/null 2>&1"
 
 	# 检查是否存在相同的定时任务
 	existing_cron=$(crontab -l 2>/dev/null | grep -F "$cron_job")
 
 	if [ -z "$existing_cron" ]; then
 		# 下载并使脚本可执行
-		curl -sS -o ./auto_cert_renewal.sh https://raw.githubusercontent.com/honeok8s/shell/main/callscript/docker_certbot.sh
-		chmod a+x auto_cert_renewal.sh
+		curl -sSL -o "cert_renewal.sh" ${github_proxy}github.com/honeok8s/shell/raw/refs/heads/main/callscript/docker_certbot.sh
+		chmod +x cert_renewal.sh
 
 		# 添加定时任务
 		(crontab -l 2>/dev/null; echo "$cron_job") | crontab -
-		_green "续签任务已安装"
+		_green "证书续签任务已安装"
 	else
-		_yellow "续签任务已存在,无需重复安装"
+		_yellow "证书续签任务已存在，无需重复安装"
 	fi
 }
 
 ldnmp_uninstall_certbot() {
-	local cron_job existing_cron
+	local cron_job existing_cron certbot_dir certbot_image_ids
 	certbot_dir="/data/docker_data/certbot"
-
 	certbot_image_ids=$(docker images --format "{{.ID}}" --filter=reference='certbot/*')
+
 	if [ -n "$certbot_image_ids" ]; then
 		while IFS= read -r image_id; do
 			docker rmi "$image_id" > /dev/null 2>&1
 		done <<< "$certbot_image_ids"
 	fi
 
-	cron_job="0 0 * * * /data/script/auto_cert_renewal.sh >/dev/null 2>&1"
+	cron_job="0 0 * * * /data/script/cert_renewal.sh >/dev/null 2>&1"
+
 	# 检查并删除定时任务
 	existing_cron=$(crontab -l 2>/dev/null | grep -F "$cron_job")
 	if [ -n "$existing_cron" ]; then
 		(crontab -l 2>/dev/null | grep -Fv "$cron_job") | crontab -
 		_green "续签任务已从定时任务中移除"
 	else
-		_yellow "定时任务未找到,无需移除"
+		_yellow "定时任务未找到，无需移除"
 	fi
 
 	# 删除脚本文件
-	if [ -f /data/script/auto_cert_renewal.sh ]; then
-		rm /data/script/auto_cert_renewal.sh
+	if [ -f /data/script/cert_renewal.sh ]; then
+		rm /data/script/cert_renewal.sh
 		_green "续签脚本文件已删除"
 	fi
 
@@ -2832,6 +2830,9 @@ default_server_ssl() {
 		openssl genpkey -algorithm Ed25519 -out "$nginx_dir/certs/default_server.key"
 		openssl req -x509 -key "$nginx_dir/certs/default_server.key" -out "$nginx_dir/certs/default_server.crt" -days 5475 -subj "/C=US/ST=State/L=City/O=Organization/OU=Organizational Unit/CN=Common Name"
 	fi
+
+	openssl rand -out "$nginx_dir/certs/ticket12.key" 48
+	openssl rand -out "$nginx_dir/certs/ticket13.key" 80
 }
 
 # Nginx日志轮转
@@ -2840,23 +2841,23 @@ ldnmp_install_ngx_logrotate(){
 	nginx_dir="$web_dir/nginx"
 
 	# 定义日志截断文件脚本路径
-	logrotate_script="$nginx_dir/logrotate.sh"
+	rotate_script="$nginx_dir/rotate.sh"
 
 	if [[ ! -d $nginx_dir ]]; then
 		_red "Nginx目录不存在"
 		return 1
 	else
-		wget -qO "$logrotate_script" "https://raw.githubusercontent.com/honeok8s/shell/main/nginx/LDNMP_ngx_logrotate.sh"
+		curl -sSL -o "$rotate_script" ${github_proxy}github.com/honeok8s/shell/raw/refs/heads/main/nginx/docker_ngx_rotate2.sh
 		if [[ $? -ne 0 ]]; then
-			_red "脚本下载失败,请检查网络连接或脚本URL"
+			_red "脚本下载失败，请检查网络连接或脚本URL"
 			return 1
 		fi
-		chmod a+x "$logrotate_script"
+		chmod +x "$rotate_script"
 	fi
 
 	# 检查crontab中是否存在相关任务
-	crontab_entry="0 0 * * 0 $logrotate_script >/dev/null 2>&1"
-	if ! crontab -l | grep -q "$logrotate_script"; then
+	crontab_entry="0 0 * * 0 $rotate_script >/dev/null 2>&1"
+	if ! crontab -l | grep -q "$rotate_script"; then
 		# 添加crontab任务
 		(crontab -l; echo "$crontab_entry") | crontab -
 		_green "Nginx日志轮转任务已安装"
@@ -2870,20 +2871,20 @@ ldnmp_uninstall_ngx_logrotate() {
 	nginx_dir="$web_dir/nginx"
 
 	# 定义日志截断文件脚本路径
-	logrotate_script="$nginx_dir/logrotate.sh"
+	rotate_script="$nginx_dir/rotate.sh"
 
 	if [[ -d $nginx_dir ]]; then
-		if [[ -f $logrotate_script ]]; then
-			rm -f "$logrotate_script"
+		if [[ -f $rotate_script ]]; then
+			rm -f "$rotate_script"
 			_green "日志截断脚本已删除"
 		else
 			_yellow "日志截断脚本不存在"
 		fi
 	fi
 
-	crontab_entry="0 0 * * 0 $logrotate_script >/dev/null 2>&1"
-	if crontab -l | grep -q "$logrotate_script"; then
-		crontab -l | grep -v "$logrotate_script" | crontab -
+	crontab_entry="0 0 * * 0 $rotate_script >/dev/null 2>&1"
+	if crontab -l | grep -q "$rotate_script"; then
+		crontab -l | grep -v "$rotate_script" | crontab -
 		_green "Nginx日志轮转任务已卸载"
 	else
 		_yellow "Nginx日志轮转任务不存在"
