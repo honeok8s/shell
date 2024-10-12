@@ -1,16 +1,19 @@
 ## VPS工具箱
+Fork from kejilion：[kejilion.sh](https://github.com/kejilion/sh)
 * 在线执行
 ```shell
-bash <(curl -sL github.com/honeok8s/shell/raw/main/honeok.sh)
+bash <(curl -fsSL github.com/honeok8s/shell/raw/main/honeok.sh)
 ```
 * 国内使用
 ```shell
-bash <(curl -sL https://ghp.ci/github.com/honeok8s/shell/raw/main/honeok.sh)
+bash <(curl -fsSL https://gh-proxy.com/github.com/honeok8s/shell/raw/main/honeok.sh)
 ```
 
 * 下载本地执行
 ```shell
-curl -sL -O github.com/honeok8s/shell/raw/main/honeok.sh && chmod +x ./honeok.sh && ./honeok.sh
+curl -fsSL -O github.com/honeok8s/shell/raw/main/honeok.sh && chmod +x ./honeok.sh && ./honeok.sh
+or
+curl -fsSL -O https://gh-proxy.com/github.com/honeok8s/shell/raw/main/honeok.sh && chmod +x ./honeok.sh && ./honeok.sh
 ```
 ## Docker一键安装
 根据IP归属地优化配置文件，安装镜像加速
