@@ -26,6 +26,7 @@ _purple() { echo -e ${purple}$@${white}; }
 _gray() { echo -e ${gray}$@${white}; }
 _orange() { echo -e ${orange}$@${white}; }
 
+# 2024/10/12
 honeok_v="v2.10_dev"
 
 ########################################
