@@ -28,6 +28,26 @@ _orange() { echo -e ${orange}$@${white}; }
 
 honeok_v="v2.10_dev"
 
+########################################
+# 设置地区相关的代理配置
+set_region_config() {
+	if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
+		execute_commands=0                    # 0 表示允许执行命令
+		github_proxy="https://gh-proxy.com/"  # 设置 GitHub 代理
+	else
+		execute_commands=1                    # 1 表示不执行命令
+		github_proxy=""                       # 不使用代理
+	fi
+}
+# 定义一个函数来执行命令
+exec_cmd() {
+	if [ "$execute_commands" -eq 0 ]; then  # 检查是否允许执行命令
+		"$@"
+	fi
+}
+# 调用地区配置函数
+set_region_config
+########################################
 print_logo(){
 	local os_info=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d '"' -f 2)
 	local bold='\033[1m'       # 加粗
@@ -2876,31 +2896,39 @@ install_ldnmp() {
 	manage_compose start
 
 	clear
-	_yellow "正在配置LDNMP环境,请耐心等待"
+	_yellow "正在配置LDNMP环境，请耐心等待..."
 
 	# 定义要执行的命令
 	commands=(
-		"docker exec nginx chmod -R 777 /var/www/html"
+		"docker exec nginx chmod -R 777 /var/www/html > /dev/null 2>&1"
+		"docker exec nginx mkdir -p /var/cache/nginx/proxy > /dev/null 2>&1"
+		"docker exec nginx chmod 777 /var/cache/nginx/proxy > /dev/null 2>&1"
+		"docker exec nginx mkdir -p /var/cache/nginx/fastcgi > /dev/null 2>&1"
+		"docker exec nginx chmod 777 /var/cache/nginx/fastcgi > /dev/null 2>&1"
 		"docker restart nginx > /dev/null 2>&1"
+
+		"exec_cmd docker exec php sed -i \"s/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g\" /etc/apk/repositories > /dev/null 2>&1"
+		"exec_cmd docker exec php74 sed -i \"s/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g\" /etc/apk/repositories > /dev/null 2>&1"
 
 		"docker exec php apk update > /dev/null 2>&1"
 		"docker exec php74 apk update > /dev/null 2>&1"
 
 		# php安装包管理
-		"curl -sL https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions -o /usr/local/bin/install-php-extensions > /dev/null 2>&1"
+		"curl -sL ${github_proxy}https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions -o /usr/local/bin/install-php-extensions > /dev/null 2>&1"
 		"docker exec php mkdir -p /usr/local/bin/ > /dev/null 2>&1"
 		"docker exec php74 mkdir -p /usr/local/bin/ > /dev/null 2>&1"
 		"docker cp /usr/local/bin/install-php-extensions php:/usr/local/bin/ > /dev/null 2>&1"
 		"docker cp /usr/local/bin/install-php-extensions php74:/usr/local/bin/ > /dev/null 2>&1"
 		"docker exec php chmod +x /usr/local/bin/install-php-extensions > /dev/null 2>&1"
 		"docker exec php74 chmod +x /usr/local/bin/install-php-extensions > /dev/null 2>&1"
+		"rm /usr/local/bin/install-php-extensions > /dev/null 2>&1"
 
 		# php安装扩展
 		"docker exec php sh -c '\
 			apk add --no-cache imagemagick imagemagick-dev \
 			&& apk add --no-cache git autoconf gcc g++ make pkgconfig \
 			&& rm -fr /tmp/imagick \
-			&& git clone https://github.com/Imagick/imagick /tmp/imagick \
+			&& git clone ${github_proxy}https://github.com/Imagick/imagick /tmp/imagick \
 			&& cd /tmp/imagick \
 			&& phpize \
 			&& ./configure \
@@ -2926,6 +2954,8 @@ install_ldnmp() {
 		"docker exec php sh -c 'echo \"memory_limit=256M\" > /usr/local/etc/php/conf.d/memory.ini' > /dev/null 2>&1"
 		"docker exec php sh -c 'echo \"max_execution_time=1200\" > /usr/local/etc/php/conf.d/max_execution_time.ini' > /dev/null 2>&1"
 		"docker exec php sh -c 'echo \"max_input_time=600\" > /usr/local/etc/php/conf.d/max_input_time.ini' > /dev/null 2>&1"
+		"docker exec php sh -c 'echo \"max_input_vars=3000\" > /usr/local/etc/php/conf.d/max_input_vars.ini' > /dev/null 2>&1"
+		"docker exec php sh -c 'echo \"expose_php=Off\" > /usr/local/etc/php/conf.d/custom-php-settings.ini' > /dev/null 2>&1"
 
 		# php重启
 		"docker exec php chmod -R 777 /var/www/html"
@@ -2949,6 +2979,8 @@ install_ldnmp() {
 		"docker exec php74 sh -c 'echo \"memory_limit=256M\" > /usr/local/etc/php/conf.d/memory.ini' > /dev/null 2>&1"
 		"docker exec php74 sh -c 'echo \"max_execution_time=1200\" > /usr/local/etc/php/conf.d/max_execution_time.ini' > /dev/null 2>&1"
 		"docker exec php74 sh -c 'echo \"max_input_time=600\" > /usr/local/etc/php/conf.d/max_input_time.ini' > /dev/null 2>&1"
+		"docker exec php sh -c 'echo \"max_input_vars=3000\" > /usr/local/etc/php/conf.d/max_input_vars.ini' > /dev/null 2>&1"
+		"docker exec php sh -c 'echo \"expose_php=Off\" > /usr/local/etc/php/conf.d/custom-php-settings.ini' > /dev/null 2>&1"
 
 		# php7.4重启
 		"docker exec php74 chmod -R 777 /var/www/html"
@@ -2957,10 +2989,6 @@ install_ldnmp() {
 		# redis调优
 		"docker exec -it redis redis-cli CONFIG SET maxmemory 512mb > /dev/null 2>&1"
 		"docker exec -it redis redis-cli CONFIG SET maxmemory-policy allkeys-lru > /dev/null 2>&1"
-
-		# 最后一次php重启
-		"docker restart php > /dev/null 2>&1"
-		"docker restart php74 > /dev/null 2>&1"
       )
 
 	total_commands=${#commands[@]}  # 计算总命令数
@@ -2984,7 +3012,7 @@ install_ldnmp() {
 			echo -ne "\r[${yellow}$percentage%${white}] $progressBar"
 	done
 
-	echo # 打印换行,以便输出不被覆盖
+	echo # 打印换行，以便输出不被覆盖
 
 	clear
 	_green "LDNMP环境安装完毕"
