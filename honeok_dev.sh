@@ -854,7 +854,7 @@ install_docker() {
 	if ! command -v docker >/dev/null 2>&1; then
 		install_add_docker
 	else
-		_green "Docker已安装"
+		_green "Docker环境已经安装"
 	fi
 }
 
@@ -883,9 +883,9 @@ docker_main_version() {
 install_docker_official() {
 	if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
 		cd ~
-		curl -sL -O https://ghp.ci/github.com/honeok8s/shell/raw/main/docker/get-docker-official.sh && chmod a+x get-docker-official.sh
-		bash get-docker-official.sh --mirror Aliyun
-		[ -f ~/get-docker-official.sh ] && rm -f get-docker-official.sh
+		curl -fsSL -o "get-docker.sh" ${github_proxy}github.com/honeok8s/shell/raw/main/docker/get-docker-official.sh && chmod +x get-docker.sh
+		sh get-docker.sh --mirror Aliyun
+		rm -f get-docker.sh
 	else
 		curl -fsSL https://get.docker.com | sh
 	fi
@@ -2775,7 +2775,7 @@ ldnmp_install_certbot() {
 
 	if [ -z "$existing_cron" ]; then
 		# 下载并使脚本可执行
-		curl -sSL -o "cert_renewal.sh" ${github_proxy}github.com/honeok8s/shell/raw/refs/heads/main/callscript/docker_certbot.sh
+		curl -fsSL -o "cert_renewal.sh" ${github_proxy}github.com/honeok8s/shell/raw/refs/heads/main/callscript/docker_certbot.sh
 		chmod +x cert_renewal.sh
 
 		# 添加定时任务
@@ -2847,7 +2847,7 @@ ldnmp_install_ngx_logrotate(){
 		_red "Nginx目录不存在"
 		return 1
 	else
-		curl -sSL -o "$rotate_script" ${github_proxy}github.com/honeok8s/shell/raw/refs/heads/main/nginx/docker_ngx_rotate2.sh
+		curl -fsSL -o "$rotate_script" ${github_proxy}github.com/honeok8s/shell/raw/refs/heads/main/nginx/docker_ngx_rotate2.sh
 		if [[ $? -ne 0 ]]; then
 			_red "脚本下载失败，请检查网络连接或脚本URL"
 			return 1
@@ -2916,7 +2916,7 @@ install_ldnmp() {
 		"docker exec php74 apk update > /dev/null 2>&1"
 
 		# php安装包管理
-		"curl -sL ${github_proxy}https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions -o /usr/local/bin/install-php-extensions > /dev/null 2>&1"
+		"curl -fsSL ${github_proxy}github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions -o /usr/local/bin/install-php-extensions > /dev/null 2>&1"
 		"docker exec php mkdir -p /usr/local/bin/ > /dev/null 2>&1"
 		"docker exec php74 mkdir -p /usr/local/bin/ > /dev/null 2>&1"
 		"docker cp /usr/local/bin/install-php-extensions php:/usr/local/bin/ > /dev/null 2>&1"
@@ -3321,28 +3321,32 @@ fail2ban_sshd() {
 }
 
 fail2ban_install_sshd() {
-	[ ! -d /data/docker_data/fail2ban ] && mkdir -p /data/docker_data/fail2ban
-	cd /data/docker_data/fail2ban
-	wget -qO docker-compose.yml https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/fail2ban-docker-compose.yml
+	local fail2ban_dir="/data/docker_data/fail2ban"
+	local config_dir="$fail2ban_dir/config/fail2ban"
+
+	[ ! -d "$fail2ban_dir" ] && mkdir -p "$fail2ban_dir"
+	cd "$fail2ban_dir"
+
+	curl -fsSL -o docker-compose.yml ${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/fail2ban/fail2ban-docker-compose.yml
 
 	manage_compose start
 
 	sleep 3
 	if grep -q 'Alpine' /etc/issue; then
-		cd /data/docker_data/fail2ban/config/fail2ban/filter.d
-		curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-sshd.conf
-		curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-sshd-ddos.conf
-		cd /data/docker_data/fail2ban/config/fail2ban/jail.d/
-		curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-ssh.conf
+		cd "$config_dir/filter.d"
+		curl -fsSL -O ${github_proxy}https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-sshd.conf
+		curl -fsSL -O ${github_proxy}https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-sshd-ddos.conf
+		cd "$config_dir/jail.d/"
+		curl -fsSL -O ${github_proxy}https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-ssh.conf
 	elif command -v dnf &>/dev/null; then
-		cd /data/docker_data/fail2ban/config/fail2ban/jail.d/
-		curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/centos-ssh.conf
+		cd "$config_dir/jail.d/"
+		curl -fsSL -O ${github_proxy}https://raw.githubusercontent.com/kejilion/config/main/fail2ban/centos-ssh.conf
 	else
 		install rsyslog
 		systemctl start rsyslog
 		systemctl enable rsyslog
-		cd /data/docker_data/fail2ban/config/fail2ban/jail.d/
-		curl -sS -O https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/linux-ssh.conf
+		cd "$config_dir/jail.d/"
+		curl -fsSL -O ${github_proxy}https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/linux-ssh.conf
 	fi
 }
 
@@ -4476,9 +4480,9 @@ linux_ldnmp() {
 					fail2ban_install_sshd
 
 					cd /data/docker_data/fail2ban/config/fail2ban/filter.d
-					curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/fail2ban-nginx-cc.conf
+					curl -fsSL -O ${github_proxy}https://raw.githubusercontent.com/kejilion/sh/main/fail2ban-nginx-cc.conf
 					cd /data/docker_data/fail2ban/config/fail2ban/jail.d
-					curl -sS -O https://raw.githubusercontent.com/kejilion/config/main/fail2ban/nginx-docker-cc.conf
+					curl -fsSL -O ${github_proxy}https://raw.githubusercontent.com/kejilion/config/main/fail2ban/nginx-docker-cc.conf
 
 					sed -i "/cloudflare/d" /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
 
@@ -4506,21 +4510,21 @@ linux_ldnmp() {
 							sed -i 's/worker_connections.*/worker_connections 1024;/' "$nginx_dir/nginx.conf"
 
 							# php调优
-							wget -qO "$web_dir/optimized_php.ini" "https://raw.githubusercontent.com/kejilion/sh/main/optimized_php.ini"
+							curl -fsSL -o "$web_dir/optimized_php.ini" "${github_proxy}https://raw.githubusercontent.com/kejilion/sh/main/optimized_php.ini"
 							docker cp "$web_dir/optimized_php.ini" "php:/usr/local/etc/php/conf.d/optimized_php.ini"
 							docker cp "$web_dir/optimized_php.ini" "php74:/usr/local/etc/php/conf.d/optimized_php.ini"
 							rm -f "$web_dir/optimized_php.ini"
 
 							# php调优
-							wget -qO "$web_dir/www.conf" "https://raw.githubusercontent.com/kejilion/sh/main/www-1.conf"
+							curl -fsSL -o "$web_dir/www.conf" "${github_proxy}https://raw.githubusercontent.com/kejilion/sh/main/www-1.conf"
 							docker cp "$web_dir/www.conf" "php:/usr/local/etc/php-fpm.d/www.conf"
 							docker cp "$web_dir/www.conf" "php74:/usr/local/etc/php-fpm.d/www.conf"
 							rm -f "$web_dir/www.conf"
 
 							# mysql调优
-							wget -qO "$web_dir/my.cnf" https://raw.githubusercontent.com/kejilion/sh/main/custom_mysql_config-1.cnf
+							curl -fsSL -o "$web_dir/my.cnf" "${github_proxy}https://raw.githubusercontent.com/kejilion/sh/main/custom_mysql_config-1.cnf"
 							docker cp "$web_dir/my.cnf" "mysql:/etc/mysql/conf.d/"
-							rm -f /home/custom_mysql_config.cnf
+							rm -f "$web_dir/my.cnf"
 
 							docker exec -it redis redis-cli CONFIG SET maxmemory 512mb
 							docker exec -it redis redis-cli CONFIG SET maxmemory-policy allkeys-lru
@@ -4538,15 +4542,15 @@ linux_ldnmp() {
 							sed -i 's/worker_connections.*/worker_connections 10240;/' /home/web/nginx.conf
 
 							# php调优
-							wget -O /home/www.conf https://raw.githubusercontent.com/kejilion/sh/main/www.conf
-							docker cp /home/www.conf php:/usr/local/etc/php-fpm.d/www.conf
-							docker cp /home/www.conf php74:/usr/local/etc/php-fpm.d/www.conf
-							rm -f /home/www.conf
+							curl -fsSL -o "$web_dir/www.conf" "${github_proxy}https://raw.githubusercontent.com/kejilion/sh/main/www.conf"
+							docker cp "$web_dir/www.conf" php:/usr/local/etc/php-fpm.d/www.conf
+							docker cp "$web_dir/www.conf" php74:/usr/local/etc/php-fpm.d/www.conf
+							rm -f "$web_dir/www.conf"
 
 							# mysql调优
-							wget -O /home/custom_mysql_config.cnf https://raw.githubusercontent.com/kejilion/sh/main/custom_mysql_config.cnf
-							docker cp /home/custom_mysql_config.cnf mysql:/etc/mysql/conf.d/
-							rm -fr /home/custom_mysql_config.cnf
+							curl -fsSL -o "$web_dir/custom_mysql_config.cnf" "${github_proxy}https://raw.githubusercontent.com/kejilion/sh/main/custom_mysql_config.cnf"
+							docker cp "$web_dir/custom_mysql_config.cnf" mysql:/etc/mysql/conf.d/
+							rm -f "$web_dir/custom_mysql_config.cnf"
 
 							docker exec -it redis redis-cli CONFIG SET maxmemory 1024mb
 							docker exec -it redis redis-cli CONFIG SET maxmemory-policy allkeys-lru
