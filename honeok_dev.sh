@@ -34,6 +34,36 @@ honeok_v="v3.0.0_dev"
 set_region_config() {
 	if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
 		execute_commands=0                    # 0 表示允许执行命令
+		
+		# 定义局部变量
+		local github_proxies=("gh-proxy.com" "www.ghproxy.cn" "github.moeyy.xyz" "ghp.ci")
+		local best_proxy=""
+		local best_time=9999                  # 设置一个较大的初始延迟值
+		local ping_time=""
+		
+		# 对每个代理进行 ping 测试，选出延迟最短的
+		for proxy in "${github_proxies[@]}"; do
+			# 进行两次 ping 测试并提取平均时间，如果 ping 失败则设为9999
+			ping_time=$(ping -c 2 -q "$proxy" | awk -F '/' 'END {print ($5 ? $5 : 9999)}')
+			
+			# 使用整数比较
+			if (( $(echo "$ping_time" | awk '{print int($1+0.5)}') < $best_time )); then
+				best_time=$(echo "$ping_time" | awk '{print int($1+0.5)}')
+				best_proxy=$proxy
+			fi
+		done
+
+		# 设置找到的最佳代理
+		github_proxy="https://$best_proxy/"
+	else
+		execute_commands=1                    # 1 表示不执行命令
+		github_proxy=""                       # 不使用代理
+	fi
+}
+
+set_region_config() {
+	if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
+		execute_commands=0                    # 0 表示允许执行命令
 		github_proxy="https://gh-proxy.com/"  # 设置 GitHub 代理
 	else
 		execute_commands=1                    # 1 表示不执行命令
