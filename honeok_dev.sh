@@ -3551,13 +3551,13 @@ linux_ldnmp() {
 				ldnmp_certs_status
 				ldnmp_add_db
 
-				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/kdy.com.conf"
-				sed -i -e "s/yuming.com/$domain/g" -e "s/my_cache/fst_cache/g" "$nginx_dir/conf.d/$domain.conf"
+				curl -fsSL -o "$nginx_dir/conf.d/$domain.conf" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/conf.d/kdy.conf"
+				sed -i "s/domain.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
 
 				kdy_dir="$nginx_dir/html/$domain"
-				[ ! -d $kdy_dir ] && mkdir -p "$kdy_dir"
-				cd "$kdy_dir" || { _red "无法进入目录$kdy_dir"; return 1; }
-				wget -qO latest.zip https://github.com/kalcaddle/kodbox/archive/refs/tags/1.50.02.zip && unzip latest.zip && rm latest.zip
+				[ ! -d "$kdy_dir" ] && mkdir -p "$kdy_dir"
+				cd "$kdy_dir"
+				curl -fsSL -o latest.zip "${github_proxy}https://github.com/kalcaddle/kodbox/archive/refs/tags/1.50.02.zip" && unzip latest.zip && rm latest.zip
 				mv "$kdy_dir/kodbox-*" "$kdy_dir/kodbox"
 
 				ldnmp_restart
