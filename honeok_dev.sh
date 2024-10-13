@@ -3493,7 +3493,7 @@ linux_ldnmp() {
 				wordpress_dir="$nginx_dir/html/$domain"
 				[ ! -d "$wordpress_dir" ] && mkdir -p "$wordpress_dir"
 				cd "$wordpress_dir"
-				curl -fsSL -o wordpress.zip "https://cn.wordpress.org/latest-zh_CN.zip" && unzip wordpress.zip && rm wordpress.zip
+				curl -fsSL -o latest.zip "https://cn.wordpress.org/latest-zh_CN.zip" && unzip latest.zip && rm latest.zip
 
 				# 配置WordPress
 				wp_sample_config="$wordpress_dir/wordpress/wp-config-sample.php"
@@ -3524,13 +3524,13 @@ linux_ldnmp() {
 				ldnmp_certs_status
 				ldnmp_add_db
 
-				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/discuz.com.conf"
-				sed -i -e "s/yuming.com/$domain/g" -e "s/my_cache/fst_cache/g" "$nginx_dir/conf.d/$domain.conf"
+				curl -fsSL -o "$nginx_dir/conf.d/$domain.conf" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/conf.d/discuz.conf"
+				sed -i "s/domain.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
 
 				discuz_dir="$nginx_dir/html/$domain"
-				[ ! -d $discuz_dir ] && mkdir -p "$discuz_dir"
-				cd "$discuz_dir" || { _red "无法进入目录$discuz_dir"; return 1; }
-				wget -qO latest.zip https://github.com/kejilion/Website_source_code/raw/main/Discuz_X3.5_SC_UTF8_20240520.zip && unzip latest.zip && rm latest.zip
+				[ ! -d "$discuz_dir" ] && mkdir -p "$discuz_dir"
+				cd "$discuz_dir"
+				curl -fsSL -o latest.zip "${github_proxy}https://github.com/kejilion/Website_source_code/raw/main/Discuz_X3.5_SC_UTF8_20240520.zip" && unzip latest.zip && rm latest.zip
 
 				ldnmp_restart
 				ldnmp_display_success
