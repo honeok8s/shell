@@ -3103,7 +3103,7 @@ ldnmp_install_nginx(){
 
 		default_server_ssl
 
-		curl -fsSL "/data/docker_data/web/docker-compose.yml" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/ldnmp-nginx-docker-compose.yml"
+		curl -fsSL -o "/data/docker_data/web/docker-compose.yml" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/ldnmp-nginx-docker-compose.yml"
 
 		cd /data/docker_data/web || { _red "无法进入目录/data/docker_data/web"; return 1; }
 		manage_compose start
