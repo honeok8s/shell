@@ -3459,9 +3459,9 @@ linux_ldnmp() {
 				cd "$web_dir"
 
 				# 下载配置文件
-				curl -fsSL -o "$nginx_dir/nginx.conf" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/nginx11.conf"
-				curl -fsSL -o "$nginx_dir/conf.d/default.conf" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/conf.d/default2.conf"
-				curl -fsSL -o "$web_dir/docker-compose.yml" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/ldnmp/LDNMP-docker-compose.yml"
+				curl -fsSL -o "$nginx_dir/nginx.conf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/nginx/nginx11.conf"
+				curl -fsSL -o "$nginx_dir/conf.d/default.conf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default2.conf"
+				curl -fsSL -o "$web_dir/docker-compose.yml" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/ldnmp/LDNMP-docker-compose.yml"
 
 				default_server_ssl
 
@@ -3487,7 +3487,7 @@ linux_ldnmp() {
 				ldnmp_certs_status
 				ldnmp_add_db
 
-				curl -fsSL -o "$nginx_dir/conf.d/$domain.conf" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/conf.d/wordpress.conf"
+				curl -fsSL -o "$nginx_dir/conf.d/$domain.conf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/wordpress.conf"
 				sed -i "s/domain.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
 
 				wordpress_dir="$nginx_dir/html/$domain"
@@ -3524,7 +3524,7 @@ linux_ldnmp() {
 				ldnmp_certs_status
 				ldnmp_add_db
 
-				curl -fsSL -o "$nginx_dir/conf.d/$domain.conf" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/conf.d/discuz.conf"
+				curl -fsSL -o "$nginx_dir/conf.d/$domain.conf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/discuz.conf"
 				sed -i "s/domain.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
 
 				discuz_dir="$nginx_dir/html/$domain"
@@ -3551,13 +3551,13 @@ linux_ldnmp() {
 				ldnmp_certs_status
 				ldnmp_add_db
 
-				curl -fsSL -o "$nginx_dir/conf.d/$domain.conf" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/conf.d/kdy.conf"
+				curl -fsSL -o "$nginx_dir/conf.d/$domain.conf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/kdy.conf"
 				sed -i "s/domain.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
 
 				kdy_dir="$nginx_dir/html/$domain"
 				[ ! -d "$kdy_dir" ] && mkdir -p "$kdy_dir"
 				cd "$kdy_dir"
-				curl -fsSL -o latest.zip "${github_proxy}https://github.com/kalcaddle/kodbox/archive/refs/tags/1.50.02.zip" && unzip latest.zip && rm latest.zip
+				curl -fsSL -o latest.zip "${github_proxy}github.com/kalcaddle/kodbox/archive/refs/tags/1.50.02.zip" && unzip latest.zip && rm latest.zip
 				mv "$kdy_dir/kodbox-*" "$kdy_dir/kodbox"
 
 				ldnmp_restart
