@@ -3443,6 +3443,7 @@ linux_ldnmp() {
 				need_root
 				ldnmp_check_status
 
+				# 清理可能存在的Nginx环境
 				if [ -d "$nginx_dir" ];then
 					cd "$web_dir"
 					manage_compose down && rm docker-compose.yml
@@ -3453,15 +3454,13 @@ linux_ldnmp() {
 				install_docker
 				ldnmp_install_certbot
 
-				# 清理并创建必要的目录
-				[ -d "$web_dir" ] && rm -fr "$web_dir"
 				mkdir -p "$nginx_dir/certs" "$nginx_dir/conf.d" "$web_dir/redis" "$web_dir/mysql"
 
-				cd "$web_dir" || { _red "无法进入目录 $web_dir"; return 1; }
+				cd "$web_dir"
 
 				# 下载配置文件
 				curl -fsSL -o "$nginx_dir/nginx.conf" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/nginx11.conf"
-				curl -fsSL -o "$nginx_conf_dir/default.conf" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/conf.d/default2.conf"
+				curl -fsSL -o "$nginx_dir/conf.d/default.conf" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/conf.d/default2.conf"
 				curl -fsSL -o "$web_dir/docker-compose.yml" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/ldnmp/LDNMP-docker-compose.yml"
 
 				default_server_ssl
