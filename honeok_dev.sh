@@ -3420,7 +3420,6 @@ linux_ldnmp() {
 		echo "23. 站点反向代理-IP+端口"
 		echo "24. 站点反向代理-域名"
 		echo "25. 自定义静态站点"
-		echo "26. 安装Bitwarden密码管理平台"
 		echo "------------------------"
 		echo "31. 站点数据管理"
 		echo "32. 备份全站数据"
@@ -3978,42 +3977,6 @@ linux_ldnmp() {
 				fi
 
 				nginx_display_success
-				;;
-			26)
-				clear
-				#webname="Bitwarden"
-
-				#nginx_install_status
-				#add_domain
-				#ldnmp_install_ssltls
-				#ldnmp_certs_status
-
-				#docker run -d \
-				#	--name bitwarden \
-				#	--restart always \
-				#	-p 3280:80 \
-				#	-v /home/web/html/$yuming/bitwarden/data:/data \
-				#	vaultwarden/server
-				#duankou=3280
-				#reverse_proxy
-
-				#nginx_display_success
-				;;
-
-			27)
-				clear
-				#webname="halo"
-
-				#nginx_install_status
-				#add_domain
-				#ldnmp_install_ssltls
-				#ldnmp_certs_status
-
-				#docker run -d --name halo --restart always -p 8010:8090 -v /home/web/html/$yuming/.halo2:/root/.halo2 halohub/halo:2
-				#duankou=8010
-				#reverse_proxy
-
-				#nginx_display_success
 				;;
 			31)
 				need_root
