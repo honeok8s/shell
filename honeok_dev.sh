@@ -3162,7 +3162,7 @@ add_domain() {
 	ip_address
 
 	echo -e "先将域名解析到本机IP: ${yellow}$ipv4_address  $ipv6_address${white}"
-	echo -n "请输入你解析的域名(输入0取消操作):"
+	echo -n "请输入你解析的域名（输入0取消操作）："
 	read -r domain
 
 	if [[ "$domain" == "0" ]]; then
@@ -3174,14 +3174,14 @@ add_domain() {
 	if [[ $domain =~ $domain_regex ]]; then
 		# 检查域名是否已存在
 		if [ -e $nginx_dir/conf.d/$domain.conf ]; then
-			_red "当前域名${domain}已被使用,请前往31站点管理,删除站点后再部署${webname}"
+			_red "当前域名${domain}已被使用，请前往31站点管理,删除站点后再部署${webname}"
 			end_of
 			linux_ldnmp
 		else
 			_green "域名${domain}格式校验正确"
 		fi
 	else
-		_red "域名格式不正确,请重新输入"
+		_red "域名格式不正确，请重新输入"
 		end_of
 		linux_ldnmp
 	fi
@@ -3255,7 +3255,7 @@ ldnmp_certs_status() {
 	file_path="/data/docker_data/certbot/cert/live/$domain/fullchain.pem"
 
 	if [ ! -f "$file_path" ]; then
-		_red "域名证书申请失败,请检测域名是否正确解析或更换域名重新尝试!"
+		_red "域名证书申请失败，请检测域名是否正确解析或更换域名重新尝试！"
 		end_of
 		linux_ldnmp
 	fi
@@ -3490,28 +3490,32 @@ linux_ldnmp() {
 				ldnmp_certs_status
 				ldnmp_add_db
 
-				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/wordpress.com.conf"
-				sed -i -e "s/yuming.com/$domain/g" -e "s/my_cache/fst_cache/g" "$nginx_dir/conf.d/$domain.conf"
+				curl -fsSL -o "$nginx_dir/conf.d/$domain.conf" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/conf.d/wordpress.conf"
+				sed -i "s/domain.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
 
 				wordpress_dir="$nginx_dir/html/$domain"
-				[ ! -d $wordpress_dir ] && mkdir -p "$wordpress_dir"
+				[ ! -d "$wordpress_dir" ] && mkdir -p "$wordpress_dir"
 				cd "$wordpress_dir" || { _red "无法进入目录$wordpress_dir"; return 1; }
-				wget -qO latest.zip "https://cn.wordpress.org/latest-zh_CN.zip" && unzip latest.zip && rm latest.zip
+				curl -fsSL -o wordpress.zip "https://cn.wordpress.org/latest-zh_CN.zip" && unzip wordpress.zip && rm wordpress.zip
 
 				# 配置WordPress
-				wp_config="$wordpress_dir/wordpress/wp-config-sample.php"
-				echo "define('FS_METHOD', 'direct');" >> "$wp_config"
-				echo "define('WP_REDIS_HOST', 'redis');" >> "$wp_config"
-				echo "define('WP_REDIS_PORT', '6379');" >> "$wp_config"
+				wp_sample_config="$wordpress_dir/wordpress/wp-config-sample.php"
+				wp_config="$wordpress_dir/wordpress/wp-config.php"
+				echo "define('FS_METHOD', 'direct'); define('WP_REDIS_HOST', 'redis'); define('WP_REDIS_PORT', '6379');" >> "$wp_sample_config"
+				sed -i "s|database_name_here|$DB_NAME|g" "$wp_sample_config"
+				sed -i "s|username_here|$dbuse|g" "$wp_sample_config"
+				sed -i "s|password_here|$dbusepasswd|g" "$wp_sample_config"
+				sed -i "s|localhost|mysql|g" "$wp_sample_config"
+				cp -p "$wp_sample_config" "$wp_config"
 
 				ldnmp_restart
 				ldnmp_display_success
 
-				echo "数据库名: $DB_NAME"
-				echo "用户名: $DB_USER"
-				echo "密码: $DB_USER_PASSWD"
-				echo "数据库地址: mysql"
-				echo "表前缀: wp_"
+				#echo "数据库名: $DB_NAME"
+				#echo "用户名: $DB_USER"
+				#echo "密码: $DB_USER_PASSWD"
+				#echo "数据库地址: mysql"
+				#echo "表前缀: wp_"
 				;;
 			3)
 				clear
