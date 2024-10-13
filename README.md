@@ -2,11 +2,11 @@
 Fork from kejilion：[kejilion.sh](https://github.com/kejilion/sh)
 * 在线执行
 ```shell
-bash <(curl -fsSL github.com/honeok8s/shell/raw/main/honeok.sh)
+bash <(curl -sL github.com/honeok8s/shell/raw/main/honeok.sh)
 ```
 * 国内使用
 ```shell
-bash <(curl -fsSL https://gh-proxy.com/github.com/honeok8s/shell/raw/main/honeok.sh)
+bash <(curl -sL https://gh-proxy.com/github.com/honeok8s/shell/raw/main/honeok.sh)
 ```
 
 * 下载本地执行
