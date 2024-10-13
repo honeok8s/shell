@@ -2686,7 +2686,7 @@ linux_panel() {
 				;;
 			51)
 				clear
-				curl -L https://raw.githubusercontent.com/oneclickvirt/pve/main/scripts/install_pve.sh -o install_pve.sh && chmod +x install_pve.sh && bash install_pve.sh
+				curl -fsSL -o "install_pve.sh" ${github_proxy}https://raw.githubusercontent.com/oneclickvirt/pve/main/scripts/install_pve.sh && chmod +x install_pve.sh && bash install_pve.sh
 				;;
 			0)
 				honeok
@@ -3072,23 +3072,21 @@ install_ldnmp() {
 }
 
 ldnmp_install_nginx(){
-	local nginx_dir nginx_conf_dir default_conf
-
-	nginx_dir="/data/docker_data/web/nginx"
-	nginx_conf_dir="/data/docker_data/web/nginx/conf.d"
-	default_conf="$nginx_conf_dir/default.conf"
+	local nginx_dir="/data/docker_data/web/nginx"
+	local nginx_conf_dir="/data/docker_data/web/nginx/conf.d"
+	local default_conf="$nginx_conf_dir/default.conf"
 
 	need_root
 
 	# 如果已安装LDNMP环境直接返回
 	if docker inspect "ldnmp" &>/dev/null; then
-		_yellow "LDNMP环境已集成Nginx,无须重复安装"
+		_yellow "LDNMP环境已集成Nginx，无须重复安装。"
 		return 0
 	fi
 
 	if docker inspect "nginx" &>/dev/null; then
-		if curl -s https://raw.githubusercontent.com/honeok8s/conf/main/nginx/ldnmp-nginx-docker-compose.yml | head -n 20 | diff - "/data/docker_data/web/docker-compose.yml" &>/dev/null; then
-			_yellow "检测到通过本脚本已安装Nginx"
+		if curl -sL "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/ldnmp-nginx-docker-compose.yml" | head -n 20 | diff - "/data/docker_data/web/docker-compose.yml" &>/dev/null; then
+			_yellow "检测到通过本脚本已安装Nginx。"
 			return 0
 		else
 			docker rm -f nginx >/dev/null 2>&1
@@ -3100,12 +3098,12 @@ ldnmp_install_nginx(){
 		ldnmp_install_certbot
 
 		mkdir -p "$nginx_dir" "$nginx_conf_dir" "$nginx_dir/certs"
-		wget -qO "$nginx_dir/nginx.conf" "https://raw.githubusercontent.com/honeok8s/conf/main/nginx/nginx-2C2G.conf"
-		wget -qO "$nginx_conf_dir/default.conf" "https://raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default2.conf"
+		curl -fsSL -o "$nginx_dir/nginx.conf" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/nginx11.conf"
+		curl -fsSL -o "$nginx_conf_dir/default.conf" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/conf.d/default2.conf"
 
 		default_server_ssl
 
-		wget -qO "/data/docker_data/web/docker-compose.yml" "https://raw.githubusercontent.com/honeok8s/conf/main/nginx/ldnmp-nginx-docker-compose.yml"
+		curl -fsSL "/data/docker_data/web/docker-compose.yml" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/ldnmp-nginx-docker-compose.yml"
 
 		cd /data/docker_data/web || { _red "无法进入目录/data/docker_data/web"; return 1; }
 		manage_compose start
@@ -3115,8 +3113,8 @@ ldnmp_install_nginx(){
 		clear
 		nginx_version=$(docker exec nginx nginx -v 2>&1)
 		nginx_version=$(echo "$nginx_version" | grep -oP "nginx/\K[0-9]+\.[0-9]+\.[0-9]+")
-		_green "Nginx安装完成"
-		echo -e "当前版本:${yellow}v$nginx_version${white}"
+		_green "Nginx安装完成！"
+		echo -e "当前版本：${yellow}v$nginx_version${white}"
 		echo ""
 	fi
 }
