@@ -61,7 +61,7 @@ set_region_config() {
 	fi
 }
 
-# 定义一个根据配置条件执行命令的函数
+# 定义一个根据中国地区配置条件执行命令的函数
 exec_cmd() {
 	if [ "$execute_commands" -eq 0 ]; then  # 检查是否允许执行命令
 		"$@"
