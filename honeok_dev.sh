@@ -288,12 +288,15 @@ install() {
 			elif command -v apk &>/dev/null; then
 				apk update
 				apk add "$package"
+			elif command -v opkg &>/dev/null; then
+				opkg update
+				opkg install "$package"
 			else
 				_red "未知的包管理器"
 				return 1
 			fi
 		else
-			_green "$package已安装"
+			_green "$package已经安装！"
 		fi
 	done
 
@@ -303,31 +306,45 @@ install() {
 # 卸载软件包
 remove() {
 	if [ $# -eq 0 ]; then
-		_red "未提供软件包参数"
+		_red "未提供软件包参数！"
 		return 1
 	fi
 
+	check_installed() {
+		local package="$1"
+		if command -v dnf &>/dev/null; then
+			rpm -q "$package" &>/dev/null
+		elif command -v yum &>/dev/null; then
+			rpm -q "$package" &>/dev/null
+		elif command -v apt &>/dev/null; then
+			dpkg -l | grep -qw "$package"
+		elif command -v apk &>/dev/null; then
+			apk info | grep -qw "$package"
+		elif command -v opkg &>/dev/null; then
+			opkg list-installed | grep -qw "$package"
+		else
+			_red "未知的包管理器！"
+			return 1
+		fi
+		return 0
+    }
+
 	for package in "$@"; do
 		_yellow "正在卸载$package"
-		if command -v dnf &>/dev/null; then
-			if rpm -q "$package" &>/dev/null; then
+		if check_installed "$package"; then
+			if command -v dnf &>/dev/null; then
 				dnf remove "$package"* -y
-			fi
-		elif command -v yum &>/dev/null; then
-			if rpm -q "${package}" >/dev/null 2>&1; then
-				yum remove "${package}"* -y
-			fi
-		elif command -v apt &>/dev/null; then
-			if dpkg -l | grep -qw "${package}"; then
-				apt purge "${package}"* -y
-			fi
-		elif command -v apk &>/dev/null; then
-			if apk info | grep -qw "${package}"; then
-				apk del "${package}"*
+			elif command -v yum &>/dev/null; then
+				yum remove "$package"* -y
+			elif command -v apt &>/dev/null; then
+				apt purge "$package"* -y
+			elif command -v apk &>/dev/null; then
+				apk del "$package"* -y
+			elif command -v opkg &>/dev/null; then
+				opkg remove --force "$package"
 			fi
 		else
-			_red "未知的包管理器"
-			return 1
+			_red "$package 没有安装，跳过卸载"
 		fi
 	done
 
@@ -497,49 +514,6 @@ ip_address() {
 #################### 通用函数END ####################
 
 #################### 系统更新START ####################
-update_system(){
-	wait_for_lock(){
-		local timeout=300  # 设置超时时间为300秒(5分钟)
-		local waited=0
-
-		while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
-			_yellow "等待dpkg锁释放"
-			sleep 1
-			waited=$((waited + 1))
-			if [ $waited -ge $timeout ]; then
-				_red "等待dpkg锁超时"
-				break # 等待dpkg锁超时后退出循环
-			fi
-		done
-	}
-
-	# 修复dpkg中断问题
-	fix_dpkg(){
-		DEBIAN_FRONTEND=noninteractive dpkg --configure -a
-	}
-
-	_yellow "系统正在更新"
-	if command -v dnf &>/dev/null; then
-		dnf -y update
-	elif command -v yum &>/dev/null; then
-		yum -y update
-	elif command -v apt &>/dev/null; then
-		wait_for_lock
-		fix_dpkg
-		DEBIAN_FRONTEND=noninteractive apt update -y
-		DEBIAN_FRONTEND=noninteractive apt full-upgrade -y
-	elif command -v apk &>/dev/null; then
-		apk update && apk upgrade
-	else
-		_red "未知的包管理器!"
-		return 1
-	fi
-
-	return 0
-}
-#################### 系统更新END ####################
-
-#################### 系统清理START ####################
 wait_for_lock(){
 	local timeout=300  # 设置超时时间为300秒(5分钟)
 	local waited=0
@@ -560,6 +534,30 @@ fix_dpkg(){
 	DEBIAN_FRONTEND=noninteractive dpkg --configure -a
 }
 
+linux_update(){
+	_yellow "正在系统更新"
+	if command -v dnf &>/dev/null; then
+		dnf -y update
+	elif command -v yum &>/dev/null; then
+		yum -y update
+	elif command -v apt &>/dev/null; then
+		wait_for_lock
+		fix_dpkg
+		DEBIAN_FRONTEND=noninteractive apt update -y
+		DEBIAN_FRONTEND=noninteractive apt full-upgrade -y
+	elif command -v apk &>/dev/null; then
+		apk update && apk upgrade
+	elif command -v opkg &>/dev/null; then
+		opkg update
+	else
+		_red "未知的包管理器！"
+		return 1
+	fi
+	return 0
+}
+#################### 系统更新END ####################
+
+#################### 系统清理START ####################
 linux_clean() {
 	_yellow "正在系统清理"
 
@@ -591,11 +589,13 @@ linux_clean() {
 		rm -fr /var/log/*
 		rm -fr /var/cache/apk/*
 		rm -fr /tmp/*
+	elif command -v opkg &>/dev/null; then
+		rm -rf /var/log/*
+		rm -rf /tmp/*
 	else
 		_red "未知的包管理器！"
 		return 1
 	fi
-
 	return 0
 }
 #################### 系统清理END ####################
@@ -2740,7 +2740,7 @@ manage_compose() {
 
 ldnmp_check_status() {
 	if docker inspect "ldnmp" &>/dev/null; then
-		_yellow "LDNMP环境已安装,可以选择更新LDNMP环境"
+		_yellow "LDNMP环境已安装，可以选择更新LDNMP环境！"
 		end_of
 		linux_ldnmp
 	fi
@@ -2748,9 +2748,9 @@ ldnmp_check_status() {
 
 ldnmp_install_status() {
 	if docker inspect "ldnmp" &>/dev/null; then
-		_yellow "LDNMP环境已安装,开始部署$webname"
+		_yellow "LDNMP环境已安装，开始部署$webname"
 	else
-		_red "LDNMP环境未安装,请先安装LDNMP环境再部署网站"
+		_red "LDNMP环境未安装，请先安装LDNMP环境再部署网站！"
 		end_of
 		linux_ldnmp
 	fi
@@ -2758,7 +2758,7 @@ ldnmp_install_status() {
 
 ldnmp_restore_check(){
 	if docker inspect "ldnmp" &>/dev/null; then
-		_yellow "LDNMP环境已安装,无法还原LDNMP环境,请先卸载现有环境再次尝试还原"
+		_yellow "LDNMP环境已安装，无法还原LDNMP环境，请先卸载现有环境再次尝试还原！"
 		end_of
 		linux_ldnmp
 	fi
@@ -2766,9 +2766,9 @@ ldnmp_restore_check(){
 
 nginx_install_status() {
 	if docker inspect "nginx" &>/dev/null; then
-		_yellow "Nginx环境已安装,开始部署$webname"
+		_yellow "Nginx环境已安装，开始部署$webname！"
 	else
-		_red "Nginx环境未安装,请先安装Nginx环境再部署网站"
+		_red "Nginx环境未安装，请先安装Nginx环境再部署网站！"
 		end_of
 		linux_ldnmp
 	fi
@@ -2784,7 +2784,7 @@ ldnmp_check_port() {
 
 		if [ -n "$result" ]; then
 			clear
-			_red "端口$port已被占用,无法安装环境,卸载以下程序后重试"
+			_red "端口$port已被占用，无法安装环境，卸载以下程序后重试！"
 			_yellow "$result"
 			end_of
 			linux_ldnmp
@@ -2824,14 +2824,14 @@ ldnmp_install_certbot() {
 
 	if [ -z "$existing_cron" ]; then
 		# 下载并使脚本可执行
-		curl -fsSL -o "cert_renewal.sh" ${github_proxy}github.com/honeok8s/shell/raw/refs/heads/main/callscript/docker_certbot.sh
+		curl -fsSL -o "cert_renewal.sh" "${github_proxy}github.com/honeok8s/shell/raw/refs/heads/main/callscript/docker_certbot.sh"
 		chmod +x cert_renewal.sh
 
 		# 添加定时任务
 		(crontab -l 2>/dev/null; echo "$cron_job") | crontab -
-		_green "证书续签任务已安装"
+		_green "证书续签任务已安装！"
 	else
-		_yellow "证书续签任务已存在，无需重复安装"
+		_yellow "证书续签任务已存在，无需重复安装！"
 	fi
 }
 
@@ -8083,7 +8083,7 @@ honeok(){
 				;;
 			2)
 				clear
-				update_system
+				linux_update
 				;;
 			3)
 				clear
