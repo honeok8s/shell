@@ -7795,7 +7795,8 @@ node_create(){
 				;;
 			36)
 				clear
-				rm -fr /home/mtproxy >/dev/null 2>&1 && mkdir /home/mtproxy && cd /home/mtproxy
+				rm -fr /home/mtproxy >/dev/null 2>&1
+				mkdir /home/mtproxy && cd /home/mtproxy
 				curl -fsSL -o mtproxy.sh https://github.com/ellermister/mtproxy/raw/master/mtproxy.sh && chmod +x mtproxy.sh && bash mtproxy.sh
 				sleep 1
 				;;
