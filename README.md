@@ -11,11 +11,11 @@ bash <(curl -sL https://gh-proxy.com/github.com/honeok8s/shell/raw/main/honeok.s
 
 * 下载本地执行
 ```shell
-curl -fsSL -O github.com/honeok8s/shell/raw/main/honeok.sh && chmod +x ./honeok.sh && ./honeok.sh
+curl -sL -O github.com/honeok8s/shell/raw/main/honeok.sh && chmod +x ./honeok.sh && ./honeok.sh
 ```
 or
 ```
-curl -fsSL -O https://gh-proxy.com/github.com/honeok8s/shell/raw/main/honeok.sh && chmod +x ./honeok.sh && ./honeok.sh
+curl -sL -O https://gh-proxy.com/github.com/honeok8s/shell/raw/main/honeok.sh && chmod +x ./honeok.sh && ./honeok.sh
 ```
 ## Docker一键安装
 根据IP归属地优化配置文件，安装镜像加速
