@@ -3469,7 +3469,6 @@ linux_ldnmp() {
 				default_server_ssl
 
 				# 随机生成数据库密码并替换
-
 				DB_ROOT_PASSWD=$(openssl rand -base64 16)
 				DB_USER=$(openssl rand -hex 4)
 				DB_USER_PASSWD=$(openssl rand -base64 8)
