@@ -3374,26 +3374,26 @@ fail2ban_install_sshd() {
 	[ ! -d "$fail2ban_dir" ] && mkdir -p "$fail2ban_dir"
 	cd "$fail2ban_dir"
 
-	curl -fsSL -o docker-compose.yml ${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/fail2ban/fail2ban-docker-compose.yml
+	curl -fsSL -o "docker-compose.yml" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/fail2ban/fail2ban-docker-compose.yml"
 
 	manage_compose start
 
 	sleep 3
 	if grep -q 'Alpine' /etc/issue; then
 		cd "$config_dir/filter.d"
-		curl -fsSL -O ${github_proxy}https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-sshd.conf
-		curl -fsSL -O ${github_proxy}https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-sshd-ddos.conf
+		curl -fsSL -O "${github_proxy}https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-sshd.conf"
+		curl -fsSL -O "${github_proxy}https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-sshd-ddos.conf"
 		cd "$config_dir/jail.d/"
-		curl -fsSL -O ${github_proxy}https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-ssh.conf
+		curl -fsSL -O "${github_proxy}https://raw.githubusercontent.com/kejilion/config/main/fail2ban/alpine-ssh.conf"
 	elif command -v dnf &>/dev/null; then
 		cd "$config_dir/jail.d/"
-		curl -fsSL -O ${github_proxy}https://raw.githubusercontent.com/kejilion/config/main/fail2ban/centos-ssh.conf
+		curl -fsSL -O "${github_proxy}https://raw.githubusercontent.com/kejilion/config/main/fail2ban/centos-ssh.conf"
 	else
 		install rsyslog
 		systemctl start rsyslog
 		systemctl enable rsyslog
 		cd "$config_dir/jail.d/"
-		curl -fsSL -O ${github_proxy}https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/linux-ssh.conf
+		curl -fsSL -O "${github_proxy}https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/linux-ssh.conf"
 	fi
 }
 
@@ -3462,9 +3462,9 @@ linux_ldnmp() {
 				cd "$web_dir" || { _red "无法进入目录 $web_dir"; return 1; }
 
 				# 下载配置文件
-				wget -qO "$nginx_dir/nginx.conf" "https://raw.githubusercontent.com/honeok8s/conf/main/nginx/nginx-2C2G.conf"
-				wget -qO "$nginx_dir/conf.d/default.conf" "https://raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default2.conf"
-				wget -qO "$web_dir/docker-compose.yml" "https://raw.githubusercontent.com/honeok8s/conf/main/ldnmp/LDNMP-docker-compose.yml"
+				curl -fsSL -o "$nginx_dir/nginx.conf" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/nginx11.conf"
+				curl -fsSL -o "$nginx_conf_dir/default.conf" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/conf.d/default2.conf"
+				curl -fsSL -o "$web_dir/docker-compose.yml" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/ldnmp/LDNMP-docker-compose.yml"
 
 				default_server_ssl
 
