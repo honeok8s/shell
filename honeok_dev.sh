@@ -3492,7 +3492,7 @@ linux_ldnmp() {
 
 				wordpress_dir="$nginx_dir/html/$domain"
 				[ ! -d "$wordpress_dir" ] && mkdir -p "$wordpress_dir"
-				cd "$wordpress_dir" || { _red "无法进入目录$wordpress_dir"; return 1; }
+				cd "$wordpress_dir"
 				curl -fsSL -o wordpress.zip "https://cn.wordpress.org/latest-zh_CN.zip" && unzip wordpress.zip && rm wordpress.zip
 
 				# 配置WordPress
