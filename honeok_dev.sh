@@ -3502,10 +3502,10 @@ linux_ldnmp() {
 				wp_sample_config="$wordpress_dir/wordpress/wp-config-sample.php"
 				wp_config="$wordpress_dir/wordpress/wp-config.php"
 				echo "define('FS_METHOD', 'direct'); define('WP_REDIS_HOST', 'redis'); define('WP_REDIS_PORT', '6379');" >> "$wp_sample_config"
-				sed -i "s|database_name_here|$DB_NAME|g" "$wp_sample_config"
-				sed -i "s|username_here|$dbuse|g" "$wp_sample_config"
-				sed -i "s|password_here|$dbusepasswd|g" "$wp_sample_config"
-				sed -i "s|localhost|mysql|g" "$wp_sample_config"
+				sed -i "s#database_name_here#$DB_NAME#g" "$wp_sample_config"
+				sed -i "s#username_here#$DB_USER#g" "$wp_sample_config"
+				sed -i "s#password_here#$DB_USER_PASSWD#g" "$wp_sample_config"
+				sed -i "s#localhost#mysql#g" "$wp_sample_config"
 				cp -p "$wp_sample_config" "$wp_config"
 
 				ldnmp_restart
