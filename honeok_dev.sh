@@ -7675,7 +7675,7 @@ servertest_script(){
 node_create(){
 	if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
 		clear
-		_red "时刻铭记上网三要素：不评政治、不谈宗教、不碰黄賭毒，龙的传人需自律"
+		_red "时刻铭记上网三要素：不评政治、不谈宗教、不碰黄賭毒，龙的传人需自律。"
 		_red "本功能所提供的内容已触犯你的IP所在地相关法律法规，请绕行！"
 		end_of
 		honeok # 返回主菜单
@@ -7718,7 +7718,7 @@ node_create(){
 
 			1)
 				clear
-				install wget
+				install wget >/dev/null 2>&1
 				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/sing-box/main/sing-box.sh)
 				;;
 			3)
@@ -7727,12 +7727,12 @@ node_create(){
 				;;
 			5)
 				clear
-				install wget
+				install wget >/dev/null 2>&1
 				bash <(wget -qO- -o- https://github.com/233boy/sing-box/raw/main/install.sh)
 				;;
 			6)
 				clear
-				install wget
+				install wget >/dev/null 2>&1
 				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/argox/main/argox.sh)
 				;;
 			7)
@@ -7741,7 +7741,7 @@ node_create(){
 				;;
 			8)
 				clear
-				install wget
+				install wget >/dev/null 2>&1
 				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/sba/main/sba.sh)
 				;;
 			9)
@@ -7750,23 +7750,23 @@ node_create(){
 				;;
 			20)
 				clear
-				install wget
+				install wget >/dev/null 2>&1
 				wget --no-check-certificate -O gost.sh https://raw.githubusercontent.com/KANIKIG/Multi-EasyGost/master/gost.sh && chmod +x gost.sh && ./gost.sh
 				;;
 			22)
 				clear
-				_yellow "安装Tcp-Brutal-Reality需要内核高于5.8,不符合请手动升级5.8内核以上再安装"
+				_yellow "安装Tcp-Brutal-Reality需要内核高于5.8，不符合请手动升级5.8内核以上再安装。"
 				
 				current_kernel_version=$(uname -r | cut -d'-' -f1 | awk -F'.' '{print $1 * 100 + $2}')
 				target_kernel_version=508
 				
 				# 比较内核版本
 				if [ "$current_kernel_version" -lt "$target_kernel_version" ]; then
-					_red "当前系统内核版本小于 $target_kernel_version,请手动升级内核后重试,正在退出"
+					_red "当前系统内核版本小于 $target_kernel_version，请手动升级内核后重试，正在退出。"
 					sleep 2
 					honeok
 				else
-					_yellow "当前系统内核版本 $current_kernel_version,符合安装要求"
+					_yellow "当前系统内核版本 $current_kernel_version,符合安装要求。"
 					sleep 1
 					bash <(curl -fsSL https://github.com/vveg26/sing-box-reality-hysteria2/raw/main/tcp-brutal-reality.sh)
 					sleep 1
@@ -7790,12 +7790,12 @@ node_create(){
 				;;
 			35)
 				clear
-				install wget
+				install wget >/dev/null 2>&1
 				wget https://git.io/vpn -O openvpn-install.sh && bash openvpn-install.sh
 				;;
 			36)
 				clear
-				rm -fr /home/mtproxy && mkdir /home/mtproxy && cd /home/mtproxy
+				rm -fr /home/mtproxy >/dev/null 2>&1 && mkdir /home/mtproxy && cd /home/mtproxy
 				curl -fsSL -o mtproxy.sh https://github.com/ellermister/mtproxy/raw/master/mtproxy.sh && chmod +x mtproxy.sh && bash mtproxy.sh
 				sleep 1
 				;;
