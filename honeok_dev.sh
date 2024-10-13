@@ -7675,7 +7675,8 @@ servertest_script(){
 node_create(){
 	if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
 		clear
-		_red "请遵守你当地的法律法规"
+		_red "时刻铭记上网三要素：不评政治、不谈宗教、不碰黄賭毒，龙的传人需自律"
+		_red "本功能所提供的内容已触犯你的IP所在地相关法律法规，请绕行！"
 		sleep 1
 		honeok # 返回主菜单
 	fi
