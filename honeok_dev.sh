@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2024 honeok
 # Forked from kejilion
-# Current Author: honeok yihaohey@gmail.com
+# Current Author: honeok
 # Blog: https://www.honeok.com
 # Original Author: kejilion
 
