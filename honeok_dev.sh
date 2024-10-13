@@ -3301,14 +3301,14 @@ ldnmp_restart() {
 	if nginx_check; then
 		cd "$web_dir" && manage_compose restart
 	else
-		_red "Nginx配置校验失败,请检查配置文件"
+		_red "Nginx配置校验失败，请检查配置文件！"
 		return 1
 	fi
 }
 
 ldnmp_display_success() {
 	clear
-	echo "您的$webname搭建好了!"
+	echo "您的$webname搭建好了！"
 	echo "https://$domain"
 	echo "------------------------"
 	echo "$webname安装信息如下"
@@ -3316,14 +3316,14 @@ ldnmp_display_success() {
 
 nginx_display_success() {
 	clear
-	echo "您的$webname搭建好了"
+	echo "您的$webname搭建好了！"
 	echo "https://$domain"
 }
 
 fail2ban_status() {
 	docker restart fail2ban >/dev/null 2>&1
 
-	# 初始等待5秒,确保容器有时间启动
+	# 初始等待5秒，确保容器有时间启动
 	sleep 5
 
 	# 定义最大重试次数和每次检查的间隔时间
@@ -3334,12 +3334,12 @@ fail2ban_status() {
 	while [ $count -lt $retries ]; do
 		# 捕获结果
 		if docker exec fail2ban fail2ban-client status > /dev/null 2>&1; then
-			# 如果命令成功执行,显示fail2ban状态并退出循环
+			# 如果命令成功执行，显示fail2ban状态并退出循环
 			docker exec fail2ban fail2ban-client status
 			return 0
 		else
 			# 如果失败输出提示信息并等待
-			_yellow "Fail2Ban 服务尚未完全启动,重试中($((count+1))/$retries)"
+			_yellow "Fail2Ban 服务尚未完全启动，重试中($((count+1))/$retries)"
 		fi
 
 			sleep $interval
@@ -3347,7 +3347,7 @@ fail2ban_status() {
 	done
 
 	# 如果多次检测后仍未成功,输出错误信息
-	_red "Fail2ban容器在重试后仍未成功运行"
+	_red "Fail2ban容器在重试后仍未成功运行！"
 }
 
 fail2ban_status_jail() {
