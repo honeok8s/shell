@@ -3066,7 +3066,7 @@ install_ldnmp() {
 	echo # 打印换行，以便输出不被覆盖
 
 	clear
-	_green "LDNMP环境安装完毕"
+	_green "LDNMP环境安装完毕！"
 	echo "------------------------"
 	ldnmp_version
 }
@@ -3174,14 +3174,14 @@ add_domain() {
 	if [[ $domain =~ $domain_regex ]]; then
 		# 检查域名是否已存在
 		if [ -e $nginx_dir/conf.d/$domain.conf ]; then
-			_red "当前域名${domain}已被使用，请前往31站点管理,删除站点后再部署${webname}"
+			_red "当前域名${domain}已被使用，请前往31站点管理,删除站点后再部署！${webname}"
 			end_of
 			linux_ldnmp
 		else
-			_green "域名${domain}格式校验正确"
+			_green "域名${domain}格式校验正确！"
 		fi
 	else
-		_red "域名格式不正确，请重新输入"
+		_red "域名格式不正确，请重新输入！"
 		end_of
 		linux_ldnmp
 	fi
@@ -3269,28 +3269,27 @@ ldnmp_add_db() {
 	DB_USER_PASSWD=$(grep -oP 'MYSQL_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
 
 	if [[ -z "$DB_ROOT_PASSWD" || -z "$DB_USER" || -z "$DB_USER_PASSWD" ]]; then
-		_red "无法获取MySQL凭据"
+		_red "无法获取MySQL凭据！"
 		return 1
 	fi
 
 	docker exec mysql mysql -u root -p"$DB_ROOT_PASSWD" -e "CREATE DATABASE IF NOT EXISTS $DB_NAME; GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'%';" > /dev/null 2>&1 || {
-		_red "创建数据库或授予权限失败"
+		_red "创建数据库或授予权限失败！"
 		return 1
 	}
 }
 
 reverse_proxy() {
 	ip_address
-	wget -O /home/web/conf.d/$yuming.conf https://raw.githubusercontent.com/kejilion/nginx/main/reverse-proxy.conf
-	sed -i "s/yuming.com/$yuming/g" /home/web/conf.d/$yuming.conf
-	sed -i "s/0.0.0.0/$ipv4_address/g" /home/web/conf.d/$yuming.conf
-	sed -i "s/0000/$duankou/g" /home/web/conf.d/$yuming.conf
-	docker restart nginx
+	curl -fsSL -o "$nginx_dir/conf.d/$domain.conf" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/conf.d/reverse-proxy.conf"
+	sed -i "s/domain.com/$yuming/g" "$nginx_dir/conf.d/$domain.conf"
+	sed -i "s/0.0.0.0/$ipv4_address/g" "$nginx_dir/conf.d/$domain.conf"
+	sed -i "s/0000/$duankou/g" "$nginx_dir/conf.d/$domain.conf"
+	docker restart nginx > /dev/null 2>&1
 }
 
 nginx_check() {
 	docker exec nginx nginx -t > /dev/null 2>&1
-	return $?
 }
 
 ldnmp_restart() {
