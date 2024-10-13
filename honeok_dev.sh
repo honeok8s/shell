@@ -3392,7 +3392,7 @@ fail2ban_install_sshd() {
 		systemctl start rsyslog
 		systemctl enable rsyslog
 		cd "$config_dir/jail.d/"
-		curl -fsSL -O "${github_proxy}https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/linux-ssh.conf"
+		curl -fsSL -O "${github_proxy}https://raw.githubusercontent.com/kejilion/config/main/fail2ban/linux-ssh.conf"
 	fi
 }
 
