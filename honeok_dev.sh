@@ -36,7 +36,7 @@ set_region_config() {
 		execute_commands=0                    # 0 表示允许执行命令
 		
 		# 定义局部变量
-		local github_proxies=("gh-proxy.com" "www.ghproxy.cn" "github.moeyy.xyz" "ghp.ci")
+		local github_proxies=("gh-proxy.com" "gh.kejilion.pro" "github.moeyy.xyz" "www.ghproxy.cn" "ghp.ci")
 		local best_proxy=""
 		local best_time=9999                  # 设置一个较大的初始延迟值
 		local ping_time=""
@@ -55,16 +55,6 @@ set_region_config() {
 
 		# 设置找到的最佳代理
 		github_proxy="https://$best_proxy/"
-	else
-		execute_commands=1                    # 1 表示不执行命令
-		github_proxy=""                       # 不使用代理
-	fi
-}
-
-set_region_config() {
-	if [[ "$(curl -s --connect-timeout 5 ipinfo.io/country)" == "CN" ]]; then
-		execute_commands=0                    # 0 表示允许执行命令
-		github_proxy="https://gh-proxy.com/"  # 设置 GitHub 代理
 	else
 		execute_commands=1                    # 1 表示不执行命令
 		github_proxy=""                       # 不使用代理
