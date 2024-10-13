@@ -2892,11 +2892,11 @@ ldnmp_install_ngx_logrotate(){
 	# 定义日志截断文件脚本路径
 	rotate_script="$nginx_dir/rotate.sh"
 
-	if [[ ! -d $nginx_dir ]]; then
+	if [[ ! -d "$nginx_dir" ]]; then
 		_red "Nginx目录不存在"
 		return 1
 	else
-		curl -fsSL -o "$rotate_script" ${github_proxy}github.com/honeok8s/shell/raw/refs/heads/main/nginx/docker_ngx_rotate2.sh
+		curl -fsSL -o "$rotate_script" "${github_proxy}github.com/honeok8s/shell/raw/refs/heads/main/nginx/docker_ngx_rotate2.sh"
 		if [[ $? -ne 0 ]]; then
 			_red "脚本下载失败，请检查网络连接或脚本URL"
 			return 1
