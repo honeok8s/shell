@@ -3579,19 +3579,19 @@ linux_ldnmp() {
 				ldnmp_certs_status
 				ldnmp_add_db
 
-				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/maccms.com.conf"
-				sed -i -e "s/yuming.com/$domain/g" -e "s/my_cache/fst_cache/g" "$nginx_dir/conf.d/$domain.conf"
+				curl -fsSL -o "$nginx_dir/conf.d/$domain.conf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/maccms.conf"
+				sed -i "s/domain.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
 
 				cms_dir="$nginx_dir/html/$domain"
-				[ ! -d $cms_dir ] && mkdir -p "$cms_dir"
-				cd "$cms_dir" || { _red "无法进入目录$cms_dir"; return 1; }
-				wget -q https://github.com/magicblack/maccms_down/raw/master/maccms10.zip && unzip maccms10.zip && rm maccms10.zip
-				cd "$cms_dir/template/" || { _red "无法进入目录$cms_dir/template/"; return 1; }
-				wget -q https://github.com/kejilion/Website_source_code/raw/main/DYXS2.zip && unzip DYXS2.zip && rm "$cms_dir/template/DYXS2.zip"
+				[ ! -d "$cms_dir" ] && mkdir -p "$cms_dir"
+				cd "$cms_dir"
+				wget -q -L "${github_proxy}github.com/magicblack/maccms_down/raw/master/maccms10.zip" && unzip maccms10.zip && rm maccms10.zip
+				cd "$cms_dir/template/"
+				wget -q -L "${github_proxy}github.com/kejilion/Website_source_code/raw/main/DYXS2.zip" && unzip DYXS2.zip && rm "$cms_dir/template/DYXS2.zip"
 				cp "$cms_dir/template/DYXS2/asset/admin/Dyxs2.php" "$cms_dir/application/admin/controller"
 				cp "$cms_dir/template/DYXS2/asset/admin/dycms.html" "$cms_dir/application/admin/view/system"
 				mv "$cms_dir/admin.php" "$cms_dir/vip.php"
-				wget -qO "$cms_dir/application/extra/maccms.php" https://raw.githubusercontent.com/kejilion/Website_source_code/main/maccms.php
+				curl -fsSL -o "$cms_dir/application/extra/maccms.php" "${github_proxy}raw.githubusercontent.com/kejilion/Website_source_code/main/maccms.php"
  
 				ldnmp_restart
 				ldnmp_display_success
