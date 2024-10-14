@@ -4200,7 +4200,7 @@ linux_ldnmp() {
 
 				[ ! -d /data/script ] && mkdir -p /data/script
 				cd /data/script || { _red "进入目录/data/script失败"; return 1; }
-				wget -qO "${useip}_backup.sh" "https://raw.githubusercontent.com/honeok8s/shell/main/callscript/web_backup.sh"
+				curl -fsSL -o "${useip}_backup.sh" "${github_proxy}raw.githubusercontent.com/honeok8s/shell/main/callscript/web_backup.sh"
 				chmod +x "${useip}_backup.sh"
 
 				sed -i "s/0.0.0.0/$useip/g" "${useip}_backup.sh"
