@@ -7697,6 +7697,7 @@ node_create(){
 				clear
 				install wget >/dev/null 2>&1
 				bash <(wget -qO- -o- https://git.io/v2ray.sh)
+				;;
 			7)
 				clear
 				install wget >/dev/null 2>&1
