@@ -7653,22 +7653,23 @@ node_create(){
 		echo "1. Fscarmen Sing-box一键脚本"
 		echo "3. FranzKafkaYu Sing-box一键脚本"
 		echo "5. 233boy Sing-box一键脚本"
-		echo "6. Fscarmen ArgoX一键脚本"
-		echo "7. WL一键Argo哪吒脚本"
-		echo "8. Fscarmen Argo+Sing-box一键脚本"
-		echo "9. 甬哥 Sing-box一键四协议共存脚本"
-		echo "20. Multi EasyGost一键脚本"
+		echo "6. 233boy V2Ray一键脚本"
+		echo "7. Fscarmen ArgoX一键脚本"
+		echo "8. WL一键Argo哪吒脚本"
+		echo "9. Fscarmen Argo+Sing-box一键脚本"
+		echo "10. 甬哥 Sing-box一键四协议共存脚本"
+		echo "11. Multi EasyGost一键脚本"
 		echo "-------------------------------"
 		_yellow "单协议/XRAY面板及其他"
 		echo "-------------------------------"
-		echo "22. Brutal Reality一键脚本"
-		echo "23. Vaxilu X-UI面板一键脚本"
-		echo "24. FranzKafkaYu X-UI面板一键脚本"
-		echo "25. Alireza0 X-UI面板一键脚本"
-		echo "31. MHSanaei 3X-UI面板一键脚本"
+		echo "25. Brutal Reality一键脚本"
+		echo "26. Vaxilu X-UI面板一键脚本"
+		echo "27. FranzKafkaYu X-UI面板一键脚本"
+		echo "28. Alireza0 X-UI面板一键脚本"
+		echo "29. MHSanaei 3X-UI面板一键脚本"
 		echo "-------------------------------"
-		echo "35. OpenVPN一键安装脚本"
-		echo "36. 一键搭建TG代理"
+		echo "40. OpenVPN一键安装脚本"
+		echo "41. 一键搭建TG代理"
 		echo "-------------------------------"
 		echo "0. 返回主菜单"
 		echo "-------------------------------"
@@ -7695,27 +7696,31 @@ node_create(){
 			6)
 				clear
 				install wget >/dev/null 2>&1
+				bash <(wget -qO- -o- https://git.io/v2ray.sh)
+			7)
+				clear
+				install wget >/dev/null 2>&1
 				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/argox/main/argox.sh)
 				;;
-			7)
+			8)
 				clear
 				bash <(curl -sL https://raw.githubusercontent.com/dsadsadsss/vps-argo/main/install.sh)
 				;;
-			8)
+			9)
 				clear
 				install wget >/dev/null 2>&1
 				bash <(wget -qO- https://raw.githubusercontent.com/fscarmen/sba/main/sba.sh)
 				;;
-			9)
+			10)
 				clear
 				bash <(curl -Ls https://gitlab.com/rwkgyg/sing-box-yg/raw/main/sb.sh)
 				;;
-			20)
+			11)
 				clear
 				install wget >/dev/null 2>&1
 				wget --no-check-certificate -O gost.sh https://raw.githubusercontent.com/KANIKIG/Multi-EasyGost/master/gost.sh && chmod +x gost.sh && ./gost.sh
 				;;
-			22)
+			25)
 				clear
 				_yellow "安装Tcp-Brutal-Reality需要内核高于5.8，不符合请手动升级5.8内核以上再安装。"
 				
@@ -7734,28 +7739,28 @@ node_create(){
 					sleep 1
 				fi
 				;;
-			23)
+			26)
 				clear
 				bash <(curl -Ls https://raw.githubusercontent.com/vaxilu/x-ui/master/install.sh)
 				;;
-			24)
+			27)
 				clear
 				bash <(curl -Ls https://raw.githubusercontent.com/FranzKafkaYu/x-ui/master/install.sh)
 				;;
-			25)
+			28)
 				clear
 				bash <(curl -Ls https://raw.githubusercontent.com/alireza0/x-ui/master/install.sh)
 				;;
-			31)
+			29)
 				clear
 				bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh)
 				;;
-			35)
+			40)
 				clear
 				install wget >/dev/null 2>&1
 				wget https://git.io/vpn -O openvpn-install.sh && bash openvpn-install.sh
 				;;
-			36)
+			41)
 				clear
 				rm -fr /home/mtproxy >/dev/null 2>&1
 				mkdir /home/mtproxy && cd /home/mtproxy
