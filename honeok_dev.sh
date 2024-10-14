@@ -4676,7 +4676,7 @@ linux_ldnmp() {
 							_green "更新${ldnmp_pods}完成"
 							;;
 						5)
-							echo -n -e "${yellow}长时间不更新环境的用户请慎重更新LDNMP环境,会有数据库更新失败的风险,确定更新LDNMP环境吗?(y/n)${white}"
+							echo -n -e "${yellow}长时间不更新环境的用户请慎重更新LDNMP环境，会有数据库更新失败的风险，确定更新LDNMP环境吗？（y/n）${white}"
 							read -r choice
 
 							case "$choice" in
