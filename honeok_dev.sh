@@ -4333,7 +4333,7 @@ linux_ldnmp() {
 								timeout 5 tail -f /data/docker_data/fail2ban/config/log/fail2ban/fail2ban.log
 								;;
 							9)
-								cd /data/docker_data/fail2ban || { _red "无法进入目录/data/docker_data/fail2ban"; return 1; }
+								cd /data/docker_data/fail2ban
 								manage_compose down_all
 
 								[ -d /data/docker_data/fail2ban ] && rm -fr /data/docker_data/fail2ban
@@ -4347,29 +4347,29 @@ linux_ldnmp() {
 								break
 								;;
 							21)
-								echo "Cloudflare后台右上角我的个人资料,选择左侧API令牌,获取Global API Key"
+								echo "Cloudflare后台右上角我的个人资料，选择左侧API令牌,获取Global API Key"
 								echo "https://dash.cloudflare.com/login"
 
 								# 获取CFUSER
 								while true; do
-									echo -n "请输入你的Cloudflare管理员邮箱:"
+									echo -n "请输入你的Cloudflare管理员邮箱："
 									read -r CFUSER
 									if [[ "$CFUSER" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
 										break
 									else
-										_red "无效的邮箱格式,请重新输入"
+										_red "无效的邮箱格式，请重新输入"
 									fi
 								done
 								# 获取CFKEY
 								while true; do
-									echo "cloudflare后台右上角我的个人资料,选择左侧API令牌,获取Global API Key"
+									echo "Cloudflare后台右上角我的个人资料，选择左侧API令牌，获取Global API Key"
 									echo "https://dash.cloudflare.com/login"
-									echo -n "请输入你的Global API Key:"
+									echo -n "请输入你的Global API Key："
 									read -r CFKEY
 									if [[ -n "$CFKEY" ]]; then
 										break
 									else
-										_red "CFKEY不能为空,请重新输入"
+										_red "CFKEY不能为空，请重新输入"
 									fi
 								done
 
@@ -4505,7 +4505,7 @@ linux_ldnmp() {
 					clear
 					echo "优化LDNMP环境"
 					echo "------------------------"
-					echo "1. 标准模式              2. 高性能模式(推荐2H2G以上)"
+					echo "1. 标准模式              2. 高性能模式（推荐2H2G以上）"
 					echo "------------------------"
 					echo "0. 退出"
 					echo "------------------------"
@@ -4520,55 +4520,49 @@ linux_ldnmp() {
 							sed -i 's/worker_connections.*/worker_connections 1024;/' "$nginx_dir/nginx.conf"
 
 							# php调优
-							curl -fsSL -o "$web_dir/optimized_php.ini" "${github_proxy}https://raw.githubusercontent.com/kejilion/sh/main/optimized_php.ini"
+							curl -fsSL -o "$web_dir/optimized_php.ini" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/ldnmp/optimize/optimized_php.ini"
 							docker cp "$web_dir/optimized_php.ini" "php:/usr/local/etc/php/conf.d/optimized_php.ini"
 							docker cp "$web_dir/optimized_php.ini" "php74:/usr/local/etc/php/conf.d/optimized_php.ini"
 							rm -f "$web_dir/optimized_php.ini"
 
 							# php调优
-							curl -fsSL -o "$web_dir/www.conf" "${github_proxy}https://raw.githubusercontent.com/kejilion/sh/main/www-1.conf"
+							curl -fsSL -o "$web_dir/www.conf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/ldnmp/optimize/www-1.conf"
 							docker cp "$web_dir/www.conf" "php:/usr/local/etc/php-fpm.d/www.conf"
 							docker cp "$web_dir/www.conf" "php74:/usr/local/etc/php-fpm.d/www.conf"
 							rm -f "$web_dir/www.conf"
 
 							# mysql调优
-							curl -fsSL -o "$web_dir/my.cnf" "${github_proxy}https://raw.githubusercontent.com/kejilion/sh/main/custom_mysql_config-1.cnf"
-							docker cp "$web_dir/my.cnf" "mysql:/etc/mysql/conf.d/"
-							rm -f "$web_dir/my.cnf"
+							curl -fsSL -o "$web_dir/mysql_config.cnf" "${github_proxy}raw.githubusercontent.com/kejilion/sh/main/custom_mysql_config-1.cnf"
+							docker cp "$web_dir/mysql_config.cnf" "mysql:/etc/mysql/conf.d/"
+							rm -f "$web_dir/mysql_config.cnf"
 
+							cd "${web_dir}"
+							manage_compose restart
 							docker exec -it redis redis-cli CONFIG SET maxmemory 512mb
 							docker exec -it redis redis-cli CONFIG SET maxmemory-policy allkeys-lru
-
-							docker restart nginx
-							docker restart php
-							docker restart php74
-							docker restart mysql
 
 							_green "LDNMP环境已设置成标准模式"
 							;;
 						2)
 							_yellow "站点高性能模式"
 							# nginx调优
-							sed -i 's/worker_connections.*/worker_connections 10240;/' /home/web/nginx.conf
+							sed -i 's/worker_connections.*/worker_connections 10240;/' "$nginx_dir/nginx/nginx.conf"
 
 							# php调优
-							curl -fsSL -o "$web_dir/www.conf" "${github_proxy}https://raw.githubusercontent.com/kejilion/sh/main/www.conf"
+							curl -fsSL -o "$web_dir/www.conf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/ldnmp/optimize/www.conf"
 							docker cp "$web_dir/www.conf" php:/usr/local/etc/php-fpm.d/www.conf
 							docker cp "$web_dir/www.conf" php74:/usr/local/etc/php-fpm.d/www.conf
 							rm -f "$web_dir/www.conf"
 
 							# mysql调优
-							curl -fsSL -o "$web_dir/custom_mysql_config.cnf" "${github_proxy}https://raw.githubusercontent.com/kejilion/sh/main/custom_mysql_config.cnf"
-							docker cp "$web_dir/custom_mysql_config.cnf" mysql:/etc/mysql/conf.d/
-							rm -f "$web_dir/custom_mysql_config.cnf"
+							curl -fsSL -o "$web_dir/mysql_config.cnf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/ldnmp/optimize/custom_mysql_config.cnf"
+							docker cp "$web_dir/mysql_config.cnf" mysql:/etc/mysql/conf.d/
+							rm -f "$web_dir/mysql_config.cnf"
 
+							cd "${web_dir}"
+							manage_compose restart
 							docker exec -it redis redis-cli CONFIG SET maxmemory 1024mb
 							docker exec -it redis redis-cli CONFIG SET maxmemory-policy allkeys-lru
-
-							docker restart nginx
-							docker restart php
-							docker restart php74
-							docker restart mysql
 
 							_green "LDNMP环境已设置成高性能模式"
 							;;
@@ -4589,7 +4583,7 @@ linux_ldnmp() {
 					echo "更新LDNMP环境"
 					echo "------------------------"
 					ldnmp_version
-					echo "1. 更新Nginx     2. 更新MySQL(建议不做更新)     3. 更新PHP     4. 更新Redis"
+					echo "1. 更新Nginx     2. 更新MySQL（建议不做更新）     3. 更新PHP     4. 更新Redis"
 					echo "------------------------"
 					echo "5. 更新完整环境"
 					echo "------------------------"
