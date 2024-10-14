@@ -5126,18 +5126,18 @@ reinstall_system(){
 }
 
 check_swap() {
-	# 获取当前总交换空间大小(以MB为单位)
+	# 获取当前总交换空间大小（以MB为单位）
 	local swap_total
 	swap_total=$(free -m | awk 'NR==3{print $2}')
 
-	# 获取当前物理内存大小(以MB为单位)
+	# 获取当前物理内存大小（以MB为单位）
 	local mem_total
 	mem_total=$(free -m | awk 'NR==2{print $2}')
 
 	# 判断是否需要创建虚拟内存
 	if [ "$swap_total" -le 0 ]; then
 		if [ "$mem_total" -le 900 ]; then
-			# 系统没有交换空间且物理内存小于等于900MB,设置默认的1024MB交换空间
+			# 系统没有交换空间且物理内存小于等于900MB，设置默认的1024MB交换空间
 			local new_swap=1024
 			add_swap $new_swap
 		else
@@ -5151,12 +5151,17 @@ check_swap() {
 add_swap() {
 	local new_swap=$1
 
+	if [[ -d "/proc/vz" ]]; then
+		_red "您的VPS基于OpenVZ，不受支持！"
+		return 1
+	fi
+
 	# 获取当前系统中所有的swap分区
 	local swap_partitions
 	swap_partitions=$(grep -E '^/dev/' /proc/swaps | awk '{print $1}')
 
 	# 遍历并删除所有的swap分区
-	for partition in $swap_partitions; do
+	for partition in "$swap_partitions"; do
 		swapoff "$partition"
 		wipefs -a "$partition"  # 清除文件系统标识符
 		mkswap -f "$partition"
@@ -5171,7 +5176,7 @@ add_swap() {
 	fi
 
 	# 创建新的swap文件
-	dd if=/dev/zero of=/swapfile bs=1M count=$new_swap status=progress
+	dd if=/dev/zero of=/swapfile bs=1M count="$new_swap" status=progress
 	chmod 600 /swapfile
 	mkswap /swapfile
 	swapon /swapfile
@@ -5308,7 +5313,7 @@ xanmod_bbr3(){
 			clear
 			local kernel_version=$(uname -r)
 			echo "已安装XanMod的BBRv3内核"
-			echo "当前内核版本: $kernel_version"
+			echo "当前内核版本：$kernel_version"
 
 			echo ""
 			echo "内核管理"
@@ -5326,17 +5331,17 @@ xanmod_bbr3(){
 					remove 'linux-*xanmod1*'
 					update-grub
 					# wget -qO - https://dl.xanmod.org/archive.key | gpg --dearmor -o /usr/share/keyrings/xanmod-archive-keyring.gpg --yes
-					wget -qO - https://raw.githubusercontent.com/honeok8s/shell/main/callscript/archive.key | gpg --dearmor -o /usr/share/keyrings/xanmod-archive-keyring.gpg --yes
+					wget -qO - "${github_proxy}raw.githubusercontent.com/honeok8s/shell/main/callscript/archive.key" | gpg --dearmor -o /usr/share/keyrings/xanmod-archive-keyring.gpg --yes
 
 					# 添加存储库
 					echo 'deb [signed-by=/usr/share/keyrings/xanmod-archive-keyring.gpg] http://deb.xanmod.org releases main' | tee /etc/apt/sources.list.d/xanmod-release.list
 
 					# kernel_version=$(wget -q https://dl.xanmod.org/check_x86-64_psabi.sh && chmod +x check_x86-64_psabi.sh && ./check_x86-64_psabi.sh | grep -oP 'x86-64-v\K\d+|x86-64-v\d+')
-					local kernel_version=$(wget -q https://raw.githubusercontent.com/honeok8s/shell/main/callscript/check_x86-64_psabi.sh && chmod +x check_x86-64_psabi.sh && ./check_x86-64_psabi.sh | grep -oP 'x86-64-v\K\d+|x86-64-v\d+')
+					local kernel_version=$(wget -q ${github_proxy}raw.githubusercontent.com/honeok8s/shell/main/callscript/check_x86-64_psabi.sh && chmod +x check_x86-64_psabi.sh && ./check_x86-64_psabi.sh | grep -oP 'x86-64-v\K\d+|x86-64-v\d+')
 
-					install linux-xanmod-x64v$kernel_version
+					install linux-xanmod-x64v"$kernel_version"
 
-					_green "XanMod内核已更新,重启后生效"
+					_green "XanMod内核已更新，重启后生效"
 					rm -f /etc/apt/sources.list.d/xanmod-release.list
 					rm -f check_x86-64_psabi.sh*
 
@@ -5345,11 +5350,11 @@ xanmod_bbr3(){
 				2)
 					remove 'linux-*xanmod1*' gnupg
 					update-grub
-					_green "XanMod内核已卸载,重启后生效"
+					_green "XanMod内核已卸载，重启后生效"
 					server_reboot
 					;;
 				0)
-					break  # 跳出循环,退出菜单
+					break  # 跳出循环，退出菜单
 					;;
 				*)
 					_red "无效选项，请重新输入。"
@@ -5361,11 +5366,12 @@ xanmod_bbr3(){
 		clear
 		echo "请备份数据,将为你升级Linux内核开启XanMod BBR3"
 		echo "------------------------------------------------"
-		echo "仅支持Debian/Ubuntu 仅支持x86_64架构"
-		echo "VPS是512M内存的,请提前添加1G虚拟内存,防止因内存不足失联!"
+		echo "仅支持Debian/Ubuntu并且仅支持x86_64架构"
+		echo "请备份数据，将为你升级Linux内核开启BBR3！"
+		echo "VPS是512M内存的，请提前添加1G虚拟内存，防止因内存不足失联！"
 		echo "------------------------------------------------"
 
-		echo -n -e "${yellow}确定继续吗?(y/n)${white}"
+		echo -n -e "${yellow}确定继续吗？（y/n）${white}"
 		read -r choice
 
 		case "$choice" in
@@ -5373,7 +5379,7 @@ xanmod_bbr3(){
 				if [ -r /etc/os-release ]; then
 					. /etc/os-release
 					if [ "$ID" != "debian" ] && [ "$ID" != "ubuntu" ]; then
-						_red "当前环境不支持,仅支持Debian和Ubuntu系统"
+						_red "当前环境不支持，仅支持Debian和Ubuntu系统"
 						end_of
 						linux_system_tools
 					fi
@@ -5395,20 +5401,20 @@ xanmod_bbr3(){
 				install wget gnupg
 
 				# wget -qO - https://dl.xanmod.org/archive.key | gpg --dearmor -o /usr/share/keyrings/xanmod-archive-keyring.gpg --yes
-				wget -qO - https://raw.githubusercontent.com/honeok8s/shell/main/callscript/archive.key | gpg --dearmor -o /usr/share/keyrings/xanmod-archive-keyring.gpg --yes
+				wget -qO - "${github_proxy}raw.githubusercontent.com/honeok8s/shell/main/callscript/archive.key" | gpg --dearmor -o /usr/share/keyrings/xanmod-archive-keyring.gpg --yes
 
 				# 添加存储库
 				echo 'deb [signed-by=/usr/share/keyrings/xanmod-archive-keyring.gpg] http://deb.xanmod.org releases main' | tee /etc/apt/sources.list.d/xanmod-release.list
 
 				# kernel_version=$(wget -q https://dl.xanmod.org/check_x86-64_psabi.sh && chmod +x check_x86-64_psabi.sh && ./check_x86-64_psabi.sh | grep -oP 'x86-64-v\K\d+|x86-64-v\d+')
-				local kernel_version=$(wget -q https://raw.githubusercontent.com/honeok8s/shell/main/callscript/check_x86-64_psabi.sh && chmod +x check_x86-64_psabi.sh && ./check_x86-64_psabi.sh | grep -oP 'x86-64-v\K\d+|x86-64-v\d+')
+				local kernel_version=$(wget -q ${github_proxy}raw.githubusercontent.com/honeok8s/shell/main/callscript/check_x86-64_psabi.sh && chmod +x check_x86-64_psabi.sh && ./check_x86-64_psabi.sh | grep -oP 'x86-64-v\K\d+|x86-64-v\d+')
 
-				install linux-xanmod-x64v$kernel_version
+				install linux-xanmod-x64v"$kernel_version"
 
 				set_default_qdisc
 				bbr_on
 
-				_green "XanMod内核安装并启用BBR3成功,重启后生效!"
+				_green "XanMod内核安装并启用BBR3成功，重启后生效！"
 				rm -f /etc/apt/sources.list.d/xanmod-release.list
 				rm -f check_x86-64_psabi.sh*
 				
@@ -5419,7 +5425,7 @@ xanmod_bbr3(){
 				_yellow "已取消"
 				;;
 			*)
-				_red "无效的选择,请输入Y或N"
+				_red "无效的选择，请输入Y或N。"
 				;;
 		esac
 	fi
@@ -6717,7 +6723,7 @@ EOF
 
 					_yellow "当前虚拟内存: ${swap_info}"
 					echo "------------------------"
-					echo "1. 分配1024MB         2. 分配2048MB         3. 自定义大小         0. 退出"
+					echo "1. 分配1024MB     2. 分配2048MB     3. 自定义大小（建议为内存的2倍！）     0. 退出"
 					echo "------------------------"
 					
 					echo -n -e "${yellow}请输入选项并按回车键确认：${white}"
@@ -6725,23 +6731,21 @@ EOF
 
 					case "$choice" in
 						1)
-							new_swap=1024
-							add_swap $new_swap
-							_green "已设置1G虚拟内存"
+							add_swap 1024
+							_green "已设置虚拟内存为1024MB"
 							;;
 						2)
-							new_swap=2048
-							add_swap $new_swap
-							_green "已设置2G虚拟内存"
+							add_swap 2048
+							_green "已设置虚拟内存为2048MB"
 							;;
 						3)
-							echo -n "请输入虚拟内存大小MB:"
+							echo -n "请输入虚拟内存大小MB："
 							read -r new_swap
 							if [[ "$new_swap" =~ ^[0-9]+$ ]] && [ "$new_swap" -gt 0 ]; then
-								add_swap $new_swap
+								add_swap "$new_swap"
 								_green "已设置自定义虚拟内存为 ${new_swap}MB"
 							else
-								_red "无效输入,请输入正整数"
+								_red "无效输入，请输入正整数"
 							fi
 							;;
 						0)
