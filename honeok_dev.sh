@@ -3461,7 +3461,7 @@ linux_ldnmp() {
 				# 下载配置文件
 				curl -fsSL -o "$nginx_dir/nginx.conf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/nginx/nginx11.conf"
 				curl -fsSL -o "$nginx_dir/conf.d/default.conf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default2.conf"
-				curl -fsSL -o "$web_dir/docker-compose.yml" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/ldnmp/LDNMP-docker-compose.yml"
+				curl -fsSL -o "$web_dir/docker-compose.yml" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/ldnmp/stable-ldnmp-docker-compose.yml"
 
 				default_server_ssl
 
