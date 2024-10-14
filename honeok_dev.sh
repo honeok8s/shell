@@ -2896,9 +2896,9 @@ ldnmp_install_ngx_logrotate(){
 		_red "Nginx目录不存在"
 		return 1
 	else
-		curl -fsSL -o "$rotate_script" "${github_proxy}github.com/honeok8s/shell/raw/refs/heads/main/nginx/docker_ngx_rotate2.sh"
+		curl -fsSL -o "$rotate_script" "${github_proxy}raw.githubusercontent.com/honeok8s/shell/main/nginx/docker_ngx_rotate2.sh"
 		if [[ $? -ne 0 ]]; then
-			_red "脚本下载失败，请检查网络连接或脚本URL"
+			_red "脚本下载失败，请检查网络连接或脚本URL。"
 			return 1
 		fi
 		chmod +x "$rotate_script"
@@ -2909,9 +2909,9 @@ ldnmp_install_ngx_logrotate(){
 	if ! crontab -l | grep -q "$rotate_script"; then
 		# 添加crontab任务
 		(crontab -l; echo "$crontab_entry") | crontab -
-		_green "Nginx日志轮转任务已安装"
+		_green "Nginx日志轮转任务已安装！"
 	else
-		_yellow "Nginx日志轮转任务已存在"
+		_yellow "Nginx日志轮转任务已存在。"
 	fi
 }
 
@@ -3098,14 +3098,14 @@ ldnmp_install_nginx(){
 		ldnmp_install_certbot
 
 		mkdir -p "$nginx_dir" "$nginx_conf_dir" "$nginx_dir/certs"
-		curl -fsSL -o "$nginx_dir/nginx.conf" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/nginx11.conf"
-		curl -fsSL -o "$nginx_conf_dir/default.conf" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/conf.d/default2.conf"
+		curl -fsSL -o "$nginx_dir/nginx.conf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/nginx/nginx11.conf"
+		curl -fsSL -o "$nginx_conf_dir/default.conf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default2.conf"
 
 		default_server_ssl
 
-		curl -fsSL -o "/data/docker_data/web/docker-compose.yml" "${github_proxy}github.com/honeok8s/conf/raw/refs/heads/main/nginx/ldnmp-nginx-docker-compose.yml"
+		curl -fsSL -o "${web_dir}/docker-compose.yml" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/nginx/ldnmp-nginx-docker-compose.yml"
 
-		cd /data/docker_data/web || { _red "无法进入目录/data/docker_data/web"; return 1; }
+		cd "${web_dir}"
 		manage_compose start
 
 		docker exec -it nginx chmod -R 777 /var/www/html
@@ -3530,7 +3530,7 @@ linux_ldnmp() {
 				discuz_dir="$nginx_dir/html/$domain"
 				[ ! -d "$discuz_dir" ] && mkdir -p "$discuz_dir"
 				cd "$discuz_dir"
-				curl -fsSL -o latest.zip "${github_proxy}https://github.com/kejilion/Website_source_code/raw/main/Discuz_X3.5_SC_UTF8_20240520.zip" && unzip latest.zip && rm latest.zip
+				curl -fsSL -o latest.zip "${github_proxy}github.com/kejilion/Website_source_code/raw/main/Discuz_X3.5_SC_UTF8_20240520.zip" && unzip latest.zip && rm latest.zip
 
 				ldnmp_restart
 				ldnmp_display_success
@@ -3616,13 +3616,13 @@ linux_ldnmp() {
 				ldnmp_certs_status
 				ldnmp_add_db
 
-				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/dujiaoka.com.conf"
-				sed -i -e "s/yuming.com/$domain/g" -e "s/my_cache/fst_cache/g" "$nginx_dir/conf.d/$domain.conf"
+				curl -fsSL -o "$nginx_dir/conf.d/$domain.conf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/dujiaoka.conf"
+				sed -i "s/domain.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
 
 				djsk_dir="$nginx_dir/html/$domain"
-				[ ! -d $djsk_dir ] && mkdir -p "$djsk_dir"
-				cd "$djsk_dir" || { _red "无法进入目录$djsk_dir"; return 1; }
-				wget -q https://github.com/assimon/dujiaoka/releases/download/2.0.6/2.0.6-antibody.tar.gz && tar -zxvf 2.0.6-antibody.tar.gz && rm 2.0.6-antibody.tar.gz
+				[ ! -d "$djsk_dir" ] && mkdir -p "$djsk_dir"
+				cd "$djsk_dir"
+				curl -fsSL -O "${github_proxy}github.com/assimon/dujiaoka/releases/download/2.0.6/2.0.6-antibody.tar.gz" && tar xvf 2.0.6-antibody.tar.gz && rm 2.0.6-antibody.tar.gz
 
 				ldnmp_restart
 				ldnmp_display_success
@@ -3656,20 +3656,19 @@ linux_ldnmp() {
 				ldnmp_install_ssltls
 				ldnmp_certs_status
 				ldnmp_add_db
-
-				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/flarum.com.conf"
-				sed -i -e "s/yuming.com/$domain/g" -e "s/my_cache/fst_cache/g" "$nginx_dir/conf.d/$domain.conf"
+				curl -fsSL -o "$nginx_dir/conf.d/$domain.conf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/flarum.conf"
+				sed -i "s/domain.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
 
 				flarum_dir="$nginx_dir/html/$domain"
-				[ ! -d $flarum_dir ] && mkdir -p "$flarum_dir"
-				cd "$flarum_dir" || { _red "无法进入目录$flarum_dir"; return 1; }
+				[ ! -d "$flarum_dir" ] && mkdir -p "$flarum_dir"
+				cd "$flarum_dir"
 
 				docker exec php sh -c "php -r \"copy('https://getcomposer.org/installer', 'composer-setup.php');\""
 				docker exec php sh -c "php composer-setup.php"
 				docker exec php sh -c "php -r \"unlink('composer-setup.php');\""
 				docker exec php sh -c "mv composer.phar /usr/local/bin/composer"
 
-				docker exec php composer create-project flarum/flarum /var/www/html/$domain
+				docker exec php composer create-project flarum/flarum /var/www/html/"$domain"
 				docker exec php sh -c "cd /var/www/html/$domain && composer require flarum-lang/chinese-simplified"
 				docker exec php sh -c "cd /var/www/html/$domain && composer require fof/polls"
 
@@ -3694,13 +3693,13 @@ linux_ldnmp() {
 				ldnmp_certs_status
 				ldnmp_add_db
 
-				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/typecho.com.conf"
-				sed -i -e "s/yuming.com/$domain/g" -e "s/my_cache/fst_cache/g" "$nginx_dir/conf.d/$domain.conf"
+				curl -fsSL -o "$nginx_dir/conf.d/$domain.conf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/typecho.conf"
+				sed -i "s/domain.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
 
 				typecho_dir="$nginx_dir/html/$domain"
-				[ ! -d $typecho_dir ] && mkdir -p "$typecho_dir"
-				cd "$typecho_dir" || { _red "无法进入目录$typecho_dir"; return 1; }
-				wget -qO latest.zip https://github.com/typecho/typecho/releases/latest/download/typecho.zip && unzip latest.zip && rm latest.zip
+				[ ! -d "$typecho_dir" ] && mkdir -p "$typecho_dir"
+				cd "$typecho_dir"
+				curl -fsSL -o latest.zip "${github_proxy}github.com/typecho/typecho/releases/latest/download/typecho.zip" && unzip latest.zip && rm latest.zip
 
 				ldnmp_restart
 				ldnmp_display_success
@@ -3722,18 +3721,18 @@ linux_ldnmp() {
 				ldnmp_certs_status
 				ldnmp_add_db
 
-				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/index_php.conf"
-				sed -i -e "s/yuming.com/$domain/g" -e "s/my_cache/fst_cache/g" "$nginx_dir/conf.d/$domain.conf"
+				curl -fsSL -o "$nginx_dir/conf.d/$domain.conf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/php_dyna.conf"
+				sed -i "s/domain.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
 
 				dyna_dir="$nginx_dir/html/$domain"
-				[ ! -d $dyna_dir ] && mkdir -p "$dyna_dir"
-				cd "$dyna_dir" || { _red "无法进入目录$dyna_dir"; return 1; }
+				[ ! -d "$dyna_dir" ] && mkdir -p "$dyna_dir"
+				cd "$dyna_dir"
 
 				clear
 				echo -e "[${yellow}1/6${white}] 上传PHP源码"
 				echo "-------------"
-				echo "目前只允许上传zip格式的源码包,请将源码包放到$dyna_dir目录下"
-				echo -n "也可以输入下载链接远程下载源码包,直接回车将跳过远程下载:"
+				echo "目前只允许上传zip格式的源码包，请将源码包放到$dyna_dir目录下"
+				echo -n "也可以输入下载链接远程下载源码包，直接回车将跳过远程下载："
 				read -r url_download
 
 				if [ -n "$url_download" ]; then
@@ -3748,7 +3747,7 @@ linux_ldnmp() {
 				echo "-------------"
 				find "$(realpath .)" -name "index.php" -print
 
-				echo -n "请输入index.php的路径,如($nginx_dir/html/$domain/wordpress/):"
+				echo -n "请输入index.php的路径，如($nginx_dir/html/$domain/wordpress/):"
 				read -r index_path
 
 				sed -i "s#root /var/www/html/$domain/#root $index_path#g" "$nginx_dir/conf.d/$domain.conf"
@@ -3780,7 +3779,7 @@ linux_ldnmp() {
 				echo "已经安装的扩展"
 				docker exec php php -m
 
-				echo -n "$(echo -e "输入需要安装的扩展名称,如 ${yellow}SourceGuardian imap ftp${white} 等,直接回车将跳过安装:")"
+				echo -n "$(echo -e "输入需要安装的扩展名称，如 ${yellow}SourceGuardian imap ftp${white} 等，直接回车将跳过安装：")"
 				read -r php_extensions
 				if [ -n "$php_extensions" ]; then
 					docker exec $PHP_Version install-php-extensions $php_extensions
@@ -3789,7 +3788,7 @@ linux_ldnmp() {
 				clear
 				echo -e "[${yellow}5/6${white}] 编辑站点配置"
 				echo "-------------"
-				echo "按任意键继续,可以详细设置站点配置,如伪静态等内容"
+				echo "按任意键继续，可以详细设置站点配置，如伪静态等内容"
 				read -n 1 -s -r -p ""
 				vim "$nginx_dir/conf.d/$domain.conf"
 
@@ -3803,19 +3802,19 @@ linux_ldnmp() {
 						echo ""
 						;;
 					2)
-						echo "数据库备份必须是.gz结尾的压缩包,请放到/opt/目录下,支持宝塔/1panel备份数据导入"
-						echo -n "也可以输入下载链接,远程下载备份数据,直接回车将跳过远程下载:" 
+						echo "数据库备份必须是.gz结尾的压缩包，请放到/opt/目录下，支持宝塔/1panel备份数据导入"
+						echo -n "也可以输入下载链接，远程下载备份数据，直接回车将跳过远程下载：" 
 						read -r url_download_db
 
 						cd /opt
 						if [ -n "$url_download_db" ]; then
-							wget -q "$url_download_db"
+							curl -fsSL "$url_download_db"
 						fi
 						gunzip $(ls -t *.gz | head -n 1)
 						latest_sql=$(ls -t *.sql | head -n 1)
 						DB_ROOT_PASSWD=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
 
-						docker exec -i mysql mysql -u root -p"$DB_ROOT_PASSWD" $DB_NAME < "/opt/$latest_sql"
+						docker exec -i mysql mysql -u root -p"$DB_ROOT_PASSWD" "$DB_NAME" < "/opt/$latest_sql"
 						echo "数据库导入的表数据"
 						docker exec -i mysql mysql -u root -p"$DB_ROOT_PASSWD" -e "USE $DB_NAME; SHOW TABLES;"
 						rm -f *.sql
@@ -3856,14 +3855,14 @@ linux_ldnmp() {
 				ldnmp_install_ssltls
 				ldnmp_certs_status
 
-				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/rewrite.conf"
-				sed -i "s/yuming.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
+				curl -fsSL -o "$nginx_dir/conf.d/$domain.conf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/rewrite.conf"
+				sed -i "s/domain.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
 				sed -i "s/baidu.com/$reverseproxy/g" "$nginx_dir/conf.d/$domain.conf"
 
 				if nginx_check; then
 					docker restart nginx >/dev/null 2>&1
 				else
-					_red "Nginx配置校验失败,请检查配置文件"
+					_red "Nginx配置校验失败，请检查配置文件。"
 					return 1
 				fi
 
@@ -3884,15 +3883,15 @@ linux_ldnmp() {
 				ldnmp_install_ssltls
 				ldnmp_certs_status
 
-				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/reverse-proxy.conf"
-				sed -i "s/yuming.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
+				curl -fsSL -o "$nginx_dir/conf.d/$domain.conf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/reverse-proxy.conf"
+				sed -i "s/domain.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
 				sed -i "s/0.0.0.0/$reverseproxy/g" "$nginx_dir/conf.d/$domain.conf"
 				sed -i "s/0000/$port/g" "$nginx_dir/conf.d/$domain.conf"
 
 				if nginx_check; then
 					docker restart nginx >/dev/null 2>&1
 				else
-					_red "Nginx配置校验失败,请检查配置文件"
+					_red "Nginx配置校验失败，请检查配置文件。"
 					return 1
 				fi
 
@@ -3912,14 +3911,14 @@ linux_ldnmp() {
 				ldnmp_install_ssltls
 				ldnmp_certs_status
 
-				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/reverse-proxy-domain.conf"
-				sed -i "s/yuming.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
+				curl -fsSL -o "$nginx_dir/conf.d/$domain.conf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/reverse-proxy-domain.conf"
+				sed -i "s/domain.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
 				sed -i "s|fandaicom|$proxy_domain|g" "$nginx_dir/conf.d/$domain.conf"
 
 				if nginx_check; then
 					docker restart nginx >/dev/null 2>&1
 				else
-					_red "Nginx配置校验失败,请检查配置文件"
+					_red "Nginx配置校验失败，请检查配置文件。"
 					return 1
 				fi
 
@@ -3934,18 +3933,18 @@ linux_ldnmp() {
 				ldnmp_install_ssltls
 				ldnmp_certs_status
 
-				wget -qO "$nginx_dir/conf.d/$domain.conf" "https://raw.githubusercontent.com/kejilion/nginx/main/html.conf"
-				sed -i "s/yuming.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
+				curl -fsSL -o "$nginx_dir/conf.d/$domain.conf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/html.conf"
+				sed -i "s/domain.com/$domain/g" "$nginx_dir/conf.d/$domain.conf"
 
 				static_dir="$nginx_dir/html/$domain"
-				[ ! -d $static_dir ] && mkdir -p "$static_dir"
-				cd "$static_dir" || { _red "无法进入目录$static_dir"; return 1; }
+				[ ! -d "$static_dir" ] && mkdir -p "$static_dir"
+				cd "$static_dir"
 
 				clear
 				echo -e "[${yellow}1/2${white}] 上传静态源码"
 				echo "-------------"
-				echo "目前只允许上传zip格式的源码包,请将源码包放到$static_dir目录下"
-				echo -n "也可以输入下载链接远程下载源码包,直接回车将跳过远程下载:"
+				echo "目前只允许上传zip格式的源码包，请将源码包放到$static_dir目录下"
+				echo -n "也可以输入下载链接远程下载源码包，直接回车将跳过远程下载："
 				read -r url_download
 
 				if [ -n "$url_download" ]; then
@@ -3960,7 +3959,7 @@ linux_ldnmp() {
 				echo "-------------"
 				find "$(realpath .)" -name "index.html" -print
 
-				echo -n "请输入index.html的路径,如($nginx_dir/html/$domain/index/):"
+				echo -n "请输入index.html的路径，如($nginx_dir/html/$domain/index/):"
 				read -r index_path
 
 				sed -i "s#root /var/www/html/$domain/#root $index_path#g" "$nginx_dir/conf.d/$domain.conf"
@@ -3971,7 +3970,7 @@ linux_ldnmp() {
 				if nginx_check; then
 					docker restart nginx >/dev/null 2>&1
 				else
-					_red "Nginx配置校验失败,请检查配置文件"
+					_red "Nginx配置校验失败，请检查配置文件。"
 					return 1
 				fi
 
@@ -4055,7 +4054,7 @@ linux_ldnmp() {
 							if nginx_check; then
 								docker restart nginx >/dev/null 2>&1
 							else
-								_red "Nginx配置校验失败,请检查配置文件"
+								_red "Nginx配置校验失败，请检查配置文件"
 								return 1
 							fi
 							;;
@@ -4085,18 +4084,18 @@ linux_ldnmp() {
 							if nginx_check; then
 								docker restart nginx >/dev/null 2>&1
 							else
-								_red "Nginx配置校验失败,请检查配置文件"
+								_red "Nginx配置校验失败，请检查配置文件"
 								return 1
 							fi
 							;;
 						6)
-							echo -n "编辑站点配置,请输入你要编辑的域名:"
+							echo -n "编辑站点配置，请输入你要编辑的域名:"
 							vim "$nginx_dir/conf.d/$edit_domain.conf"
 
 							if nginx_check; then
 								docker restart nginx >/dev/null 2>&1
 							else
-								_red "Nginx配置校验失败,请检查配置文件"
+								_red "Nginx配置校验失败，请检查配置文件"
 								return 1
 							fi
 							;;
@@ -4104,7 +4103,7 @@ linux_ldnmp() {
 							cert_live_dir="/data/docker_data/certbot/cert/live"
 							cert_archive_dir="/data/docker_data/certbot/cert/archive"
 							cert_renewal_dir="/data/docker_data/certbot/cert/renewal"
-							echo -n "删除站点数据目录,请输入你的域名:"
+							echo -n "删除站点数据目录，请输入你的域名:"
 							read -r del_domain
 
 							# 删除站点数据目录和相关文件
@@ -4128,12 +4127,12 @@ linux_ldnmp() {
 							if nginx_check; then
 								docker restart nginx >/dev/null 2>&1
 							else
-								_red "Nginx配置校验失败,请检查配置文件"
+								_red "Nginx配置校验失败，请检查配置文件"
 								return 1
 							fi
 							;;
 						8)
-							echo -n "删除站点数据库,请输入数据库名:"
+							echo -n "删除站点数据库，请输入数据库名:"
 							read -r del_database
 							DB_ROOT_PASSWD=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /data/docker_data/web/docker-compose.yml | tr -d '[:space:]')
 							docker exec mysql mysql -u root -p"$DB_ROOT_PASSWD" -e "DROP DATABASE $del_database;" >/dev/null 2>&1
@@ -4156,7 +4155,7 @@ linux_ldnmp() {
 
 					while true; do
 						clear
-						echo -n -e "${yellow}要传送文件到远程服务器吗?(y/n)${white}"
+						echo -n -e "${yellow}要传送文件到远程服务器吗？（y/n）${white}"
 						read -r choice
 
 						case "$choice" in
@@ -4202,10 +4201,10 @@ linux_ldnmp() {
 				[ ! -d /data/script ] && mkdir -p /data/script
 				cd /data/script || { _red "进入目录/data/script失败"; return 1; }
 				wget -qO "${useip}_backup.sh" "https://raw.githubusercontent.com/honeok8s/shell/main/callscript/web_backup.sh"
-				chmod +x ${useip}_backup.sh
+				chmod +x "${useip}_backup.sh"
 
-				sed -i "s/0.0.0.0/$useip/g" ${useip}_backup.sh
-				sed -i "s/123456/$usepasswd/g" ${useip}_backup.sh
+				sed -i "s/0.0.0.0/$useip/g" "${useip}_backup.sh"
+				sed -i "s/123456/$usepasswd/g" "${useip}_backup.sh"
 
 				echo "------------------------"
 				echo "1. 每周备份                 2. 每天备份"
@@ -4216,7 +4215,7 @@ linux_ldnmp() {
 				case $choice in
 					1)
 						check_crontab_installed
-						echo -n "选择每周备份的星期几(0-6,0代表星期日):"
+						echo -n "选择每周备份的星期几（0-6,0代表星期日）："
 						read -r weekday
 						(crontab -l ; echo "0 0 * * $weekday /data/script/${useip}_backup.sh > /dev/null 2>&1") | crontab -
 						;;
@@ -4237,7 +4236,7 @@ linux_ldnmp() {
 				need_root
 
 				ldnmp_restore_check
-				echo "请确认/opt目录中已经放置网站备份的gz压缩包,按任意键继续"
+				echo "请确认/opt目录中已经放置网站备份的gz压缩包，按任意键继续"
 				read -n 1 -s -r -p ""
 				_yellow "正在解压"
 				cd /opt && ls -t /opt/*.tar.gz | head -1 | xargs -I {} tar -xzf {}
@@ -4247,7 +4246,7 @@ linux_ldnmp() {
 				[ -d "$web_dir" ] && rm -fr "$web_dir"
 				mkdir -p "$web_dir"
 
-				cd "$web_dir" || { _red "无法进入目录 $web_dir"; return 1; }
+				cd "$web_dir"
 				mv /opt/web .
 
 				ldnmp_check_port
@@ -4374,62 +4373,62 @@ linux_ldnmp() {
 									fi
 								done
 
-								wget -qO /data/docker_data/web/nginx/conf.d/default.conf https://raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default11.conf
+								curl -fsSL -o "/data/docker_data/web/nginx/conf.d/default.conf" "${github_proxy}raw.githubusercontent.com/honeok8s/conf/main/nginx/conf.d/default11.conf"
 
 								if nginx_check; then
 									docker restart nginx >/dev/null 2>&1
 								else
-									_red "Nginx配置校验失败,请检查配置文件"
+									_red "Nginx配置校验失败，请检查配置文件"
 									return 1
 								fi
 
-								cd /data/docker_data/fail2ban/config/fail2ban/jail.d || { _red "无法进入目录 /data/docker_data/fail2ban/config/fail2ban/jail.d"; return 1; }
-								curl -sS -O https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/nginx-docker-cc.conf
+								cd /data/docker_data/fail2ban/config/fail2ban/jail.d
+								curl -fsSL -O "${github_proxy}raw.githubusercontent.com/kejilion/config/main/fail2ban/nginx-docker-cc.conf"
 								
-								cd /data/docker_data/fail2ban/config/fail2ban/action.d || { _red "无法进入目录 /data/docker_data/fail2ban/config/fail2ban/action.d"; return 1; }
-								curl -sS -O https://raw.githubusercontent.com/honeok8s/conf/main/fail2ban/cloudflare-docker.conf
-								
+								cd /data/docker_data/fail2ban/config/fail2ban/action.d
+								curl -fsSL -O "${github_proxy}raw.githubusercontent.com/kejilion/config/main/fail2ban/cloudflare-docker.conf"
+
 								sed -i "s/kejilion@outlook.com/$CFUSER/g" /data/docker_data/fail2ban/config/fail2ban/action.d/cloudflare-docker.conf
 								sed -i "s/APIKEY00000/$CFKEY/g" /data/docker_data/fail2ban/config/fail2ban/action.d/cloudflare-docker.conf
 
 								fail2ban_status
-								_green "已配置Cloudflare模式,可在Cloudflare后台站点-安全性-事件中查看拦截记录"
+								_green "已配置Cloudflare模式，可在Cloudflare后台站点-安全性-事件中查看拦截记录"
 								;;
 							22)
-								echo "网站每5分钟自动检测,当达检测到高负载会自动开盾,低负载也会自动关闭5秒盾"
+								echo "网站每5分钟自动检测，当达检测到高负载会自动开盾，低负载也会自动关闭5秒盾"
 								echo "------------------------"
 
 								# 获取CFUSER
 								while true; do
-									echo -n "请输入你的Cloudflare管理员邮箱:"
+									echo -n "请输入你的Cloudflare管理员邮箱："
 									read -r CFUSER
 									if [[ "$CFUSER" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
 										break
 									else
-										_red "无效的邮箱格式,请重新输入"
+										_red "无效的邮箱格式，请重新输入"
 									fi
 								done
 								# 获取CFKEY
 								while true; do
-									echo "cloudflare后台右上角我的个人资料,选择左侧API令牌,获取Global API Key"
+									echo "cloudflare后台右上角我的个人资料，选择左侧API令牌，获取Global API Key"
 									echo "https://dash.cloudflare.com/login"
-									echo -n "请输入你的Global API Key:"
+									echo -n "请输入你的Global API Key："
 									read -r CFKEY
 									if [[ -n "$CFKEY" ]]; then
 										break
 									else
-										_red "CFKEY不能为空,请重新输入"
+										_red "CFKEY不能为空，请重新输入"
 									fi
 								done
 								# 获取ZoneID
 								while true;do
 									echo "Cloudflare后台域名概要页面右下方获取区域ID"
-									echo -n "请输入你的ZoneID:"
+									echo -n "请输入你的ZoneID："
 									read -r CFZoneID
 									if [[ -n "$CFZoneID" ]]; then
 										break
 									else
-										_red "CFZoneID不能为空,请重新输入"
+										_red "CFZoneID不能为空，请重新输入"
 									fi
 								done
 
@@ -4437,9 +4436,9 @@ linux_ldnmp() {
 								check_crontab_installed
 
 								[ ! -d /data/script ] && mkdir -p /data/script
-								cd /data/script || { _red "进入目录/data/script失败"; return 1; }
+								cd /data/script
 
-								curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/CF-Under-Attack.sh
+								curl -fsSL -O "${github_proxy}raw.githubusercontent.com/kejilion/sh/main/CF-Under-Attack.sh"
 								chmod +x CF-Under-Attack.sh
 								sed -i "s/AAAA/$CFUSER/g" /data/script/CF-Under-Attack.sh
 								sed -i "s/BBBB/$CFKEY/g" /data/script/CF-Under-Attack.sh
@@ -4452,7 +4451,7 @@ linux_ldnmp() {
 									(crontab -l 2>/dev/null; echo "$cron_job") | crontab -
 									_green "高负载自动开盾脚本已添加"
 								else
-									_yellow "自动开盾脚本已存在,无需添加"
+									_yellow "自动开盾脚本已存在，无需添加"
 								fi
 								;;
 							0)
@@ -4467,7 +4466,7 @@ linux_ldnmp() {
 				elif [ -x "$(command -v fail2ban-client)" ] ; then
 					clear
 					_yellow "卸载旧版Fail2ban"
-					echo -n -e "${yellow}确定继续吗?(y/n)${white}"
+					echo -n -e "${yellow}确定继续吗？（y/n）${white}"
 					read -r choice
 					
 					case "$choice" in
@@ -4491,14 +4490,14 @@ linux_ldnmp() {
 					fail2ban_install_sshd
 
 					cd /data/docker_data/fail2ban/config/fail2ban/filter.d
-					curl -fsSL -O ${github_proxy}https://raw.githubusercontent.com/kejilion/sh/main/fail2ban-nginx-cc.conf
+					curl -fsSL -O "${github_proxy}raw.githubusercontent.com/kejilion/sh/main/fail2ban-nginx-cc.conf"
 					cd /data/docker_data/fail2ban/config/fail2ban/jail.d
-					curl -fsSL -O ${github_proxy}https://raw.githubusercontent.com/kejilion/config/main/fail2ban/nginx-docker-cc.conf
+					curl -fsSL -O "${github_proxy}raw.githubusercontent.com/kejilion/config/main/fail2ban/nginx-docker-cc.conf"
 
-					sed -i "/cloudflare/d" /data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf
+					sed -i "/cloudflare/d" "/data/docker_data/fail2ban/config/fail2ban/jail.d/nginx-docker-cc.conf"
 
 					fail2ban_status
-					_green "防御程序已开启"
+					_green "防御程序已开启！"
 				fi
 				;;
 			36)
