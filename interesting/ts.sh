@@ -53,6 +53,7 @@ set_region_config
 # Check TeamSpeak Container.
 if docker ps --format '{{.Image}}' | grep -q "teamspeak"; then
 	_red "TeamSpeak容器正在运行，请不要重复安装。"
+	exit 0
 fi
 
 # Check Docker Install.
