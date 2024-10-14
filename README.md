@@ -4,7 +4,7 @@ Fork from kejilion：[kejilion.sh](https://github.com/kejilion/sh)
 ```shell
 bash <(curl -sL github.com/honeok8s/shell/raw/main/honeok.sh)
 ```
-* 国内使用
+or
 ```shell
 bash <(curl -sL gh-proxy.com/github.com/honeok8s/shell/raw/main/honeok.sh)
 ```
