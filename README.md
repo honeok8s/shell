@@ -6,7 +6,7 @@ bash <(curl -sL github.com/honeok8s/shell/raw/main/honeok.sh)
 ```
 * 国内使用
 ```shell
-bash <(curl -sL https://gh-proxy.com/github.com/honeok8s/shell/raw/main/honeok.sh)
+bash <(curl -sL gh-proxy.com/github.com/honeok8s/shell/raw/main/honeok.sh)
 ```
 
 * 下载本地执行
@@ -15,7 +15,7 @@ curl -sL -O github.com/honeok8s/shell/raw/main/honeok.sh && chmod +x ./honeok.sh
 ```
 or
 ```
-curl -sL -O https://gh-proxy.com/github.com/honeok8s/shell/raw/main/honeok.sh && chmod +x ./honeok.sh && ./honeok.sh
+curl -sL -O gh-proxy.com/github.com/honeok8s/shell/raw/main/honeok.sh && chmod +x ./honeok.sh && ./honeok.sh
 ```
 ## Docker一键安装
 根据IP归属地优化配置文件，安装镜像加速
