@@ -5,6 +5,9 @@ on:
     - cron: '*/1 * * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -31,8 +34,7 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5.0.1
         if: env.changed == 'true'
         with:
-          commit_message: "chore: docker script Sync by Github Actions"
-          token: ${{ secrets.GITHUB_ACTIONS_TOKEN }}
+          commit_message: "chore: docker script sync by Github Actions"
 
       - name: Delete old workflow runs
         uses: Mattraks/delete-workflow-runs@v2.0.6
