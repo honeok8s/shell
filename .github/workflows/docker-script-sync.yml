@@ -7,7 +7,6 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -33,6 +32,7 @@ jobs:
         if: env.changed == 'true'
         with:
           commit_message: "chore: docker script Sync by Github Actions"
+          token: ${{ secrets.GITHUB_ACTIONS_TOKEN }}
 
       - name: Delete old workflow runs
         uses: Mattraks/delete-workflow-runs@v2.0.6
