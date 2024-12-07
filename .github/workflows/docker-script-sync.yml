@@ -1,0 +1,44 @@
+name: docker script sync
+
+on:
+  schedule:
+    - cron: '*/1 * * * *'
+  workflow_dispatch:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check repository
+        uses: actions/checkout@v4
+
+      - name: Download latest get-docker.sh
+        run: |
+          curl -fsSkL -o "get-docker.sh" https://get.docker.com
+
+      - name: Compare files
+        run: |
+          if ! diff -q docker/install.sh get-docker.sh; then
+            mv get-docker.sh docker/install.sh
+            echo "changed=true" >> $GITHUB_ENV
+          else
+            rm -f get-docker.sh
+            echo "changed=false" >> $GITHUB_ENV
+          fi
+
+      - name: Upload to repository
+        uses: stefanzweifel/git-auto-commit-action@v5.0.1
+        if: env.changed == 'true'
+        with:
+          commit_message: "chore: docker script Sync by Github Actions"
+
+      - name: Delete old workflow runs
+        uses: Mattraks/delete-workflow-runs@v2.0.6
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          retain_days: 0
+          keep_minimum_runs: 0
+          delete_run_by_conclusion_pattern: "cancelled, skipped, success"
